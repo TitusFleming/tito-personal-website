@@ -1,65 +1,114 @@
-import Image from "next/image";
+const projects = [
+  {
+    title: "EPL Brief",
+    type: "Football data",
+    status: "Live project",
+    description: "A Premier League team form tracker for fans who have not watched every match.",
+    href: "/projects/epl-brief",
+    tags: ["Next.js", "Runtime API", "Football"],
+  },
+  {
+    title: "Retirement Cohort Models",
+    type: "Data systems",
+    status: "Internship",
+    description: "Snowflake models for analyzing retirement customer behavior at Fidelity Investments.",
+    href: "",
+    tags: ["SQL", "Snowflake", "Analytics"],
+  },
+  {
+    title: "Battery Storage Analysis",
+    type: "Energy",
+    status: "Research",
+    description: "Feasibility and incentive research for a 400MWh battery energy storage project.",
+    href: "",
+    tags: ["Energy", "Markets", "Policy"],
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
+    <main className="min-h-screen text-[#181713]">
+      <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10">
+        <header className="site-header">
+          <a className="site-mark" href="#top" aria-label="Richard Tito Fleming home">
+            RTF
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+          <nav aria-label="Primary navigation">
+            <a href="#portfolio">Portfolio</a>
+            <a href="#about">About</a>
+            <a href="mailto:richard_fleming@brown.edu">Contact</a>
+          </nav>
+        </header>
+
+        <section id="top" className="hero">
+          <div className="portrait-frame" aria-label="Richard Tito Fleming portrait" />
+          <div className="hero-copy">
+            <p className="eyebrow">Richard &quot;Tito&quot; Fleming</p>
+            <h1>Tito Fleming</h1>
+            <p className="lede">
+              Brown CS student making software, data projects, and technical experiments.
+            </p>
+            <div className="hero-links">
+              <a href="#portfolio">Projects</a>
+              <a href="mailto:richard_fleming@brown.edu">Email</a>
+            </div>
+          </div>
+        </section>
+
+        <section id="portfolio" className="section-block" aria-labelledby="portfolio-title">
+          <div className="section-heading">
+            <p className="eyebrow">Work</p>
+            <h2 id="portfolio-title">Projects</h2>
+          </div>
+
+          <div className="project-grid">
+            {projects.map((project) => {
+              const content = (
+                <>
+                  <div className="project-topline">
+                    <span>{project.type}</span>
+                    <span>{project.status}</span>
+                  </div>
+                  <h3>{project.title}</h3>
+                  <p>{project.description}</p>
+                  <div className="tag-row">
+                    {project.tags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                  {project.href ? <span className="project-link-cue">Open project</span> : null}
+                </>
+              );
+
+              return project.href ? (
+                <a className="project-card project-card-linked" href={project.href} key={project.title}>
+                  {content}
+                </a>
+              ) : (
+                <article className="project-card" key={project.title}>
+                  {content}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="details-grid single-detail" id="about">
+          <section className="mini-section" aria-labelledby="about-title">
+            <p className="eyebrow">About</p>
+            <h2 id="about-title">I like projects with a little bit of data and a little bit of personality.</h2>
+            <p>
+              Currently at Brown. Reach me at{" "}
+              <a href="mailto:richard_fleming@brown.edu">richard_fleming@brown.edu</a>.
+            </p>
+          </section>
+        </section>
+
+        <footer>
+          <a href="mailto:richard_fleming@brown.edu">richard_fleming@brown.edu</a>
+          <a href="https://titofleming.com">titofleming.com</a>
+        </footer>
+      </div>
+    </main>
   );
 }
