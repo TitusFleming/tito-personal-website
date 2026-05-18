@@ -107,6 +107,7 @@ export default function Home() {
         <footer>
           <a href="mailto:richard_fleming@brown.edu">richard_fleming@brown.edu</a>
           <a href="https://titofleming.com">titofleming.com</a>
+          <a href="https://www.linkedin.com/in/tito-fleming/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
         </footer>
       </div>
     </main>
