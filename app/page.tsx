@@ -8,6 +8,14 @@ const projects = [
     tags: ["Next.js", "Runtime API", "Football"],
   },
   {
+    title: "GDDL Higher or Lower",
+    type: "Browser game",
+    status: "Live project",
+    description: "Pick a tier range and guess which GD level ranks harder on the GDDL. Go until you get one wrong.",
+    href: "/projects/gd-tier-game",
+    tags: ["Geometry Dash", "GDDL", "Browser Game"],
+  },
+  {
     title: "Retirement Cohort Models",
     type: "Data systems",
     status: "Internship",
