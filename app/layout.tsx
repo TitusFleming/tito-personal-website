@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.richard-fleming.com"),
   title: "Richard \"Tito\" Fleming",
   description:
     "Computer science student at Brown building useful software across data systems, energy infrastructure, aerospace, and education.",
