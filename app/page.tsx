@@ -16,6 +16,14 @@ const projects = [
     tags: ["Geometry Dash", "GDDL", "Browser Game"],
   },
   {
+    title: "yourElections",
+    type: "Civic tech",
+    status: "Live project",
+    description: "Look up your 2026 primary races and candidates by zip code.",
+    href: "/projects/yourElections",
+    tags: ["Next.js", "FastAPI", "Postgres"],
+  },
+  {
     title: "Retirement Cohort Models",
     type: "Data systems",
     status: "Internship",

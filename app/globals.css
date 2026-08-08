@@ -833,6 +833,194 @@ footer {
   margin-top: 1.5rem;
 }
 
+/* ── yourElections ────────────────────────────────────────────── */
+
+/* Zip lookup bar, modeled on .pulse-controls */
+
+.elections-controls {
+  align-items: center;
+  background: var(--brown);
+  color: #fffaf0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
+  padding: 1rem;
+}
+
+.elections-controls .eyebrow,
+.elections-controls h2 {
+  color: #fffaf0;
+}
+
+.elections-input-row {
+  align-items: flex-end;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.elections-input-row label {
+  display: grid;
+  flex: 1;
+  gap: 0.45rem;
+}
+
+.elections-input-row label span {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.elections-input-row input {
+  background: #fffaf0;
+  border: 1px solid #fffaf0;
+  color: var(--brown);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  min-height: 2.75rem;
+  padding: 0 0.8rem;
+  width: 100%;
+}
+
+.elections-input-row button {
+  background: #fffaf0;
+  border: 1px solid #fffaf0;
+  color: var(--brown);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 2.75rem;
+  padding: 0 1.1rem;
+  transition: opacity 120ms ease;
+}
+
+.elections-input-row button:hover:not(:disabled) {
+  opacity: 0.82;
+}
+
+.elections-input-row button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+/* Status / empty / error blocks */
+
+.elections-status {
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding: 1.15rem;
+}
+
+.elections-status p {
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 46rem;
+}
+
+.elections-status .pulse-loading {
+  height: 10rem;
+  margin-top: 0.25rem;
+}
+
+.elections-error {
+  color: var(--red);
+}
+
+.elections-date {
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  text-transform: uppercase;
+}
+
+/* Race cards, one per party primary */
+
+.race-section {
+  border-top: 1px solid var(--line);
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+
+.race-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+}
+
+.race-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  padding: 1.15rem;
+}
+
+.race-party {
+  color: #7a3027;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.race-empty {
+  color: var(--muted);
+  margin-top: 0.85rem;
+}
+
+.candidate-list {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+}
+
+.candidate-row {
+  align-items: center;
+  border: 1px solid var(--line);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.7rem;
+}
+
+.candidate-row strong {
+  color: var(--foreground);
+  font-weight: 760;
+}
+
+.candidate-incumbent {
+  background: var(--tan);
+  border: 1px solid var(--line);
+  color: #373229;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-left: 0.55rem;
+  padding: 0.2rem 0.4rem;
+  text-transform: uppercase;
+}
+
+.candidate-row a {
+  color: var(--brown);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.candidate-nosite {
+  color: var(--muted);
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
 /* ── Responsive ───────────────────────────────────────────────── */
 
 @media (max-width: 620px) {
@@ -858,9 +1046,16 @@ footer {
   }
 
   .pulse-controls,
+  .elections-controls,
   .dashboard-grid,
   .lower-grid {
     grid-template-columns: 1fr;
+  }
+
+  .candidate-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
   }
 
   .metric-grid,
