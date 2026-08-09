@@ -1,3 +1,7 @@
 allowBuilds:
+  # Optional native modules pulled in by mapshaper (dev-only geo pipeline);
+  # their prebuilt-binary install scripts aren't needed for what we use.
+  better-sqlite3: false
+  msgpackr-extract: false
   sharp: true
   unrs-resolver: true

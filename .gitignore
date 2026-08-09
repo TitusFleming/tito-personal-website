@@ -20,6 +20,10 @@
 # production
 /build
 
+# map geometry build cache (outputs in public/geo are committed)
+/.geo-cache
+/.pnpm-store
+
 # misc
 .DS_Store
 *.pem

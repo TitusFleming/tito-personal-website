@@ -1,34 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-
-type Candidate = {
-  id: string;
-  full_name: string;
-  party: string | null;
-  website_url: string | null;
-  incumbent: boolean;
-  status: string;
-};
-
-type RaceGroup = {
-  office_id: string;
-  office_title: string;
-  office_type: string;
-  party: string | null;
-  candidates: Candidate[];
-};
-
-type ElectionsResponse = {
-  zip: string;
-  election_name: string;
-  election_date: string;
-  races: RaceGroup[];
-};
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import RacePanel from "./race-panel";
+import USMap from "./us-map";
+import type {
+  ElectionScopeResponse,
+  ElectionsByZipResponse,
+  MapStateDetail,
+} from "./types";
 
 function isElectionsResponse(
-  value: ElectionsResponse | { detail?: string },
-): value is ElectionsResponse {
+  value: ElectionsByZipResponse | { detail?: string },
+): value is ElectionsByZipResponse {
   return "races" in value && Array.isArray(value.races);
 }
 
@@ -41,12 +25,70 @@ function formatElectionDate(value: string) {
   }).format(new Date(`${value}T12:00:00`));
 }
 
-export default function ElectionsLookup() {
-  const [zipInput, setZipInput] = useState("");
-  const [data, setData] = useState<ElectionsResponse | null>(null);
-  const [error, setError] = useState("");
+/** Fetches one backend payload whenever the url changes; null url clears. */
+function useBackendData<T>(url: string | null) {
+  const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!url) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setData(null);
+    setLoading(true);
+    fetch(url, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json: T | null) => {
+        if (!cancelled) setData(json);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  return { data, loading };
+}
+
+export default function ElectionsLookup() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const rawState = searchParams.get("state")?.toUpperCase() ?? null;
+  const selectedState = rawState && /^[A-Z]{2}$/.test(rawState) ? rawState : null;
+  const rawDistrict = Number(searchParams.get("district"));
+  const selectedDistrict =
+    selectedState && Number.isInteger(rawDistrict) && rawDistrict >= 1
+      ? rawDistrict
+      : null;
+
+  const setSelection = useCallback(
+    (state: string | null, district: number | null) => {
+      const params = new URLSearchParams();
+      if (state) params.set("state", state);
+      if (state && district) params.set("district", String(district));
+      const query = params.toString();
+      router.replace(query ? `?${query}` : "?", { scroll: false });
+    },
+    [router],
+  );
+
+  // Zip shortcut state.
+  const [zipInput, setZipInput] = useState("");
+  const [zipHint, setZipHint] = useState("");
+  const [zipError, setZipError] = useState("");
+  const [zipLoading, setZipLoading] = useState(false);
   const [slowWakeup, setSlowWakeup] = useState(false);
+  const [highlighted, setHighlighted] = useState<{ state: string; districts: number[] }>({
+    state: "",
+    districts: [],
+  });
   const wakeupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -55,10 +97,24 @@ export default function ElectionsLookup() {
     };
   }, []);
 
-  async function lookup(zip: string) {
-    setLoading(true);
-    setError("");
-    setData(null);
+  const { data: stateDetail } = useBackendData<MapStateDetail>(
+    selectedState ? `/api/yourElections/map/state/${selectedState}` : null,
+  );
+  const { data: statewide, loading: statewideLoading } =
+    useBackendData<ElectionScopeResponse>(
+      selectedState ? `/api/yourElections/elections/statewide/${selectedState}` : null,
+    );
+  const { data: districtRaces, loading: districtLoading } =
+    useBackendData<ElectionScopeResponse>(
+      selectedState && selectedDistrict
+        ? `/api/yourElections/elections/district/${selectedState}/${selectedDistrict}`
+        : null,
+    );
+
+  async function lookupZip(zip: string) {
+    setZipLoading(true);
+    setZipError("");
+    setZipHint("");
     setSlowWakeup(false);
     // The backend runs on a free tier that spins down when idle; if the
     // request takes a while, tell the user what's happening.
@@ -68,7 +124,9 @@ export default function ElectionsLookup() {
       const response = await fetch(`/api/yourElections?zip=${zip}`, {
         cache: "no-store",
       });
-      const json = (await response.json()) as ElectionsResponse | { detail?: string };
+      const json = (await response.json()) as
+        | ElectionsByZipResponse
+        | { detail?: string };
 
       if (!response.ok || !isElectionsResponse(json)) {
         throw new Error(
@@ -77,46 +135,63 @@ export default function ElectionsLookup() {
             : "Could not load election data.",
         );
       }
-      setData(json);
+
+      if (!json.state) {
+        throw new Error("We couldn't place that zip code on the map.");
+      }
+
+      const districts = json.districts ?? [];
+      setHighlighted({ state: json.state, districts });
+      if (districts.length === 1) {
+        setSelection(json.state, districts[0]);
+      } else {
+        setSelection(json.state, null);
+        if (districts.length > 1) {
+          setZipHint(
+            `Zip ${json.zip} spans districts ${districts.join(", ")} — pick yours on the map.`,
+          );
+        }
+      }
     } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : "Could not load election data.",
+      setZipError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Could not load election data.",
       );
     } finally {
       if (wakeupTimer.current) clearTimeout(wakeupTimer.current);
       setSlowWakeup(false);
-      setLoading(false);
+      setZipLoading(false);
     }
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleZipSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const zip = zipInput.trim();
     if (!/^\d{5}$/.test(zip)) {
-      setError("Enter a 5-digit zip code.");
-      setData(null);
+      setZipError("Enter a 5-digit zip code.");
       return;
     }
-    lookup(zip);
+    lookupZip(zip);
   }
 
-  const officeGroups = useMemo(() => {
-    if (!data) return [];
-    const byOffice = new Map<string, RaceGroup[]>();
-    for (const race of data.races) {
-      const group = byOffice.get(race.office_title) ?? [];
-      group.push(race);
-      byOffice.set(race.office_title, group);
-    }
-    return [...byOffice.entries()];
-  }, [data]);
+  const stateName = stateDetail?.name ?? selectedState;
+  const atLarge = stateDetail !== null && stateDetail.districts.length === 1;
+  const selectedInfo =
+    stateDetail?.districts.find((d) => d.district === selectedDistrict) ?? null;
+  const electionScope = districtRaces ?? statewide;
 
   return (
-    <section className="pulse-shell" aria-label="Zip code election lookup">
-      <form className="elections-controls" onSubmit={handleSubmit}>
+    <section className="pulse-shell" aria-label="Interactive election map">
+      <form className="elections-controls" onSubmit={handleZipSubmit}>
         <div>
-          <p className="eyebrow">Ballot lookup</p>
-          <h2>{data ? data.election_name : "Find your 2026 primary races"}</h2>
+          <p className="eyebrow">2026 primaries</p>
+          <h2>{selectedState ? `${stateName}` : "Click your state, or jump by zip"}</h2>
+          {electionScope ? (
+            <p className="elections-date">
+              Primary election day: {formatElectionDate(electionScope.election_date)}
+            </p>
+          ) : null}
         </div>
         <div className="elections-input-row">
           <label>
@@ -130,106 +205,132 @@ export default function ElectionsLookup() {
               aria-label="Zip code"
             />
           </label>
-          <button type="submit" disabled={loading}>
-            {loading ? "Looking up…" : "Look up"}
+          <button type="submit" disabled={zipLoading}>
+            {zipLoading ? "Looking up…" : "Look up"}
           </button>
         </div>
       </form>
 
-      {loading ? (
+      {zipLoading && slowWakeup ? (
         <div className="elections-status">
-          <p className="eyebrow">Loading your ballot</p>
-          {slowWakeup ? (
-            <p>
-              The backend is waking up from a nap (it spins down when idle) —
-              this first lookup can take up to a minute.
-            </p>
-          ) : null}
+          <p>
+            The backend is waking up from a nap (it spins down when idle) —
+            this first lookup can take up to a minute.
+          </p>
           <div className="pulse-loading" />
         </div>
       ) : null}
+      {zipError ? <p className="elections-error">{zipError}</p> : null}
+      {zipHint ? <p className="map-zip-hint">{zipHint}</p> : null}
 
-      {!loading && error ? (
-        <div className="elections-status">
-          <p className="eyebrow">No results</p>
-          <p className="elections-error">{error}</p>
-        </div>
-      ) : null}
+      <div className="map-layout">
+        <USMap
+          selectedState={selectedState}
+          selectedDistrict={selectedDistrict}
+          highlightedDistricts={
+            selectedState && highlighted.state === selectedState
+              ? highlighted.districts
+              : []
+          }
+          stateDetail={stateDetail}
+          onSelectState={(abbr) => setSelection(abbr, null)}
+          onSelectDistrict={(district) => setSelection(selectedState, district)}
+          onBack={() => setSelection(null, null)}
+        />
 
-      {!loading && data ? (
-        <>
-          <p className="elections-date">
-            Primary election day: {formatElectionDate(data.election_date)} · zip{" "}
-            {data.zip}
-          </p>
-
-          {officeGroups.length === 0 ? (
+        <aside className="map-panels">
+          {!selectedState ? (
             <div className="elections-status">
-              <p className="eyebrow">Nothing yet</p>
+              <p className="eyebrow">How it works</p>
               <p>
-                We found your area, but no races are loaded for it yet. Check
-                back after the next data refresh.
+                States are colored by their current House delegation — bluer
+                means more Democrats, redder means more Republicans. Dots mark
+                states with a U.S. Senate seat on the 2026 ballot.
+              </p>
+              <p>
+                Click a state to see its congressional districts and every
+                2026 primary race we have on file, or enter your zip code to
+                jump straight to your district.
               </p>
             </div>
           ) : (
-            officeGroups.map(([officeTitle, races]) => (
-              <section className="race-section" key={officeTitle}>
-                <div className="section-heading">
-                  <p className="eyebrow">Office</p>
-                  <h2>{officeTitle}</h2>
-                </div>
-                <div className="race-grid">
-                  {races.map((race) => (
-                    <article className="race-card" key={`${race.office_id}-${race.party ?? "general"}`}>
-                      <p className="race-party">
-                        {race.party ? `${race.party} primary` : "Nonpartisan"}
-                      </p>
-                      {race.candidates.length === 0 ? (
-                        <p className="race-empty">No candidates on file yet.</p>
-                      ) : (
-                        <ul className="candidate-list">
-                          {race.candidates.map((candidate) => (
-                            <li className="candidate-row" key={candidate.id}>
-                              <div>
-                                <strong>{candidate.full_name}</strong>
-                                {candidate.incumbent ? (
-                                  <span className="candidate-incumbent">Incumbent</span>
-                                ) : null}
-                              </div>
-                              {candidate.website_url ? (
-                                <a
-                                  href={candidate.website_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  Campaign site
-                                </a>
-                              ) : (
-                                <span className="candidate-nosite">No site listed</span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              </section>
-            ))
-          )}
-        </>
-      ) : null}
+            <>
+              <div className="map-panel">
+                <p className="eyebrow">Statewide</p>
+                <h3>U.S. Senate — {stateName}</h3>
+                {stateDetail && stateDetail.senators.length > 0 ? (
+                  <ul className="senator-list">
+                    {stateDetail.senators.map((senator) => (
+                      <li key={senator.full_name}>
+                        <strong>{senator.full_name}</strong>
+                        <span>
+                          {senator.party}
+                          {senator.senate_class
+                            ? ` · Class ${["I", "II", "III"][senator.senate_class - 1]}`
+                            : ""}
+                        </span>
+                        {senator.website_url ? (
+                          <a
+                            href={senator.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Official site
+                          </a>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {stateDetail && !stateDetail.senate_race_2026 ? (
+                  <p className="map-panel-note">
+                    No U.S. Senate seat here is on the 2026 ballot.
+                  </p>
+                ) : statewideLoading ? (
+                  <p className="map-panel-note">Loading Senate races…</p>
+                ) : statewide && statewide.races.length > 0 ? (
+                  <RacePanel races={statewide.races} />
+                ) : null}
+              </div>
 
-      {!loading && !data && !error ? (
-        <div className="elections-status">
-          <p className="eyebrow">How it works</p>
-          <p>
-            Enter your 5-digit zip code to see the 2026 primary races for your
-            area — U.S. Senate and House to start — with every filed candidate
-            and a link to their campaign site.
-          </p>
-        </div>
-      ) : null}
+              <div className="map-panel">
+                <p className="eyebrow">By district</p>
+                {!selectedDistrict ? (
+                  <p className="map-panel-note">
+                    Select a district on the map to see its 2026 House races.
+                  </p>
+                ) : (
+                  <>
+                    <h3>
+                      {atLarge
+                        ? `${stateName} At-Large`
+                        : `${stateName} District ${selectedDistrict}`}
+                    </h3>
+                    {selectedInfo ? (
+                      <p className="map-panel-note">
+                        {selectedInfo.incumbent
+                          ? `Current representative: ${selectedInfo.incumbent.full_name} (${selectedInfo.incumbent.party})`
+                          : "This seat is currently vacant."}
+                      </p>
+                    ) : null}
+                    {districtLoading ? (
+                      <p className="map-panel-note">Loading races…</p>
+                    ) : districtRaces ? (
+                      <RacePanel races={districtRaces.races} />
+                    ) : (
+                      <p className="map-panel-note">
+                        Races for this district couldn&apos;t be loaded — the
+                        backend may still be waking up. Try reselecting the
+                        district in a few seconds.
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </aside>
+      </div>
     </section>
   );
 }

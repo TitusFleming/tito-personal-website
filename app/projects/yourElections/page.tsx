@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import ElectionsLookup from "./elections-lookup";
 
 export const metadata = {
   title: "yourElections | Tito Fleming",
-  description: "Find your 2026 primary races and candidates by zip code.",
+  description:
+    "An interactive map of the 2026 primaries — click your state and district to see every race and candidate.",
 };
 
 export default function YourElectionsPage() {
@@ -24,10 +26,15 @@ export default function YourElectionsPage() {
         <section className="project-hero">
           <p className="eyebrow">Civic tech</p>
           <h1>yourElections</h1>
-          <p className="lede">Type in your zip code, see your 2026 primary ballot.</p>
+          <p className="lede">
+            Click your state on the map — or jump by zip code — to see your
+            2026 primary ballot.
+          </p>
         </section>
 
-        <ElectionsLookup />
+        <Suspense fallback={<div className="pulse-loading" />}>
+          <ElectionsLookup />
+        </Suspense>
       </div>
     </main>
   );

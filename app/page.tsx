@@ -19,9 +19,10 @@ const projects = [
     title: "yourElections",
     type: "Civic tech",
     status: "Live project",
-    description: "Look up your 2026 primary races and candidates by zip code.",
+    description:
+      "An interactive map of the 2026 primaries — click your state and district to see every race and candidate.",
     href: "/projects/yourElections",
-    tags: ["Next.js", "FastAPI", "Postgres"],
+    tags: ["Next.js", "FastAPI", "Postgres", "d3-geo"],
   },
   {
     title: "Retirement Cohort Models",
