@@ -7,8 +7,16 @@ import type { FeatureCollection, Feature, Geometry } from "geojson";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import type { MapOverview, MapStateDetail } from "./types";
 
+// The national frame. A selected state gets its own frame instead (see
+// `view`), so a tall state isn't letterboxed inside a 1.6:1 box.
 const WIDTH = 975;
 const HEIGHT = 610;
+
+// How much of the state frame the state itself fills, and the range the
+// frame's aspect ratio is allowed to take before it starts letterboxing.
+const STATE_FILL = 0.94;
+const MIN_STATE_ASPECT = 0.8;
+const MAX_STATE_ASPECT = 1.6;
 
 // Muted party palette, desaturated to sit alongside the site's warm
 // browns instead of election-night primaries. Mirrored in globals.css.
@@ -156,14 +164,28 @@ export default function USMap({
   );
 
   // Zoom-to-state as a group transform over nationally-projected paths.
-  const zoom = useMemo(() => {
-    if (!selectedFeature) return { k: 1, tx: 0, ty: 0 };
+  // The frame reshapes to the state's own proportions too, so the map keeps
+  // filling its column now that the column is no wider than the panels
+  // beside it — a wide national box would leave a selected state stranded
+  // in empty space on either side.
+  const view = useMemo(() => {
+    if (!selectedFeature) return { w: WIDTH, h: HEIGHT, k: 1, tx: 0, ty: 0 };
     const [[x0, y0], [x1, y1]] = path.bounds(selectedFeature);
-    const k = Math.min(10, 0.88 / Math.max((x1 - x0) / WIDTH, (y1 - y0) / HEIGHT));
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const aspect = Math.min(
+      MAX_STATE_ASPECT,
+      Math.max(MIN_STATE_ASPECT, dx / dy),
+    );
+    const h = HEIGHT;
+    const w = h * aspect;
+    const k = Math.min(12, STATE_FILL / Math.max(dx / w, dy / h));
     return {
+      w,
+      h,
       k,
-      tx: WIDTH / 2 - (k * (x0 + x1)) / 2,
-      ty: HEIGHT / 2 - (k * (y0 + y1)) / 2,
+      tx: w / 2 - (k * (x0 + x1)) / 2,
+      ty: h / 2 - (k * (y0 + y1)) / 2,
     };
   }, [selectedFeature, path]);
 
@@ -256,7 +278,7 @@ export default function USMap({
         </div>
       ) : (
         <svg
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          viewBox={`0 0 ${view.w} ${view.h}`}
           role="img"
           aria-label={
             inStateView
@@ -275,7 +297,7 @@ export default function USMap({
           <g
             className="map-zoom"
             style={{
-              transform: `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.k})`,
+              transform: `translate(${view.tx}px, ${view.ty}px) scale(${view.k})`,
               transformOrigin: "0 0",
             }}
           >
@@ -283,6 +305,13 @@ export default function USMap({
               const abbr = f.properties.state;
               const isSelected = abbr === selectedState;
               const info = overview?.states[abbr];
+              // Alaska and Hawaii sit at made-up inset positions in an
+              // Albers USA projection, so as backdrop they can drift into
+              // a zoomed frame — Hawaii lands in the Gulf beside Texas.
+              // They're only drawn when they're the state being viewed.
+              if (inStateView && !isSelected && (abbr === "AK" || abbr === "HI")) {
+                return null;
+              }
               return (
                 <path
                   key={abbr}
@@ -379,7 +408,7 @@ export default function USMap({
             {/* District numbers, only where they fit at the current zoom. */}
             {showDistricts && districts!.features.length > 1
               ? districts!.features.map((f) => {
-                  const area = path.area(f) * zoom.k * zoom.k;
+                  const area = path.area(f) * view.k * view.k;
                   if (area < 1200) return null;
                   const c = path.centroid(f);
                   if (Number.isNaN(c[0])) return null;
@@ -389,7 +418,7 @@ export default function USMap({
                       className="map-district-label"
                       x={c[0]}
                       y={c[1]}
-                      fontSize={13 / zoom.k}
+                      fontSize={13 / view.k}
                     >
                       {f.properties.district}
                     </text>

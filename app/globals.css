@@ -1145,7 +1145,7 @@ footer {
   align-items: start;
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   margin-top: 1rem;
 }
 
@@ -1160,6 +1160,10 @@ footer {
 .us-map svg {
   display: block;
   height: auto;
+  /* A portrait state gets a portrait frame; this stops the tallest ones
+   * from running off the screen. Past the cap the drawing letterboxes
+   * rather than distorting. */
+  max-height: 78vh;
   overflow: hidden;
   width: 100%;
 }
