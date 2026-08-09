@@ -842,6 +842,43 @@ footer {
 
 /* ── yourElections ────────────────────────────────────────────── */
 
+/* The map wants width, so this project opts out of the shared max-w-6xl
+ * shell and runs a short hero above it. */
+
+.elections-page {
+  margin: 0 auto;
+  max-width: min(100%, 92rem);
+  padding: 1rem 1.25rem 2rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .elections-page {
+    padding: 1.25rem 1.75rem 2.5rem;
+  }
+}
+
+.elections-hero.project-hero {
+  padding: 1rem 0 0.85rem;
+}
+
+.elections-hero h1 {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.05;
+  margin-top: 0.35rem;
+  max-width: none;
+}
+
+.elections-hero .lede {
+  font-size: 0.95rem;
+  margin-top: 0.4rem;
+  max-width: 40rem;
+}
+
+.elections-page .pulse-shell {
+  padding: 0.75rem 0 2rem;
+}
+
 /* Zip lookup bar, modeled on .pulse-controls */
 
 .elections-controls {
@@ -1026,6 +1063,80 @@ footer {
   color: var(--muted);
   font-size: 0.86rem;
   white-space: nowrap;
+}
+
+/* One collapsed row per party primary, stacked vertically */
+
+.race-accordion-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.race-accordion {
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+
+.race-accordion-trigger {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  width: 100%;
+}
+
+.race-accordion-trigger::before {
+  border-color: transparent transparent transparent #7a3027;
+  border-style: solid;
+  border-width: 0.3rem 0 0.3rem 0.42rem;
+  content: "";
+  flex: none;
+  height: 0;
+  transition: transform 140ms ease;
+  width: 0;
+}
+
+.race-accordion.is-open .race-accordion-trigger::before {
+  transform: rotate(90deg);
+}
+
+.race-accordion-trigger:hover,
+.race-accordion-trigger:focus-visible {
+  background: var(--tan);
+  outline: none;
+}
+
+.race-accordion-title {
+  color: #7a3027;
+  flex: 1;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.race-accordion-meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.race-accordion-body {
+  border-top: 1px solid var(--line);
+  padding: 0.65rem 0.85rem 0.85rem;
+}
+
+.race-accordion-body .candidate-list,
+.race-accordion-body .race-empty {
+  margin-top: 0;
 }
 
 /* ── yourElections interactive map ────────────────────────────── */
@@ -1261,9 +1372,12 @@ footer {
   margin-top: 0.65rem;
 }
 
+/* Accordions carry their own borders, so drop the section rule and most of
+ * the vertical space when race groups sit inside a map panel. */
 .map-panel .race-section {
-  margin-top: 1rem;
-  padding-top: 1rem;
+  border-top: none;
+  margin-top: 0.5rem;
+  padding-top: 0;
 }
 
 .map-panel .race-section .section-heading h2 {

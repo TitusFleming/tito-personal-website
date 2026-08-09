@@ -11,7 +11,7 @@ export const metadata = {
 export default function YourElectionsPage() {
   return (
     <main className="min-h-screen text-[#181713]">
-      <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10">
+      <div className="elections-page">
         <header className="site-header">
           <Link className="site-mark" href="/" aria-label="Back to Tito Fleming home">
             RTF
@@ -23,12 +23,11 @@ export default function YourElectionsPage() {
           </nav>
         </header>
 
-        <section className="project-hero">
+        <section className="project-hero elections-hero">
           <p className="eyebrow">Civic tech</p>
           <h1>yourElections</h1>
           <p className="lede">
-            Click your state on the map — or jump by zip code — to see your
-            2026 primary ballot.
+            Click your state — or jump by zip — to see your 2026 primary ballot.
           </p>
         </section>
 

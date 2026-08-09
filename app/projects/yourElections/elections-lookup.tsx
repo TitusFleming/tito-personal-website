@@ -289,7 +289,10 @@ export default function ElectionsLookup() {
                 ) : statewideLoading ? (
                   <p className="map-panel-note">Loading Senate races…</p>
                 ) : statewide && statewide.races.length > 0 ? (
-                  <RacePanel races={statewide.races} />
+                  <RacePanel
+                    races={statewide.races}
+                    scopeKey={`statewide-${selectedState}`}
+                  />
                 ) : null}
               </div>
 
@@ -316,7 +319,10 @@ export default function ElectionsLookup() {
                     {districtLoading ? (
                       <p className="map-panel-note">Loading races…</p>
                     ) : districtRaces ? (
-                      <RacePanel races={districtRaces.races} />
+                      <RacePanel
+                        races={districtRaces.races}
+                        scopeKey={`district-${selectedState}-${selectedDistrict}`}
+                      />
                     ) : (
                       <p className="map-panel-note">
                         Races for this district couldn&apos;t be loaded — the
