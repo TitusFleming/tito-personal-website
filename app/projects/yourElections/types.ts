@@ -5,6 +5,23 @@ export type Candidate = {
   website_url: string | null;
   incumbent: boolean;
   status: string;
+  /**
+   * True when this candidate has reported money to the FEC. It is a
+   * display grouping, never a filter — a real campaign whose first report
+   * hasn't landed yet reads as unfunded, so nothing is hidden on it.
+   */
+  funded: boolean;
+  receipts: number | null;
+  disbursements: number | null;
+  cash_on_hand: number | null;
+  individual_contributions: number | null;
+  pac_contributions: number | null;
+  /** Figures above are "as of" this date; always show it alongside them. */
+  coverage_end_date: string | null;
+  hq_city: string | null;
+  hq_state: string | null;
+  /** Only present for sitting members running again. */
+  officeholder: Officeholder | null;
 };
 
 export type RaceGroup = {
@@ -38,6 +55,15 @@ export type Officeholder = {
   website_url: string | null;
   district: number | null;
   senate_class: number | null;
+  photo_url: string | null;
+  phone: string | null;
+  office_address: string | null;
+  in_office_since: number | null;
+  sponsored_count: number | null;
+  cosponsored_count: number | null;
+  leadership_role: string | null;
+  /** Subjects they most often file bills about — not policy positions. */
+  policy_areas: string | null;
 };
 
 export type StateOverview = {

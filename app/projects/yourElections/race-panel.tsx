@@ -1,10 +1,76 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { RaceGroup } from "./types";
+import CandidateRow from "./candidate-row";
+import type { Candidate, RaceGroup } from "./types";
 
 function raceKey(race: RaceGroup) {
   return `${race.office_id}-${race.party ?? "general"}`;
+}
+
+/** Splits a race into the candidates who have reported money and the
+ * long tail who haven't, with the tail behind its own disclosure.
+ *
+ * The tail is real: 22 of the 36 people who filed for the 2026 Texas
+ * Senate seat have reported nothing. But "no money reported" is not the
+ * same as "not a real candidate" — a campaign whose first FEC report
+ * hasn't landed yet looks identical to a paper filing here. So they are
+ * tucked away and counted, never dropped. */
+function CandidateGroups({
+  candidates,
+  groupId,
+}: {
+  candidates: Candidate[];
+  groupId: string;
+}) {
+  const [showRest, setShowRest] = useState(false);
+
+  const funded = candidates.filter((c) => c.funded);
+  const rest = candidates.filter((c) => !c.funded);
+
+  // With nobody funded, a "0 shown, 8 hidden" split is just noise.
+  if (funded.length === 0) {
+    return (
+      <ul className="candidate-list">
+        {candidates.map((candidate) => (
+          <CandidateRow candidate={candidate} key={candidate.id} />
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <>
+      <ul className="candidate-list">
+        {funded.map((candidate) => (
+          <CandidateRow candidate={candidate} key={candidate.id} />
+        ))}
+      </ul>
+      {rest.length > 0 ? (
+        <div className={`candidate-rest${showRest ? " is-open" : ""}`}>
+          <button
+            type="button"
+            className="candidate-rest-trigger"
+            aria-expanded={showRest}
+            aria-controls={`candidate-rest-${groupId}`}
+            onClick={() => setShowRest((value) => !value)}
+          >
+            {showRest ? "Hide" : "Show"} {rest.length} other filed{" "}
+            {rest.length === 1 ? "candidate" : "candidates"}
+          </button>
+          <ul
+            className="candidate-list"
+            id={`candidate-rest-${groupId}`}
+            hidden={!showRest}
+          >
+            {rest.map((candidate) => (
+              <CandidateRow candidate={candidate} key={candidate.id} />
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </>
+  );
 }
 
 /** Renders race groups the same way for every flow (zip lookup, district
@@ -98,33 +164,10 @@ export default function RacePanel({
                     {count === 0 ? (
                       <p className="race-empty">No candidates on file yet.</p>
                     ) : (
-                      <ul className="candidate-list">
-                        {race.candidates.map((candidate) => (
-                          <li className="candidate-row" key={candidate.id}>
-                            <div>
-                              <strong>{candidate.full_name}</strong>
-                              {candidate.incumbent ? (
-                                <span className="candidate-incumbent">
-                                  Incumbent
-                                </span>
-                              ) : null}
-                            </div>
-                            {candidate.website_url ? (
-                              <a
-                                href={candidate.website_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Campaign site
-                              </a>
-                            ) : (
-                              <span className="candidate-nosite">
-                                No site listed
-                              </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
+                      <CandidateGroups
+                        candidates={race.candidates}
+                        groupId={key}
+                      />
                     )}
                   </div>
                 </div>

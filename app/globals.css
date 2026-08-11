@@ -1026,19 +1026,183 @@ footer {
   padding: 0;
 }
 
+/* A candidate is a disclosure: a summary line that opens onto whatever
+ * we actually know about them, which ranges from "everything" for a
+ * sitting member to "a name" for a fresh filing. */
+
 .candidate-row {
-  align-items: center;
   border: 1px solid var(--line);
+}
+
+.candidate-trigger,
+.candidate-row-static {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: inherit;
   display: flex;
+  font: inherit;
   gap: 1rem;
   justify-content: space-between;
   min-height: 2.6rem;
   padding: 0.55rem 0.7rem;
+  text-align: left;
+  width: 100%;
+}
+
+.candidate-trigger {
+  cursor: pointer;
+}
+
+.candidate-trigger:hover,
+.candidate-trigger:focus-visible {
+  background: var(--tan);
+  outline: none;
+}
+
+.candidate-identity {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .candidate-row strong {
   color: var(--foreground);
   font-weight: 760;
+}
+
+.candidate-money {
+  color: var(--foreground);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.candidate-nomoney {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.candidate-detail {
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.75rem 0.7rem;
+}
+
+.candidate-photo {
+  /* align-self matters: as a flex child the default `stretch` beats
+   * height:auto and squashes the portrait out of its aspect ratio. */
+  align-self: flex-start;
+  border: 1px solid var(--line);
+  flex: none;
+  height: auto;
+  width: 4.5rem;
+}
+
+.candidate-facts {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.candidate-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.4rem;
+  margin: 0;
+}
+
+.candidate-stats dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.candidate-stats dd {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.92rem;
+  margin: 0.1rem 0 0;
+}
+
+.candidate-currently {
+  background: var(--tan);
+  border-left: 2px solid var(--brown);
+  font-size: 0.82rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.candidate-policy {
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.candidate-policy-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* The distinction that keeps this honest: a bill's subject says what it
+ * is about, never which side of it the sponsor took. */
+.candidate-caveat {
+  color: var(--muted);
+  display: block;
+  font-size: 0.78rem;
+  font-style: italic;
+  margin-top: 0.15rem;
+}
+
+.candidate-finance {
+  border-top: 1px dashed var(--line);
+  padding-top: 0.6rem;
+}
+
+.candidate-asof {
+  color: var(--muted);
+  font-size: 0.76rem;
+  margin-top: 0.4rem;
+}
+
+.candidate-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  font-size: 0.86rem;
+}
+
+.candidate-links span {
+  color: var(--muted);
+}
+
+/* The long tail of filers with no reported money, kept out of the way
+ * but never dropped — see race-panel.tsx. */
+
+.candidate-rest {
+  margin-top: 0.5rem;
+}
+
+.candidate-rest-trigger {
+  background: transparent;
+  border: none;
+  color: var(--brown);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.3rem 0;
+  text-decoration: underline;
+}
+
+.candidate-rest-trigger:focus-visible {
+  outline: 1px solid var(--brown);
+}
+
+.candidate-rest .candidate-list {
+  margin-top: 0.45rem;
 }
 
 .candidate-incumbent {
@@ -1059,11 +1223,6 @@ footer {
   white-space: nowrap;
 }
 
-.candidate-nosite {
-  color: var(--muted);
-  font-size: 0.86rem;
-  white-space: nowrap;
-}
 
 /* One collapsed row per party primary, stacked vertically */
 
@@ -1397,7 +1556,7 @@ footer {
 }
 
 .senator-list li {
-  align-items: baseline;
+  align-items: center;
   border: 1px solid var(--line);
   display: flex;
   flex-wrap: wrap;
@@ -1405,9 +1564,25 @@ footer {
   padding: 0.55rem 0.7rem;
 }
 
+.senator-photo {
+  border: 1px solid var(--line);
+  flex: none;
+  height: auto;
+  width: 2.1rem;
+}
+
+.senator-name {
+  display: grid;
+  gap: 0.1rem;
+}
+
 .senator-list li span {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.senator-name strong {
+  color: var(--foreground);
 }
 
 .senator-list li a {
@@ -1454,10 +1629,16 @@ footer {
     grid-template-columns: 1fr;
   }
 
-  .candidate-row {
+  .candidate-trigger,
+  .candidate-row-static {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.35rem;
+  }
+
+  /* Stack the headshot above the facts rather than squeezing both. */
+  .candidate-detail {
+    flex-direction: column;
   }
 
   .metric-grid,

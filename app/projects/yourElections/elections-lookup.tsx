@@ -262,12 +262,30 @@ export default function ElectionsLookup() {
                   <ul className="senator-list">
                     {stateDetail.senators.map((senator) => (
                       <li key={senator.full_name}>
-                        <strong>{senator.full_name}</strong>
-                        <span>
-                          {senator.party}
-                          {senator.senate_class
-                            ? ` · Class ${["I", "II", "III"][senator.senate_class - 1]}`
-                            : ""}
+                        {senator.photo_url ? (
+                          <img
+                            className="senator-photo"
+                            src={senator.photo_url}
+                            alt=""
+                            width={34}
+                            height={42}
+                            loading="lazy"
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : null}
+                        <span className="senator-name">
+                          <strong>{senator.full_name}</strong>
+                          <span>
+                            {senator.party}
+                            {senator.senate_class
+                              ? ` · Class ${["I", "II", "III"][senator.senate_class - 1]}`
+                              : ""}
+                            {senator.in_office_since
+                              ? ` · since ${senator.in_office_since}`
+                              : ""}
+                          </span>
                         </span>
                         {senator.website_url ? (
                           <a
