@@ -37,12 +37,14 @@ export default function CandidateRow({ candidate }: { candidate: Candidate }) {
   const hasMoney = candidate.funded && receipts > 0;
 
   // Nothing to expand into for a bare filing — don't offer a disclosure
-  // that opens onto an empty box.
+  // that opens onto an empty box. Loose `!= null` so an absent key counts
+  // as absent too: `undefined !== null` is true, which would open an empty
+  // box the moment the API stopped sending explicit nulls.
   const hasDetail =
     hasMoney ||
-    member !== null ||
-    candidate.website_url !== null ||
-    candidate.hq_city !== null;
+    member != null ||
+    candidate.website_url != null ||
+    candidate.hq_city != null;
 
   const summary = (
     <>
