@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { isWarm, voiceBaseUrl, voiceSocketUrl } from "../warm";
+import { isWarm, voiceBaseUrl, voiceSocketUrl, wakeBackend } from "../warm";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +41,12 @@ async function handle(request: Request) {
       "<Say>Sorry, the voice agent is not configured right now.</Say><Hangup/>",
     );
   }
+
+  // Wake the elections backend on every pass, warm or cold. It sleeps on its
+  // own 15-minute timer, so the voice service being up says nothing about
+  // whether the data behind it is — and an agent that connects and then can't
+  // reach the data is a worse call than one that asks you to hold.
+  wakeBackend();
 
   // This probe doubles as the wake-up call: on Render, any request to a
   // sleeping instance starts it. So the failure path below has already set

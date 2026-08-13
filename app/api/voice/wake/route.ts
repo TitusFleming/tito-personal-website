@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { isWarm, voiceBaseUrl } from "../warm";
+import { isWarm, voiceBaseUrl, wakeBackend } from "../warm";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +19,10 @@ export async function POST() {
       { status: 500 },
     );
   }
+
+  // Both services, for the same reason the TwiML route wakes both: the agent
+  // is useless if it can talk but can't reach the election data.
+  wakeBackend();
 
   // isWarm's probe *is* the wake trigger on a sleeping instance. If it comes
   // back true the service was already up and there is nothing to wait for.

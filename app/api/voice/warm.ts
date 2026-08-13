@@ -40,3 +40,30 @@ export async function isWarm(base: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Start the elections backend waking, too.
+ *
+ * The voice agent answers questions by calling that backend, which is a
+ * separate free Render service with its own ~35s cold start and its own
+ * 15-minute sleep timer. The agent's in-call timeout is 12s, so a sleeping
+ * backend makes it apologize — "I couldn't reach the election data" — which
+ * sounds like the data is broken rather than merely asleep.
+ *
+ * Waking the voice service is therefore not enough: both have to be up before
+ * the call bridges. This fires at the same moment, so both spend the same
+ * ~30s window warming while the caller listens to the greeting.
+ *
+ * Deliberately fire-and-forget and never awaited for its result — this must
+ * not add a single millisecond to the TwiML response, which Twilio times out
+ * at ~15s. Reaching Render's router is what triggers the wake; we don't care
+ * what comes back.
+ */
+export function wakeBackend(): void {
+  const backend = process.env.BACKEND_URL;
+  if (!backend) return;
+  void fetch(`${backend.replace(/\/$/, "")}/health`, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+  }).catch(() => {});
+}
