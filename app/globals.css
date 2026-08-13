@@ -1592,6 +1592,79 @@ footer {
   white-space: nowrap;
 }
 
+/* Voice agent card, modeled on .map-panel with .elections-status spacing */
+
+.voice-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  margin-top: 1.25rem;
+  padding: 1.15rem;
+}
+
+.voice-card h3 {
+  color: var(--foreground);
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.voice-card-note {
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 46rem;
+}
+
+/* The number is the point of the card, so it carries the weight rather than
+ * sitting in body copy. tel: links matter here — most visitors are on the
+ * device they'd call from. */
+.voice-number {
+  color: var(--brown);
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.voice-number:hover {
+  text-decoration: underline;
+}
+
+/* Outlined brown on cream, matching .gddl-ghost-btn */
+.voice-wake-btn {
+  background: transparent;
+  border: 1px solid var(--brown);
+  color: var(--brown);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 2.4rem;
+  padding: 0 0.9rem;
+  transition: opacity 120ms ease;
+}
+
+.voice-wake-btn:hover {
+  opacity: 0.7;
+}
+
+.voice-status {
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 46rem;
+}
+
+.voice-status-ready {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.voice-card .pulse-loading {
+  height: 3rem;
+  width: 100%;
+}
+
 @media (max-width: 900px) {
   .map-layout {
     grid-template-columns: 1fr;

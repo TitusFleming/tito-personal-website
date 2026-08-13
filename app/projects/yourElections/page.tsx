@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import ElectionsLookup from "./elections-lookup";
+import VoiceCard from "./voice-card";
 
 export const metadata = {
   title: "yourElections | Tito Fleming",
@@ -34,6 +35,8 @@ export default function YourElectionsPage() {
         <Suspense fallback={<div className="pulse-loading" />}>
           <ElectionsLookup />
         </Suspense>
+
+        <VoiceCard />
       </div>
     </main>
   );
