@@ -8,6 +8,15 @@ const projects = [
     tags: ["Next.js", "Runtime API", "Football"],
   },
   {
+    title: "Fleming Dash",
+    type: "Browser game",
+    status: "Live project",
+    description:
+      "A Geometry Dash-style platformer built from scratch — fixed-timestep physics, cube and ship modes, and a level imported from the original game data.",
+    href: "/projects/fleming-dash",
+    tags: ["Canvas", "Game engine", "TypeScript"],
+  },
+  {
     title: "GDDL Higher or Lower",
     type: "Browser game",
     status: "Live project",

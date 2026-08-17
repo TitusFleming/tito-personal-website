@@ -1671,9 +1671,228 @@ footer {
   }
 }
 
+/* ── Fleming Dash ─────────────────────────────────────────────── */
+
+/* Wider than the usual max-w-6xl shell, so the playfield has room. Same
+   opt-out .elections-page uses for the map. */
+.fdash-page {
+  margin: 0 auto;
+  max-width: min(100%, 82rem);
+  padding: 1.5rem 1.25rem 2.5rem;
+  width: 100%;
+}
+
+.fdash-hero.project-hero {
+  padding: 1rem 0 0.85rem;
+}
+
+.fdash-shell {
+  background: var(--card);
+  border: 1px solid var(--line);
+  margin-top: 1rem;
+  padding: 1.6rem 1.5rem 1.8rem;
+}
+
+.fdash-shell h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-top: 0.35rem;
+}
+
+.fdash-note {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-top: 0.7rem;
+  max-width: 38rem;
+}
+
+.fdash-note-quiet {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.fdash-note kbd {
+  background: var(--tan);
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  padding: 0.1rem 0.35rem;
+}
+
+.fdash-name-label {
+  color: var(--muted);
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
+  margin-top: 1.3rem;
+  text-transform: uppercase;
+}
+
+.fdash-name-row {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  max-width: 26rem;
+}
+
+.fdash-name-input {
+  background: var(--background);
+  border: 1px solid var(--brown);
+  color: var(--foreground);
+  flex: 1;
+  font: inherit;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+}
+
+.fdash-btn {
+  background: var(--brown);
+  border: 1px solid var(--brown);
+  color: var(--card);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 2.75rem;
+  padding: 0 1.4rem;
+  transition: background-color 140ms ease, transform 140ms ease;
+}
+
+.fdash-btn:hover {
+  background: var(--foreground);
+  transform: translateY(-1px);
+}
+
+.fdash-ghost-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.6rem;
+  text-transform: uppercase;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+.fdash-ghost-btn:hover,
+.fdash-ghost-btn[aria-pressed="true"] {
+  border-color: var(--brown);
+  color: var(--brown);
+}
+
+.fdash-best {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 1.4rem;
+  padding-top: 1rem;
+}
+
+/* ── playfield ── */
+
+.fdash-play {
+  margin-top: 1rem;
+}
+
+.fdash-hud {
+  align-items: flex-end;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fdash-hud-left {
+  align-items: baseline;
+  display: flex;
+  gap: 0.7rem;
+}
+
+.fdash-hud-right {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.fdash-pct {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.fdash-hud-label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fdash-bar-track {
+  background: var(--tan);
+  border: 1px solid var(--line);
+  height: 8px;
+  margin-top: 0.6rem;
+  overflow: hidden;
+}
+
+.fdash-bar {
+  background: var(--red);
+  height: 100%;
+  width: 0;
+}
+
+.fdash-canvas-wrap {
+  border: 1px solid var(--brown);
+  line-height: 0;
+  margin-top: 0.6rem;
+  position: relative;
+  width: 100%;
+}
+
+.fdash-canvas {
+  display: block;
+  /* Without this the browser scrolls the page on a mobile tap instead of
+     letting the game read it as a jump. */
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  width: 100%;
+}
+
+.fdash-resume {
+  background: rgba(42, 33, 28, 0.82);
+  border: 0;
+  color: var(--card);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
 /* ── Responsive ───────────────────────────────────────────────── */
 
 @media (max-width: 620px) {
+  .fdash-name-row {
+    flex-direction: column;
+  }
+
+  .fdash-pct {
+    font-size: 1.5rem;
+  }
+
+  .fdash-hud {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
   .site-header {
     align-items: flex-start;
     flex-direction: column;
