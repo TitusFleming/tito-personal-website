@@ -87,10 +87,18 @@ export function applyRotation(s: SimState, speed: number, dt: number): void {
   }
 
   if (s.onGround) {
-    // Snap flat on landing rather than easing, so the cube reads as "settled".
+    // Snap to the nearest quarter turn on landing rather than easing, so the
+    // cube reads as settled. A full uninterrupted jump accumulates exactly PI,
+    // which is why a hop between two surfaces at the same height lands the cube
+    // 180 degrees flipped instead of at some arbitrary angle.
     const quarter = Math.PI / 2;
     s.rot = Math.round(s.rot / quarter) * quarter;
+    // Keep it bounded. Rotation is never reset, so over a long session this
+    // would otherwise grow without limit and start losing float precision.
+    s.rot %= Math.PI * 2;
   } else {
+    // Increasing rot is clockwise on screen: the renderer applies it directly
+    // to a canvas whose y axis points down.
     s.rot += CUBE_SPIN_RATE * s.gravitySign * dt;
   }
 }

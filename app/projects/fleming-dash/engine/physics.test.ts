@@ -16,7 +16,7 @@ import {
   SPEED_1X,
   TILE,
 } from "./constants.ts";
-import { applyVertical, integrate } from "./physics.ts";
+import { applyRotation, applyVertical, integrate } from "./physics.ts";
 import type { InputState, SimEvent, SimState } from "./types.ts";
 
 function makeState(over: Partial<SimState> = {}): SimState {
@@ -51,16 +51,18 @@ function simulateJump() {
   // First step triggers the jump, then we release so it is a single jump.
   applyVertical(s, HELD, FIXED_DT, out);
   integrate(s, SPEED_1X, FIXED_DT);
+  applyRotation(s, SPEED_1X, FIXED_DT);
   steps++;
 
   while (s.y > 0 && steps < 10_000) {
     applyVertical(s, RELEASED, FIXED_DT, out);
     integrate(s, SPEED_1X, FIXED_DT);
+    applyRotation(s, SPEED_1X, FIXED_DT);
     apex = Math.max(apex, s.y);
     steps++;
   }
 
-  return { apex, airtime: steps * FIXED_DT, distance: s.x, events: out };
+  return { apex, airtime: steps * FIXED_DT, distance: s.x, rotation: s.rot, events: out };
 }
 
 test("a cube jump clears exactly two tiles", () => {
@@ -79,22 +81,34 @@ test("a cube jump clears exactly two tiles", () => {
   );
 });
 
-test("a cube jump lasts about 0.4713 s", () => {
+test("a cube jump lasts about 0.43 s", () => {
   const { airtime } = simulateJump();
   // Tolerance is a couple of steps: the loop lands on whichever step first
   // crosses y = 0, which quantises the result to FIXED_DT.
   assert.ok(
-    Math.abs(airtime - 0.4713) < FIXED_DT * 3,
-    `airtime was ${airtime.toFixed(4)} s, expected ~0.4713 s`,
+    Math.abs(airtime - 0.43) < FIXED_DT * 3,
+    `airtime was ${airtime.toFixed(4)} s, expected ~0.43 s`,
   );
 });
 
-test("a cube jump travels just under five tiles", () => {
+test("a cube jump travels about four and a half tiles", () => {
+  // Reach is the tunable half of the jump; apex is not (see constants.ts).
+  // This was 4.90 tiles and read as floaty, overshooting landings.
   const { distance } = simulateJump();
   const tiles = distance / TILE;
   assert.ok(
-    tiles > 4.7 && tiles < 5.1,
-    `jump covered ${tiles.toFixed(2)} tiles, expected ~4.90`,
+    tiles > 4.3 && tiles < 4.7,
+    `jump covered ${tiles.toFixed(2)} tiles, expected ~4.47`,
+  );
+});
+
+test("one full jump rotates the cube exactly half a turn", () => {
+  // This is what makes a hop between two same-height surfaces land the cube
+  // 180 degrees flipped rather than at an arbitrary angle.
+  const { rotation } = simulateJump();
+  assert.ok(
+    Math.abs(Math.abs(rotation) - Math.PI) < 0.08,
+    `rotated ${rotation.toFixed(3)} rad, expected ~${Math.PI.toFixed(3)}`,
   );
 });
 

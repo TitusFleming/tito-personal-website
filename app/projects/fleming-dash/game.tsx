@@ -4,10 +4,26 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FIXED_DT, MAX_FRAME_DT, MAX_STEPS_PER_FRAME } from "./engine/constants.ts";
 import { compileLevel } from "./engine/level.ts";
-import { createSim, progressPercent, resetSim, stepSim } from "./engine/simulate.ts";
+import {
+  createSim,
+  makeCheckpoint,
+  progressPercent,
+  resetSim,
+  restoreCheckpoint,
+  stepSim,
+  type Checkpoint,
+} from "./engine/simulate.ts";
 import type { LevelDoc, SimEvent, SimState } from "./engine/types.ts";
 import { createInput, type Input } from "./play/input.ts";
-import { createCamera, draw, updateCamera, type Camera, type Snapshot } from "./play/renderer.ts";
+import { createMusic, type Music } from "./play/audio.ts";
+import {
+  createCamera,
+  draw,
+  snapCamera,
+  updateCamera,
+  type Camera,
+  type Snapshot,
+} from "./play/renderer.ts";
 import {
   loadPlayer,
   loadProgress,
@@ -19,49 +35,44 @@ import {
 } from "./storage/local.ts";
 import stereoMadness from "./levels/stereo-madness.json";
 
-// The level is imported, not fetched: it is 20 KB of static data that the game
-// cannot start without, so a network round trip would only add a loading state
-// and a failure mode. resolveJsonModule is already on in tsconfig.
-
-type Phase = "intro" | "playing" | "complete";
+type Phase = "start" | "playing" | "complete";
 
 export default function FlemingDash() {
   const level = useMemo(() => compileLevel(stereoMadness as LevelDoc), []);
 
-  const [phase, setPhase] = useState<Phase>("intro");
+  const [phase, setPhase] = useState<Phase>("start");
   const [player, setPlayer] = useState<Player | null>(null);
   const [progress, setProgress] = useState<LevelProgress | null>(null);
   const [nameDraft, setNameDraft] = useState("");
-  const [showHitboxes, setShowHitboxes] = useState(false);
-  const [paused, setPaused] = useState(false);
 
-  // Everything the loop touches is a ref. A setState per frame at 240 Hz would
-  // be catastrophic, so React only ever hears about phase changes.
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [paused, setPaused] = useState(false);
+  const [practice, setPractice] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [showHitboxes, setShowHitboxes] = useState(false);
+  const [isFull, setIsFull] = useState(false);
+  const [cpCount, setCpCount] = useState(0);
+
+  // Everything the loop touches is a ref: a setState per frame at 240 Hz would
+  // be catastrophic, so React only hears about phase and toggle changes.
+  const shellRef = useRef<HTMLDivElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const simRef = useRef<SimState | null>(null);
   const camRef = useRef<Camera | null>(null);
   const inputRef = useRef<Input | null>(null);
+  const musicRef = useRef<Music | null>(null);
   const rafRef = useRef<number | null>(null);
   const accRef = useRef(0);
   const lastRef = useRef(0);
   const prevRef = useRef<Snapshot>({ x: 0, y: 0, rot: 0 });
   const viewRef = useRef({ w: 960, h: 540 });
-  const hitboxRef = useRef(false);
-  const pausedRef = useRef(false);
 
-  // HUD nodes are written to directly rather than rendered, for the same reason.
-  const pctRef = useRef<HTMLSpanElement | null>(null);
-  const barRef = useRef<HTMLDivElement | null>(null);
-  const attemptRef = useRef<HTMLSpanElement | null>(null);
+  const pausedRef = useRef(false);
+  const practiceRef = useRef(false);
+  const hitboxRef = useRef(false);
+  const checkpointsRef = useRef<Checkpoint[]>([]);
 
   useEffect(() => {
-    // localStorage cannot be read during render: the server has no such thing,
-    // so the first client render must match the server's (empty) output or
-    // hydration breaks. That forces the read into an effect, which is exactly
-    // the shape react-hooks/set-state-in-effect warns about. The warning is
-    // correct in general and inapplicable here — this runs once on mount, sets
-    // state that nothing else derives from, and cannot cascade.
     const p = loadPlayer();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlayer(p);
@@ -70,15 +81,45 @@ export default function FlemingDash() {
   }, [level.id]);
 
   useEffect(() => {
+    pausedRef.current = paused;
+    // The music is part of the game state, not background ambience — a paused
+    // game with the track still running desyncs the moment you resume.
+    if (paused) musicRef.current?.pause();
+    else musicRef.current?.resume();
+  }, [paused]);
+  useEffect(() => {
     hitboxRef.current = showHitboxes;
   }, [showHitboxes]);
   useEffect(() => {
-    pausedRef.current = paused;
-  }, [paused]);
+    practiceRef.current = practice;
+  }, [practice]);
 
-  /** Fold a finished attempt into local storage. Called on death and on completion. */
+  /**
+   * Leaving practice drops every checkpoint.
+   *
+   * Done here rather than in an effect on `practice` so the state change and
+   * its consequence happen in one event, instead of a render that then triggers
+   * another render.
+   */
+  const togglePractice = useCallback(() => {
+    setPractice((was) => {
+      if (was) {
+        checkpointsRef.current = [];
+        setCpCount(0);
+      }
+      return !was;
+    });
+  }, []);
+  useEffect(() => {
+    musicRef.current?.setMuted(muted);
+  }, [muted]);
+
   const record = useCallback(
     (s: SimState, completed: boolean) => {
+      // Practice runs must never touch the record. Beating the level with
+      // checkpoints is not beating the level, and letting it write a best would
+      // quietly make the real percentage meaningless.
+      if (practiceRef.current) return;
       const pct = completed ? 100 : progressPercent(s, level);
       const next = mergeAttempt(
         loadProgress()[level.id],
@@ -93,12 +134,49 @@ export default function FlemingDash() {
     [level],
   );
 
+  const placeCheckpoint = useCallback(() => {
+    const s = simRef.current;
+    if (!s || !practiceRef.current || s.status !== "running") return;
+    checkpointsRef.current.push(makeCheckpoint(s));
+    setCpCount(checkpointsRef.current.length);
+  }, []);
+
+  const removeCheckpoint = useCallback(() => {
+    if (!practiceRef.current) return;
+    checkpointsRef.current.pop();
+    setCpCount(checkpointsRef.current.length);
+  }, []);
+
+  const restartLevel = useCallback(() => {
+    const sim = simRef.current;
+    if (!sim) return;
+    checkpointsRef.current = [];
+    setCpCount(0);
+    // Hand it to the loop's own death/respawn path rather than mutating the
+    // simulation from a click handler mid-frame.
+    sim.status = "dead";
+    sim.deathTimer = 0;
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const el = shellRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void el.requestFullscreen?.();
+  }, []);
+
+  useEffect(() => {
+    const onFs = () => setIsFull(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+
+  // ── the loop ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "playing") return;
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -112,23 +190,19 @@ export default function FlemingDash() {
     lastRef.current = performance.now();
     prevRef.current = { x: sim.x, y: sim.y, rot: sim.rot };
 
-    // Backing store follows devicePixelRatio, capped at 2 — beyond that the
-    // extra pixels cost more than they show.
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = wrap.clientWidth;
-      // A hidden tab, a display:none ancestor, or a measurement taken before
-      // layout all report zero here. Writing that through would leave a 0x0
-      // canvas — a permanently blank game that never recovers, because nothing
-      // else triggers a resize. Bail and wait for the observer instead.
-      if (w <= 0) return;
-      const h = Math.round(w * (9 / 16));
+      const h = wrap.clientHeight;
+      // Zero here means a hidden tab or a measurement before layout. Writing it
+      // through leaves a 0x0 canvas that never recovers, since nothing else
+      // triggers a resize.
+      if (w <= 0 || h <= 0) return;
       viewRef.current = { w, h };
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
-      // A resize clears the context transform, so it has to be re-applied.
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
@@ -145,13 +219,10 @@ export default function FlemingDash() {
       lastRef.current = now;
 
       // A hitch — tab switch, GC pause, closed lid — must not be simulated.
-      // Replaying three seconds of physics with no input is a guaranteed death
-      // the player never saw happen, which reads as the game cheating.
-      if (dt > MAX_FRAME_DT || pausedRef.current) {
-        accRef.current = 0;
-      } else {
-        accRef.current += dt;
-      }
+      // Replaying seconds of physics with no input is a guaranteed death the
+      // player never saw, which reads as the game cheating.
+      if (dt > MAX_FRAME_DT || pausedRef.current) accRef.current = 0;
+      else accRef.current += dt;
 
       let steps = 0;
       while (accRef.current >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
@@ -166,9 +237,8 @@ export default function FlemingDash() {
       if (steps === MAX_STEPS_PER_FRAME) accRef.current = 0;
 
       for (const e of events) {
-        if (e.type === "death") {
-          record(sim, false);
-        } else if (e.type === "complete" && !finished) {
+        if (e.type === "death") record(sim, false);
+        else if (e.type === "complete" && !finished) {
           finished = true;
           record(sim, true);
           setPhase("complete");
@@ -176,38 +246,53 @@ export default function FlemingDash() {
       }
       events.length = 0;
 
-      // Death and restart are handled inside the loop, so a retry costs zero
-      // React renders and feels instant — which is the entire experience of
-      // this genre.
+      // Death and respawn happen inside the loop, so a retry costs zero React
+      // renders and feels instant — which is the whole experience of this genre.
       if (sim.status === "dead") {
         sim.deathTimer -= dt;
         if (sim.deathTimer <= 0) {
-          resetSim(sim, level);
+          const cps = checkpointsRef.current;
+          if (practiceRef.current && cps.length > 0) {
+            restoreCheckpoint(sim, level, cps[cps.length - 1]);
+          } else {
+            resetSim(sim, level);
+          }
           prevRef.current = { x: sim.x, y: sim.y, rot: sim.rot };
+          // Snap rather than ease, or the camera slides across the level after
+          // every death and the first half-second of every attempt is unreadable.
+          snapCamera(cam, sim, viewRef.current.w, viewRef.current.h);
+          // The level is choreographed to the track, so a run starting mid-song
+          // has every jump cue in the wrong place. A practice respawn is not a
+          // fresh run, so it keeps playing.
+          if (!practiceRef.current || checkpointsRef.current.length === 0) {
+            musicRef.current?.restart();
+          }
         }
       }
 
       const { w, h } = viewRef.current;
       updateCamera(cam, sim, w, h, Math.min(dt, MAX_FRAME_DT));
-      draw(
-        ctx,
-        sim,
-        prevRef.current,
-        level,
-        cam,
-        Math.min(accRef.current / FIXED_DT, 1),
-        w,
-        h,
-        hitboxRef.current,
-      );
-
-      const pct = progressPercent(sim, level);
-      if (pctRef.current) pctRef.current.textContent = `${pct}%`;
-      if (barRef.current) barRef.current.style.width = `${pct}%`;
-      if (attemptRef.current) attemptRef.current.textContent = String(sim.attempt);
+      draw(ctx, sim, prevRef.current, level, cam, Math.min(accRef.current / FIXED_DT, 1), w, h, {
+        percent: progressPercent(sim, level),
+        attempt: sim.attempt,
+        practice: practiceRef.current,
+        checkpoints: checkpointsRef.current,
+        showHitboxes: hitboxRef.current,
+      });
     };
-
     rafRef.current = requestAnimationFrame(frame);
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === "Escape") setPaused((p) => !p);
+      // Practice is reachable only from the pause menu now.
+      else if (e.code === "KeyP") setPaused(true);
+      else if (e.code === "KeyZ") placeCheckpoint();
+      else if (e.code === "KeyC") removeCheckpoint();
+      else if (e.code === "KeyF") toggleFullscreen();
+      else if (e.code === "KeyM") setMuted((m) => !m);
+      else if (e.code === "KeyH") setShowHitboxes((v) => !v);
+    };
+    window.addEventListener("keydown", onKey);
 
     const onHide = () => {
       if (document.visibilityState === "hidden") setPaused(true);
@@ -216,128 +301,164 @@ export default function FlemingDash() {
 
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("keydown", onKey);
       document.removeEventListener("visibilitychange", onHide);
       ro.disconnect();
       input.detach();
       simRef.current = null;
       inputRef.current = null;
     };
-  }, [phase, level, record]);
+  }, [phase, level, record, placeCheckpoint, removeCheckpoint, toggleFullscreen]);
 
   const start = () => {
     if (player) setPlayer(saveName(player, nameDraft));
+    if (!musicRef.current) musicRef.current = createMusic();
+    // Must be inside the click handler: browsers keep an AudioContext suspended
+    // until a real user gesture.
+    void musicRef.current.start();
+    musicRef.current.setMuted(muted);
     setPaused(false);
     setPhase("playing");
   };
 
   const best = progress?.rev === level.rev ? progress : null;
 
-  if (phase === "intro") {
-    return (
-      <section className="fdash-shell" aria-labelledby="fdash-start">
-        <p className="eyebrow">Level 1</p>
-        <h2 id="fdash-start">{stereoMadness.name}</h2>
-        <p className="fdash-note">
-          Hold <kbd>Space</kbd>, click, or tap to jump. Hold it down and the cube
-          keeps jumping. In the ship, holding makes you climb.
-        </p>
-
-        <label className="fdash-name-label" htmlFor="fdash-name">
-          Your name
-        </label>
-        <div className="fdash-name-row">
-          <input
-            id="fdash-name"
-            className="fdash-name-input"
-            value={nameDraft}
-            onChange={(e) => setNameDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") start();
-            }}
-            placeholder="anonymous"
-            maxLength={24}
-            autoComplete="off"
-          />
-          <button className="fdash-btn" type="button" onClick={start}>
-            Play
-          </button>
-        </div>
-        <p className="fdash-note fdash-note-quiet">
-          No password, no email. Your progress is saved in this browser.
-        </p>
-
-        {best ? (
-          <p className="fdash-best">
-            Best so far: <strong>{best.bestPercent}%</strong> over {best.attempts}{" "}
-            {best.attempts === 1 ? "attempt" : "attempts"}
-            {best.completed ? " — completed" : ""}
-          </p>
-        ) : null}
-      </section>
-    );
-  }
-
-  if (phase === "complete") {
-    return (
-      <section className="fdash-shell" aria-labelledby="fdash-done">
-        <p className="eyebrow">Complete</p>
-        <h2 id="fdash-done">
-          {player?.name ? `${player.name}, you cleared it.` : "You cleared it."}
-        </h2>
-        <p className="fdash-note">
-          {stereoMadness.name} in {best?.attempts ?? 1}{" "}
-          {(best?.attempts ?? 1) === 1 ? "attempt" : "attempts"}.
-        </p>
-        <button className="fdash-btn" type="button" onClick={() => setPhase("playing")}>
-          Play again
-        </button>
-      </section>
-    );
-  }
-
   return (
-    <section className="fdash-play" aria-label="Fleming Dash game">
-      <div className="fdash-hud">
-        <div className="fdash-hud-left">
-          <span className="fdash-pct" ref={pctRef}>
-            0%
-          </span>
-          <span className="fdash-hud-label">
-            attempt <span ref={attemptRef}>1</span>
-          </span>
-        </div>
-        <div className="fdash-hud-right">
-          {best ? <span className="fdash-hud-label">best {best.bestPercent}%</span> : null}
-          <button
-            className="fdash-ghost-btn"
-            type="button"
-            onClick={() => setShowHitboxes((v) => !v)}
-            aria-pressed={showHitboxes}
-          >
-            hitboxes
-          </button>
-          <button className="fdash-ghost-btn" type="button" onClick={() => setPhase("intro")}>
-            quit
-          </button>
-        </div>
-      </div>
-
-      <div className="fdash-bar-track">
-        <div className="fdash-bar" ref={barRef} />
-      </div>
-
+    <div className={`fdash-shell${isFull ? " fdash-shell-full" : ""}`} ref={shellRef}>
       <div className="fdash-canvas-wrap" ref={wrapRef}>
-        <canvas className="fdash-canvas" ref={canvasRef} aria-label="Game viewport" />
-        {paused ? (
-          <button className="fdash-resume" type="button" onClick={() => setPaused(false)}>
-            Paused — click to resume
-          </button>
+        {phase === "playing" ? (
+          <canvas className="fdash-canvas" ref={canvasRef} aria-label="Fleming Dash viewport" />
+        ) : null}
+
+        {phase === "start" ? (
+          <div className="fdash-overlay">
+            <p className="fdash-over-eyebrow">Level 1</p>
+            <h2 className="fdash-over-title">Stereo Madness</h2>
+            <div className="fdash-name-row">
+              <input
+                className="fdash-name-input"
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") start();
+                }}
+                placeholder="your name"
+                maxLength={24}
+                autoComplete="off"
+                aria-label="Your name"
+              />
+              <button className="fdash-btn" type="button" onClick={start}>
+                Play
+              </button>
+            </div>
+            {best ? (
+              <p className="fdash-over-note">
+                Best {best.bestPercent}% · {best.attempts} attempts
+              </p>
+            ) : null}
+            <p className="fdash-over-keys">
+              Space / Click to jump · Esc pause · P practice · F fullscreen
+            </p>
+          </div>
+        ) : null}
+
+        {phase === "complete" ? (
+          <div className="fdash-overlay">
+            <p className="fdash-over-eyebrow">Complete</p>
+            <h2 className="fdash-over-title">
+              {player?.name ? `${player.name} cleared it` : "Cleared"}
+            </h2>
+            <button className="fdash-btn" type="button" onClick={() => setPhase("playing")}>
+              Play again
+            </button>
+          </div>
+        ) : null}
+
+        {phase === "playing" && paused ? (
+          <div className="fdash-overlay">
+            <p className="fdash-over-eyebrow">Paused</p>
+            <h2 className="fdash-over-title">{stereoMadness.name}</h2>
+            <div className="fdash-circle-row">
+              <button
+                className="fdash-circle"
+                type="button"
+                onClick={() => setPaused(false)}
+                aria-label="Resume"
+                title="Resume"
+              >
+                <span aria-hidden="true">&#9654;</span>
+              </button>
+              <button
+                className="fdash-circle"
+                type="button"
+                onClick={() => {
+                  restartLevel();
+                  setPaused(false);
+                }}
+                aria-label="Restart level"
+                title="Restart level"
+              >
+                <span aria-hidden="true">&#8635;</span>
+              </button>
+              <button
+                className={`fdash-circle${practice ? " fdash-circle-on" : ""}`}
+                type="button"
+                onClick={togglePractice}
+                aria-pressed={practice}
+                aria-label={practice ? "Exit practice mode" : "Enter practice mode"}
+                title={practice ? "Exit practice mode" : "Enter practice mode"}
+              >
+                <span aria-hidden="true">&#9873;</span>
+              </button>
+            </div>
+            <p className="fdash-over-note">
+              {practice ? `Practice mode \u00b7 ${cpCount} checkpoints` : "Normal mode"}
+            </p>
+            <p className="fdash-over-keys">
+              {practice
+                ? "Z place checkpoint \u00b7 C remove \u00b7 Esc resume"
+                : "Esc resume \u00b7 F fullscreen \u00b7 M mute"}
+            </p>
+          </div>
+        ) : null}
+
+        {phase === "playing" ? (
+          <div className="fdash-controls">
+            <button className="fdash-ghost-btn" type="button" onClick={() => setPaused(true)}>
+              Pause
+            </button>
+            {practice ? (
+              <>
+                <button className="fdash-ghost-btn" type="button" onClick={placeCheckpoint}>
+                  + Checkpoint
+                </button>
+                <button className="fdash-ghost-btn" type="button" onClick={removeCheckpoint}>
+                  &minus; Checkpoint
+                </button>
+              </>
+            ) : null}
+            <button
+              className="fdash-ghost-btn"
+              type="button"
+              aria-pressed={showHitboxes}
+              onClick={() => setShowHitboxes((v) => !v)}
+            >
+              Hitboxes
+            </button>
+            <button
+              className="fdash-ghost-btn"
+              type="button"
+              aria-pressed={muted}
+              onClick={() => setMuted((m) => !m)}
+            >
+              {muted ? "Unmute" : "Mute"}
+            </button>
+            <button className="fdash-ghost-btn" type="button" onClick={toggleFullscreen}>
+              {isFull ? "Exit full" : "Fullscreen"}
+            </button>
+          </div>
         ) : null}
       </div>
-
-      <p className="fdash-note fdash-note-quiet">
-        Level design by RobTop Games, imported from the original for this recreation.
-      </p>
-    </section>
+    </div>
   );
 }

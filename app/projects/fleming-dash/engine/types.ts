@@ -25,11 +25,18 @@ export type SimStatus = "running" | "dead" | "complete";
  */
 export type LevelObject =
   | { t: "block"; x: number; y: number; w?: number; h?: number }
-  | { t: "spike"; x: number; y: number; r?: 0 | 90 | 180 | 270 }
+  // hw/hh are the lethal rect's size in pixels, straight from the game's own
+  // object table (id 8 is 6x12 inside a 30x30 cell). Per-object rather than one
+  // global constant, because a full spike, a half spike and a small thorn are
+  // all differently forgiving.
+  | { t: "spike"; x: number; y: number; r?: 0 | 90 | 180 | 270; hw?: number; hh?: number }
   | { t: "ship"; x: number; y: number }
   | { t: "cube"; x: number; y: number }
   | { t: "pad"; x: number; y: number; c?: "yellow" }
   | { t: "ring"; x: number; y: number; c?: "yellow" }
+  // Purely visual: the dark notches cut into the ground and ceiling lines.
+  // Rendered, never collided against.
+  | { t: "pit"; x: number; y: number }
   | { t: "zone"; x: number; w: number; groundY?: number; ceilingY?: number }
   | { t: "end"; x: number };
 
@@ -67,14 +74,33 @@ export type Trigger = {
   vy: number;
 };
 
+/**
+ * A hazard carries its lethal rect and its appearance separately.
+ *
+ * They are genuinely different things: the kill box for a spike is 6x12 while
+ * the drawn triangle fills a 30x30 cell, and the gap between them is the game's
+ * forgiveness. Deriving the drawing from the hitbox — which an earlier version
+ * did — makes every spike render in the wrong place and always point upwards.
+ */
+export type Hazard = {
+  /** What kills you. */
+  box: Aabb;
+  /** The cell it is drawn in, which may sit at a half-tile height on a slab. */
+  cell: Aabb;
+  /** Degrees clockwise. 180 is a ceiling spike. */
+  rot: number;
+};
+
 export type Column = {
   /** World y of this column's walkable surface. A scalar, not a rect — one comparison, exact at any length. */
   groundY: number;
   /** World y of the ceiling underside, or Infinity for open sky. */
   ceilingY: number;
   solids: Aabb[];
-  hazards: Aabb[];
+  hazards: Hazard[];
   triggers: Trigger[];
+  /** Visual only — the renderer draws these, the simulation never sees them. */
+  decor: Aabb[];
 };
 
 export type CompiledLevel = {

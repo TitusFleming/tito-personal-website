@@ -13,17 +13,35 @@ import {
 import type {
   Aabb,
   Column,
+  Hazard,
   CompiledLevel,
   LevelDoc,
   LevelObject,
   Trigger,
 } from "./types.ts";
 
-/** A spike's lethal rect within its cell, for each of the four orientations. */
-function spikeRect(gx: number, gy: number, r: 0 | 90 | 180 | 270): Aabb {
+/**
+ * A spike's lethal rect within its cell, for each of the four orientations.
+ *
+ * Size comes from the object itself when the importer supplied one (it reads
+ * the game's real hitbox scales), and falls back to SPIKE_BOX only for
+ * hand-authored levels that don't specify.
+ */
+function spikeRect(
+  gx: number,
+  gy: number,
+  r: 0 | 90 | 180 | 270,
+  hw?: number,
+  hh?: number,
+): Aabb {
   const x0 = gx * TILE;
   const y0 = gy * TILE;
-  const { dx, dy, w, h } = SPIKE_BOX;
+  const w = hw ?? SPIKE_BOX.w;
+  const h = hh ?? SPIKE_BOX.h;
+  // Centred horizontally, sitting just off the cell floor — the same placement
+  // the fixed SPIKE_BOX encoded, but derived so it works at any size.
+  const dx = (TILE - w) / 2;
+  const dy = hh !== undefined ? 2 : SPIKE_BOX.dy;
 
   switch (r) {
     case 180: // pointing down, e.g. hanging from a ceiling
@@ -38,7 +56,7 @@ function spikeRect(gx: number, gy: number, r: 0 | 90 | 180 | 270): Aabb {
 }
 
 function emptyColumn(groundY: number, ceilingY: number): Column {
-  return { groundY, ceilingY, solids: [], hazards: [], triggers: [] };
+  return { groundY, ceilingY, solids: [], hazards: [], triggers: [], decor: [] };
 }
 
 /** Register a rect in every column it touches, so lookup never has to scan. */
@@ -96,9 +114,23 @@ export function compileLevel(doc: LevelDoc): CompiledLevel {
         spread(columns, box, (col) => col.solids.push(box));
         break;
       }
+      case "pit": {
+        const box: Aabb = { x: o.x * TILE, y: o.y * TILE, w: TILE, h: TILE * 0.45 };
+        spread(columns, box, (col) => col.decor.push(box));
+        break;
+      }
       case "spike": {
-        const box = spikeRect(o.x, o.y, o.r ?? 0);
-        spread(columns, box, (col) => col.hazards.push(box));
+        const rot = o.r ?? 0;
+        const hazard: Hazard = {
+          box: spikeRect(o.x, o.y, rot, o.hw, o.hh),
+          // The full cell, at the object's real (possibly half-tile) position,
+          // so a spike sitting on a slab is drawn attached to that slab.
+          cell: { x: o.x * TILE, y: o.y * TILE, w: TILE, h: TILE },
+          rot,
+        };
+        // Spread by the CELL, not the kill box: the visual is wider, and a
+        // column that only sees the 6px box would clip the triangle away.
+        spread(columns, hazard.cell, (col) => col.hazards.push(hazard));
         break;
       }
       case "ship":

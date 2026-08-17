@@ -34,6 +34,60 @@ export function createSim(level: CompiledLevel, attempt = 1): SimState {
   };
 }
 
+/**
+ * A practice-mode respawn point.
+ *
+ * Everything the simulation needs to resume mid-level, which is more than a
+ * position: dropping the player back at an x with zero velocity in the wrong
+ * gamemode would be unrecoverable, so velocity, mode and gravity direction all
+ * have to travel with it.
+ */
+export type Checkpoint = {
+  x: number;
+  y: number;
+  vy: number;
+  mode: SimState["mode"];
+  gravitySign: 1 | -1;
+  onGround: boolean;
+  rot: number;
+};
+
+export function makeCheckpoint(s: SimState): Checkpoint {
+  return {
+    x: s.x,
+    y: s.y,
+    vy: s.vy,
+    mode: s.mode,
+    gravitySign: s.gravitySign,
+    onGround: s.onGround,
+    rot: s.rot,
+  };
+}
+
+/**
+ * Resume from a checkpoint instead of the start.
+ *
+ * maxX is deliberately NOT reset: progress is "furthest reached", and a
+ * practice run that resumes at 40% has genuinely reached 40%. Attempts still
+ * increment, so the counter reflects tries rather than distance.
+ */
+export function restoreCheckpoint(s: SimState, level: CompiledLevel, cp: Checkpoint): void {
+  s.status = "running";
+  s.t = 0;
+  s.x = cp.x;
+  s.y = cp.y;
+  s.vy = cp.vy;
+  s.mode = cp.mode;
+  s.gravitySign = cp.gravitySign;
+  s.onGround = cp.onGround;
+  s.rot = cp.rot;
+  s.attempt += 1;
+  s.deathTimer = 0;
+  // Portals behind the checkpoint must be able to fire again on the way back.
+  s.triggerTouch.fill(0);
+  if (s.x > s.maxX) s.maxX = s.x;
+}
+
 /** Reuse the state object so a restart allocates nothing. */
 export function resetSim(s: SimState, level: CompiledLevel): void {
   s.status = "running";

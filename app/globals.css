@@ -1673,224 +1673,231 @@ footer {
 
 /* ── Fleming Dash ─────────────────────────────────────────────── */
 
-/* Wider than the usual max-w-6xl shell, so the playfield has room. Same
-   opt-out .elections-page uses for the map. */
+/* The game gets the viewport, not a box under a hero. Its own palette lives in
+   play/renderer.ts — it is Geometry Dash blue, deliberately not the site's
+   browns, because a clone that isn't the game's colour reads as a different
+   game. Only the chrome around the canvas uses the site palette. */
+
+/* The page keeps the site's own palette. Only the canvas is Geometry Dash
+   blue — that palette lives in play/renderer.ts and stops at the canvas edge. */
+.fdash-main {
+  min-height: 100vh;
+}
+
 .fdash-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100vh;
   margin: 0 auto;
-  max-width: min(100%, 82rem);
-  padding: 1.5rem 1.25rem 2.5rem;
+  max-width: min(100%, 100rem);
+  padding: 0.85rem 1rem 1rem;
   width: 100%;
 }
 
-.fdash-hero.project-hero {
-  padding: 1rem 0 0.85rem;
+.fdash-header {
+  flex: 0 0 auto;
+  padding-bottom: 0.7rem;
 }
 
 .fdash-shell {
-  background: var(--card);
-  border: 1px solid var(--line);
-  margin-top: 1rem;
-  padding: 1.6rem 1.5rem 1.8rem;
-}
-
-.fdash-shell h2 {
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  margin-top: 0.35rem;
-}
-
-.fdash-note {
-  color: var(--muted);
-  font-size: 0.95rem;
-  line-height: 1.6;
-  margin-top: 0.7rem;
-  max-width: 38rem;
-}
-
-.fdash-note-quiet {
-  font-size: 0.85rem;
-  opacity: 0.8;
-}
-
-.fdash-note kbd {
-  background: var(--tan);
-  border: 1px solid var(--line);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  padding: 0.1rem 0.35rem;
-}
-
-.fdash-name-label {
-  color: var(--muted);
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.09em;
-  margin-top: 1.3rem;
-  text-transform: uppercase;
-}
-
-.fdash-name-row {
   display: flex;
-  gap: 0.6rem;
-  margin-top: 0.5rem;
-  max-width: 26rem;
-}
-
-.fdash-name-input {
-  background: var(--background);
-  border: 1px solid var(--brown);
-  color: var(--foreground);
-  flex: 1;
-  font: inherit;
-  min-height: 2.75rem;
-  padding: 0 0.75rem;
-}
-
-.fdash-btn {
-  background: var(--brown);
-  border: 1px solid var(--brown);
-  color: var(--card);
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-  min-height: 2.75rem;
-  padding: 0 1.4rem;
-  transition: background-color 140ms ease, transform 140ms ease;
-}
-
-.fdash-btn:hover {
-  background: var(--foreground);
-  transform: translateY(-1px);
-}
-
-.fdash-ghost-btn {
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--muted);
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  padding: 0.3rem 0.6rem;
-  text-transform: uppercase;
-  transition: border-color 140ms ease, color 140ms ease;
-}
-
-.fdash-ghost-btn:hover,
-.fdash-ghost-btn[aria-pressed="true"] {
-  border-color: var(--brown);
-  color: var(--brown);
-}
-
-.fdash-best {
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.9rem;
-  margin-top: 1.4rem;
-  padding-top: 1rem;
-}
-
-/* ── playfield ── */
-
-.fdash-play {
-  margin-top: 1rem;
-}
-
-.fdash-hud {
-  align-items: flex-end;
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.fdash-hud-left {
-  align-items: baseline;
-  display: flex;
-  gap: 0.7rem;
-}
-
-.fdash-hud-right {
-  align-items: center;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.fdash-pct {
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.fdash-hud-label {
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.fdash-bar-track {
-  background: var(--tan);
-  border: 1px solid var(--line);
-  height: 8px;
-  margin-top: 0.6rem;
-  overflow: hidden;
-}
-
-.fdash-bar {
-  background: var(--red);
-  height: 100%;
-  width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .fdash-canvas-wrap {
+  background: #0b2a8a;
   border: 1px solid var(--brown);
+  flex: 1 1 auto;
   line-height: 0;
-  margin-top: 0.6rem;
+  min-height: 0;
+  overflow: hidden;
   position: relative;
   width: 100%;
 }
 
+/* Fullscreen: the shell is the fullscreen element, so the wrap simply fills it. */
+.fdash-shell-full {
+  height: 100%;
+  width: 100%;
+}
+
+.fdash-shell:fullscreen .fdash-canvas-wrap,
+.fdash-shell-full .fdash-canvas-wrap {
+  border: 0;
+}
+
 .fdash-canvas {
   display: block;
-  /* Without this the browser scrolls the page on a mobile tap instead of
-     letting the game read it as a jump. */
+  height: 100%;
+  /* Without this a mobile tap scrolls the page instead of reaching the game. */
   touch-action: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   width: 100%;
 }
 
-.fdash-resume {
-  background: rgba(42, 33, 28, 0.82);
+/* ── overlays ── */
+
+.fdash-overlay {
+  align-items: center;
+  background: rgba(6, 14, 44, 0.86);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  inset: 0;
+  justify-content: center;
+  line-height: 1.4;
+  position: absolute;
+  text-align: center;
+}
+
+.fdash-over-eyebrow {
+  color: #3be86b;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.fdash-over-title {
+  color: #fff;
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.fdash-over-note {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.92rem;
+}
+
+.fdash-over-keys {
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  margin-top: 0.4rem;
+}
+
+.fdash-name-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.fdash-pause-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.fdash-name-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font: inherit;
+  min-height: 2.6rem;
+  padding: 0 0.75rem;
+  width: 12rem;
+}
+
+.fdash-name-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fdash-btn {
+  background: #3be86b;
   border: 0;
-  color: var(--card);
+  color: #06122c;
   cursor: pointer;
   font: inherit;
-  font-weight: 700;
-  inset: 0;
+  font-weight: 800;
+  min-height: 2.6rem;
+  padding: 0 1.5rem;
+  transition: filter 140ms ease, transform 140ms ease;
+}
+
+.fdash-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* Round buttons, the way the real game's pause screen does it. */
+.fdash-circle-row {
+  display: flex;
+  gap: 1.1rem;
+  margin-top: 0.6rem;
+}
+
+.fdash-circle {
+  align-items: center;
+  aspect-ratio: 1;
+  background: #3be86b;
+  border: 3px solid #06122c;
+  border-radius: 50%;
+  color: #06122c;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 1.65rem;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  transition: transform 120ms ease, filter 120ms ease;
+  width: 4.2rem;
+}
+
+.fdash-circle:hover {
+  filter: brightness(1.12);
+  transform: translateY(-2px) scale(1.04);
+}
+
+.fdash-circle-on {
+  background: #00e5ff;
+}
+
+/* ── control strip ── */
+
+.fdash-controls {
+  bottom: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  left: 0.6rem;
   position: absolute;
-  width: 100%;
+  z-index: 2;
+}
+
+.fdash-ghost-btn {
+  background: rgba(6, 18, 60, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  padding: 0.36rem 0.6rem;
+  text-transform: uppercase;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.fdash-ghost-btn:hover {
+  background: rgba(59, 232, 107, 0.28);
+  border-color: #3be86b;
+}
+
+.fdash-ghost-btn[aria-pressed="true"] {
+  background: #3be86b;
+  border-color: #3be86b;
+  color: #06122c;
 }
 
 /* ── Responsive ───────────────────────────────────────────────── */
 
 @media (max-width: 620px) {
-  .fdash-name-row {
-    flex-direction: column;
-  }
-
-  .fdash-pct {
-    font-size: 1.5rem;
-  }
-
-  .fdash-hud {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.5rem;
+  .fdash-controls {
+    bottom: 0.4rem;
+    left: 0.4rem;
   }
 
   .site-header {

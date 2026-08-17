@@ -1,0 +1,1028 @@
+{
+"1": {
+"frame": "square_01_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"2": {
+"frame": "square_02_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"3": {
+"frame": "square_03_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"4": {
+"frame": "square_04_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"5": {
+"frame": "square_05_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"6": {
+"frame": "square_06_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"7": {
+"frame": "square_07_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"8": {
+"frame": "spike_01_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": 0.2,
+"hy": 0.4,
+"sub": null,
+"type": "hazard"
+},
+"9": {
+"frame": "pit_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": 0.3,
+"hy": 0.4,
+"sub": null,
+"type": "hazard"
+},
+"10": {
+"frame": "portal_01_front_001.png",
+"gh": 3.0,
+"gw": 0.8,
+"hx": null,
+"hy": null,
+"sub": "normal",
+"type": "portal"
+},
+"11": {
+"frame": "portal_02_front_001.png",
+"gh": 3.0,
+"gw": 0.8,
+"hx": null,
+"hy": null,
+"sub": "flip",
+"type": "portal"
+},
+"12": {
+"frame": "portal_03_front_001.png",
+"gh": 3.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": "cube",
+"type": "portal"
+},
+"13": {
+"frame": "portal_04_front_001.png",
+"gh": 3.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": "fly",
+"type": "portal"
+},
+"15": {
+"frame": "rod_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"16": {
+"frame": "rod_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"17": {
+"frame": "rod_03_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"18": {
+"frame": "d_spikes_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"19": {
+"frame": "d_spikes_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"20": {
+"frame": "d_spikes_03_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"21": {
+"frame": "d_spikes_04_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"22": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"23": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"24": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"25": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"26": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"27": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"28": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"29": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"30": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"31": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "startpos"
+},
+"35": {
+"frame": "bump_01_001.png",
+"gh": 0.13333334028720856,
+"gw": 0.8333333134651184,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "pad"
+},
+"36": {
+"frame": "ring_01_001.png",
+"gh": 1.5,
+"gw": 1.5,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "ring"
+},
+"39": {
+"frame": "spike_02_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": 0.2,
+"hy": 0.4,
+"sub": null,
+"type": "hazard"
+},
+"40": {
+"frame": "plank_01_001.png",
+"gh": 0.5,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"41": {
+"frame": "chain_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"44": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"45": {
+"frame": "portal_05_front_001.png",
+"gh": 3.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "portal"
+},
+"46": {
+"frame": "portal_06_front_001.png",
+"gh": 3.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "portal"
+},
+"47": {
+"frame": "portal_07_front_001.png",
+"gh": 3.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": "fly",
+"type": "portal"
+},
+"48": {
+"frame": "d_cloud_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"49": {
+"frame": "d_cloud_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"50": {
+"frame": "d_ball_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"51": {
+"frame": "d_ball_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"52": {
+"frame": "d_ball_03_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"53": {
+"frame": "d_ball_04_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"54": {
+"frame": "d_ball_05_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"55": {
+"frame": "d_ball_06_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"56": {
+"frame": "d_ball_07_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"57": {
+"frame": "d_ball_08_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"58": {
+"frame": "d_ball_09_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"60": {
+"frame": "d_ball_06_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"61": {
+"frame": "pit_04_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": 0.3,
+"hy": 0.4,
+"sub": null,
+"type": "hazard"
+},
+"62": {
+"frame": "square_b_01_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"63": {
+"frame": "square_b_02_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"64": {
+"frame": "square_b_03_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"65": {
+"frame": "square_b_04_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"66": {
+"frame": "square_b_05_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"67": {
+"frame": "gravbump_01_001.png",
+"gh": 0.13333334028720856,
+"gw": 0.8333333134651184,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "gravpad"
+},
+"68": {
+"frame": "square_b_06_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"83": {
+"frame": "square_08_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"84": {
+"frame": "gravring_01_001.png",
+"gh": 1.5,
+"gw": 1.5,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "gravring"
+},
+"88": {
+"frame": "sawblade_01_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "hazard"
+},
+"89": {
+"frame": "sawblade_02_001.png",
+"gh": 2.0,
+"gw": 2.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "hazard"
+},
+"98": {
+"frame": "sawblade_03_001.png",
+"gh": 3.0,
+"gw": 3.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "hazard"
+},
+"103": {
+"frame": "spike_03_001.png",
+"gh": 0.5,
+"gw": 0.5,
+"hx": 0.2,
+"hy": 0.4,
+"sub": null,
+"type": "hazard"
+},
+"104": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"105": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"123": {
+"frame": "d_thorn_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"124": {
+"frame": "d_thorn_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"125": {
+"frame": "d_smallBall_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"126": {
+"frame": "d_smallBall_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"127": {
+"frame": "d_smallBall_03_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"128": {
+"frame": "d_smallBall_04_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"129": {
+"frame": "d_cloud_03_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"130": {
+"frame": "d_cloud_04_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"131": {
+"frame": "d_cloud_05_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"132": {
+"frame": "d_arrow_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"133": {
+"frame": "d_exmark_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"134": {
+"frame": "d_largeSquare_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"135": {
+"frame": "fakeSpike_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"136": {
+"frame": "d_qmark_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"137": {
+"frame": "brick_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"138": {
+"frame": "d_art_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"139": {
+"frame": "d_brick_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"140": {
+"frame": "bump_03_001.png",
+"gh": 0.13333334028720856,
+"gw": 0.8333333134651184,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "pad"
+},
+"141": {
+"frame": "ring_03_001.png",
+"gh": 1.5,
+"gw": 1.5,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "ring"
+},
+"142": {
+"frame": "secretCoin_01_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"143": {
+"frame": "d_circle_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"144": {
+"frame": "d_circle_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"145": {
+"frame": "d_smallBall_05_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"146": {
+"frame": "d_largeSquare_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"150": {
+"frame": "d_cross_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"151": {
+"frame": "d_spikeart_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"152": {
+"frame": "d_spikeart_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"153": {
+"frame": "d_spikeart_03_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"157": {
+"frame": "d_wave_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"158": {
+"frame": "d_wave_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"159": {
+"frame": "d_wave_03_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"195": {
+"frame": "square_01_001.png",
+"gh": 0.5,
+"gw": 0.5,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"196": {
+"frame": "plank_01_001.png",
+"gh": 0.25,
+"gw": 0.5,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "solid"
+},
+"200": {
+"frame": "portal_09_front_001.png",
+"gh": 3.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": "slow",
+"type": "speed"
+},
+"201": {
+"frame": "portal_10_front_001.png",
+"gh": 3.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": "normal",
+"type": "speed"
+},
+"202": {
+"frame": "portal_08_front_001.png",
+"gh": 3.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": "fast",
+"type": "speed"
+},
+"203": {
+"frame": "portal_11_front_001.png",
+"gh": 3.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": "very_fast",
+"type": "speed"
+},
+"221": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"392": {
+"frame": "spike_04_001.png",
+"gh": 0.5,
+"gw": 0.5,
+"hx": 0.2,
+"hy": 0.4,
+"sub": null,
+"type": "hazard"
+},
+"899": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"901": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"1006": {
+"frame": null,
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "trigger"
+},
+"1329": {
+"frame": "secretCoin_2_01_001.png",
+"gh": 1.0,
+"gw": 1.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"1889": {
+"frame": "fakeSpike_01_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"1890": {
+"frame": "fakeSpike_02_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"1891": {
+"frame": "fakeSpike_03_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+},
+"1892": {
+"frame": "fakeSpike_04_001.png",
+"gh": 0.0,
+"gw": 0.0,
+"hx": null,
+"hy": null,
+"sub": null,
+"type": "deco"
+}
+}

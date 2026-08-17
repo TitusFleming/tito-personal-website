@@ -6,7 +6,9 @@
 
 import type { InputState } from "../engine/types.ts";
 
-const KEYS = new Set(["Space", "ArrowUp", "KeyW", "KeyX"]);
+// Jump only. The single-purpose control keys (pause, practice, checkpoints,
+// fullscreen, mute) are handled in the component so they can reach React state.
+const KEYS = new Set(["Space", "ArrowUp", "KeyW"]);
 
 export type Input = {
   state: InputState;

@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { FIXED_DT, TILE } from "./constants.ts";
-import { hitsHazard, playerBox, playerHazardBox } from "./collision.ts";
+import { hitsHazard, playerBox, playerHazardBox, playerSolidBox } from "./collision.ts";
 import { compileLevel, validateLevel } from "./level.ts";
 import { createSim, progressPercent, stepSim } from "./simulate.ts";
 import type { InputState, LevelDoc, SimEvent, SimState } from "./types.ts";
@@ -75,21 +75,29 @@ test("validateLevel flags a ship ending with no ceiling", () => {
 
 // ── Forgiveness ─────────────────────────────────────────────────────────────
 
-test("the lethal box is inset well inside the drawn player", () => {
+test("the player has two hitboxes, and the solid one is much smaller", () => {
+  // This is the real game's model: spikes are tested against the full 30x30
+  // box, while only a small centre box decides whether a wall kills you.
   const s = createSim(compileLevel(doc()));
-  const solid = playerBox(s);
-  const kill = playerHazardBox(s);
-  assert.ok(kill.w < solid.w && kill.h < solid.h);
-  assert.equal(kill.w, 18, "a 30px cube should kill on 18px");
+  const main = playerBox(s);
+  const hazard = playerHazardBox(s);
+  const solid = playerSolidBox(s);
+
+  assert.equal(hazard.w, main.w, "hazards use the full main box");
+  assert.equal(hazard.h, main.h);
+  assert.ok(solid.w < main.w * 0.5, `solid box ${solid.w} should be far under half of ${main.w}`);
+  // and concentric with it
+  assert.ok(Math.abs((solid.x + solid.w / 2) - (main.x + main.w / 2)) < 0.001);
+  assert.ok(Math.abs((solid.y + solid.h / 2) - (main.y + main.h / 2)) < 0.001);
 });
 
 test("brushing the outer edge of a spike survives", () => {
-  const lv = compileLevel(doc({ objects: [{ t: "spike", x: 10, y: 0 }, { t: "end", x: 100 }] }));
+  const lv = compileLevel(doc({ objects: [{ t: "spike", x: 10, y: 0, hw: 6, hh: 12 }, { t: "end", x: 100 }] }));
   const s = createSim(lv);
-  // Sit the cube so its drawn box overlaps the spike's cell, but its inset kill
-  // box misses the spike's inset hazard rect. In the real game this is the
-  // difference between a clean run and rage-quitting.
-  s.x = 10 * TILE - 4;
+  // Forgiveness now lives in the spike, not the player: a real spike's lethal
+  // rect is 6x12 inside its 30x30 cell, so the cube's full box can overlap the
+  // cell while missing the kill rect entirely.
+  s.x = 10 * TILE - 10;
   s.y = TILE / 2;
   assert.equal(hitsHazard(s, lv), false);
 });
@@ -165,9 +173,18 @@ test("a ship portal switches mode and carries velocity through", () => {
 test("a pad launches the cube without any input", () => {
   const lv = compileLevel(doc({ objects: [{ t: "pad", x: 5, y: 0 }, { t: "end", x: 100 }] }));
   const s = createSim(lv);
-  const events = run(s, lv, 240);
-  assert.ok(events.some((e) => e.type === "pad"));
-  assert.ok(s.y > TILE, "the pad should have thrown the cube into the air");
+
+  // Track the peak, not the height at an arbitrary step — the cube is airborne
+  // for well under a second, so sampling at the end just catches it back down.
+  const events: SimEvent[] = [];
+  let peak = 0;
+  for (let i = 0; i < 240 && s.status === "running"; i++) {
+    stepSim(s, lv, { ...RELEASED }, FIXED_DT, events);
+    peak = Math.max(peak, s.y);
+  }
+
+  assert.ok(events.some((e) => e.type === "pad"), "the pad should have fired");
+  assert.ok(peak > TILE * 2, `pad launched the cube to ${(peak / TILE).toFixed(1)} tiles, expected > 2`);
 });
 
 test("a ring does nothing unless the player clicks", () => {

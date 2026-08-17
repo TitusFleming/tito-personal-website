@@ -13,7 +13,7 @@
 import {
   HAZARD_INSET,
   LAND_TOLERANCE,
-  SIDE_KILL_DEPTH,
+  SOLID_HITBOX_SCALE,
   TILE,
 } from "./constants.ts";
 import { playerHalfH, playerHalfW } from "./physics.ts";
@@ -39,6 +39,13 @@ export function playerBox(s: SimState): Aabb {
  * fairness lives: a 30x30 cube only dies on its middle 18x18, so brushing the
  * outer edge of a spike survives, exactly as it does in the real game.
  */
+export function playerSolidBox(s: SimState): Aabb {
+  const b = playerBox(s);
+  const w = b.w * SOLID_HITBOX_SCALE;
+  const h = b.h * SOLID_HITBOX_SCALE;
+  return { x: b.x + (b.w - w) / 2, y: b.y + (b.h - h) / 2, w, h };
+}
+
 export function playerHazardBox(s: SimState): Aabb {
   const b = playerBox(s);
   return {
@@ -86,35 +93,49 @@ export function resolveSolids(
       const rectTop = rect.y + rect.h;
       const rectBottom = rect.y;
 
-      if (s.vy <= 0 && prevBottom >= rectTop - LAND_TOLERANCE) {
+      // How far the small centre box sits inside the full one. Landing is judged
+      // on the SOLID box's edge rather than the sprite's, which is what makes a
+      // late or corner-clipped landing survivable without a special grace rule.
+      const inset = (box.h - box.h * SOLID_HITBOX_SCALE) / 2;
+
+      if (s.vy <= 0 && prevBottom + inset >= rectTop - LAND_TOLERANCE) {
         // Came down onto it.
         s.y = rectTop + hh;
         s.vy = 0;
         s.onGround = true;
         result = "land";
-      } else if (s.vy > 0 && prevTop <= rectBottom + LAND_TOLERANCE) {
+      } else if (s.vy > 0 && prevTop - inset <= rectBottom + LAND_TOLERANCE) {
         // Came up into it. A bonk, not a death — you lose your climb and fall.
         s.y = rectBottom - hh;
         s.vy = 0;
         if (result === "none") result = "ceiling";
-      } else if (s.vy <= 0 && prevBottom >= rectTop - SIDE_KILL_DEPTH) {
-        // Shallow corner clip: descending, and the previous position was only
-        // just below the top. Snap up as if it were a clean landing.
-        //
-        // Without this, catching a block's corner by three pixels is fatal and
-        // the game reads as broken rather than hard. SIDE_KILL_DEPTH is the
-        // single knob controlling how generous that is.
-        //
-        // Note this requires having *come from above*. Forgiving on position
-        // alone would let the player walk up onto any ground-level block, which
-        // deletes most of the difficulty in the game.
-        s.y = rectTop + hh;
-        s.vy = 0;
-        s.onGround = true;
-        result = "land";
       } else {
-        // Ran into the face.
-        return "death";
+        const sb = playerSolidBox(s);
+        if (overlaps(sb, rect)) {
+          // The solid box is inside the block — but overlapping is not the same
+          // as running into a wall. Compare how deep the overlap is on each
+          // axis: whichever is shallower is the side the player actually came
+          // from. A landing has a tiny vertical overlap and a wide horizontal
+          // one; a wall hit is the reverse, because x advances only ~1.3px per
+          // step while y can move ~5.8px.
+          //
+          // Without this a fast fall onto a block's corner reads as a wall and
+          // kills you, which is exactly the unfair death the real game avoids.
+          const overlapX =
+            Math.min(sb.x + sb.w, rect.x + rect.w) - Math.max(sb.x, rect.x);
+          const overlapY =
+            Math.min(sb.y + sb.h, rect.y + rect.h) - Math.max(sb.y, rect.y);
+
+          if (overlapX < overlapY) return "death"; // genuinely into the face
+
+          // Shallower vertically: treat it as the landing it really is.
+          s.y = rectTop + hh;
+          s.vy = 0;
+          s.onGround = true;
+          result = "land";
+        }
+        // Solid box clear of the block entirely — a harmless corner brush.
+        // Doing nothing here IS the forgiveness.
       }
     }
   }
@@ -131,7 +152,7 @@ export function hitsHazard(s: SimState, level: CompiledLevel): boolean {
     const col = level.columns[gx];
     if (!col) continue;
     for (const hz of col.hazards) {
-      if (overlaps(kill, hz)) return true;
+      if (overlaps(kill, hz.box)) return true;
     }
   }
   return false;
