@@ -1863,6 +1863,20 @@ footer {
   margin-top: 1rem;
 }
 
+.engine-note {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-top: 1.5rem;
+  max-width: 46rem;
+  padding-top: 1rem;
+}
+
+.engine-note em {
+  font-style: italic;
+}
+
 .engine-part-list {
   display: grid;
   gap: 0.4rem;

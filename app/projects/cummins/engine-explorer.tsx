@@ -160,6 +160,16 @@ export default function EngineExplorer() {
             </li>
           ))}
         </ul>
+
+        <p className="engine-note">
+          Modelled after <em>Exploded Engine</em>, which hangs in the lobby of
+          Cummins&apos; Corporate Office Building at 500 Jackson Street in
+          Columbus, Indiana: an NTC-400 Big Cam III — the largest diesel Cummins
+          built in the mid-1980s — pulled apart into more than 500 real
+          production parts and suspended in midair. Rudolph de Harak designed it
+          in 1984 and Cummins employees assembled it. I walked past it most days
+          of my internship there.
+        </p>
       </div>
     </section>
   );

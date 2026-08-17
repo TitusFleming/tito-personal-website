@@ -133,8 +133,6 @@ const BLOCK: EnginePart = {
   geometry: [
     { kind: "box", size: [45, 16, 13], at: [0, 8, 0] },
     { kind: "box", size: [45, 7, 15], at: [0, -3.5, 0] },
-    // Oil pan.
-    { kind: "box", size: [40, 5, 13], at: [0, -9, 0] },
     // Head-bolt bosses down both deck rails.
     ...[-5.4, 5.4].flatMap((z) =>
       Array.from({ length: 13 }, (_, i): GeometrySpec => ({
@@ -570,21 +568,192 @@ const EXHAUST_MANIFOLD: EnginePart = {
   ],
 };
 
+const OIL_PAN: EnginePart = {
+  id: "oil-pan",
+  name: "Oil pan",
+  group: "Block",
+  material: "castIron",
+  geometry: [
+    { kind: "box", size: [40, 5.5, 13] },
+    { kind: "box", size: [42, 1, 14.4], at: [0, 2.6, 0] },
+    // Drain plug.
+    { kind: "cylinder", rTop: 0.7, rBottom: 0.7, height: 1.1, segments: 12, at: [16, -2.8, 0] },
+  ],
+  placements: [{ index: 1, position: [0, -9.2, 0] }],
+  explodeDir: [0, -1, 0],
+  explodeDistance: 30,
+  blurb:
+    "Ten gallons of oil live down here. The 855's lubrication circuit runs coolant through the lube oil cooler housing rather than the other way round, and a pressure switch in the filter head watches for full-flow plugging — on an engine with no electronics anywhere else, that switch is close to the only thing on it that reports a condition.",
+  spec: [
+    { label: "Oil capacity", value: "10.2 US gal / 38.6 L" },
+    { label: "Material", value: "Cast iron" },
+  ],
+};
+
+const GEAR_TRAIN: EnginePart = {
+  id: "gear-train",
+  name: "Gear train",
+  group: "Valve train",
+  material: "steel",
+  geometry: [
+    // Crank gear, cam gear, and two accessory drive idlers.
+    { kind: "cylinder", rTop: 3.4, rBottom: 3.4, height: 1.1, segments: 34, at: [0, 0, 0], spin: [0, 0, Math.PI / 2] },
+    { kind: "cylinder", rTop: 3.3, rBottom: 3.3, height: 1.1, segments: 34, at: [0, 6.2, 5.6], spin: [0, 0, Math.PI / 2] },
+    { kind: "cylinder", rTop: 2.4, rBottom: 2.4, height: 1.0, segments: 28, at: [0, 6.6, -4.4], spin: [0, 0, Math.PI / 2] },
+    { kind: "cylinder", rTop: 2.0, rBottom: 2.0, height: 1.0, segments: 26, at: [0, 12.4, 1.6], spin: [0, 0, Math.PI / 2] },
+  ],
+  placements: [{ index: 1, position: [-21.5, 0, 0] }],
+  explodeDir: [-1, 0, 0],
+  explodeDistance: 26,
+  blurb:
+    "Induction-hardened helical gears driven off the crankshaft at the front of the block. This is the mechanical spine of the whole engine: it is what keeps the camshaft — and therefore both the valves and the injection timing — in step with the crank. Nothing here is a sensor reading a position; the position is guaranteed by teeth.",
+  spec: [
+    { label: "Type", value: "Helical, induction hardened" },
+    { label: "Location", value: "Front of block" },
+    { label: "Drives", value: "Camshaft and accessories" },
+  ],
+};
+
+const CAM_FOLLOWERS: EnginePart = {
+  id: "cam-follower",
+  name: "Cam followers",
+  group: "Valve train",
+  material: "steel",
+  geometry: [
+    { kind: "cylinder", rTop: 0.85, rBottom: 0.85, height: 1.0, segments: 16, spin: [0, 0, Math.PI / 2] },
+    { kind: "cylinder", rTop: 0.42, rBottom: 0.42, height: 2.4, segments: 12, at: [0, 1.4, 0] },
+  ],
+  placements: sixCylinders((cyl) =>
+    [-1.25, 0, 1.25].map((dx, k) => ({
+      index: (cyl - 1) * 3 + k + 1,
+      position: [cylX(cyl) + dx, CAM_Y + 2.4, CAM_Z] as Vec3,
+      explodeDir: [0, 0.35, 1] as Vec3,
+      explodeDistance: 30 + k * 0.8,
+    })),
+  ).flat(),
+  explodeDir: [0, 0.35, 1],
+  explodeDistance: 30,
+  blurb:
+    "Roller type, induction hardened. Each one rides a lobe and hands the motion up a pushrod — eighteen of them, three per cylinder, because on this engine the camshaft times the injectors as well as the valves. A roller rather than a flat face is what lets the Big Cam run the aggressive lobe profiles it does without scuffing.",
+  spec: [
+    { label: "Type", value: "Roller, induction hardened" },
+    { label: "Count", value: "Eighteen" },
+  ],
+};
+
+const INTAKE_MANIFOLD: EnginePart = {
+  id: "intake-manifold",
+  name: "Intake manifold",
+  group: "Air system",
+  material: "aluminum",
+  geometry: [
+    { kind: "box", size: [40, 5, 5.5] },
+    ...sixCylinders((cyl): GeometrySpec => ({
+      kind: "cylinder", rTop: 1.7, rBottom: 1.7, height: 3.2, segments: 14,
+      at: [cylX(cyl), 0.2, -2.6], spin: [Math.PI / 2, 0, 0],
+    })),
+  ],
+  placements: [{ index: 1, position: [0, DECK + 2.6, 10.6] }],
+  explodeDir: [0, 0.15, 1],
+  explodeDistance: 28,
+  blurb:
+    "Carries charge air from the aftercooler along the engine and into the six intake ports. On a turbocharged diesel this is the high-pressure side of the breathing system — everything the turbo compresses has to get down here before it does any good.",
+  spec: [
+    { label: "Feeds", value: "Six intake ports" },
+    { label: "Fed by", value: "Aftercooler" },
+  ],
+};
+
+const AFTERCOOLER: EnginePart = {
+  id: "aftercooler",
+  name: "Aftercooler",
+  group: "Air system",
+  material: "aluminum",
+  geometry: [
+    { kind: "box", size: [22, 6, 7] },
+    { kind: "cylinder", rTop: 1.9, rBottom: 1.9, height: 3.2, segments: 18, at: [-12, 0, 0], spin: [0, 0, Math.PI / 2] },
+    { kind: "cylinder", rTop: 1.9, rBottom: 1.9, height: 3.2, segments: 18, at: [12, 0, 0], spin: [0, 0, Math.PI / 2] },
+    // Core fins.
+    ...Array.from({ length: 9 }, (_, i): GeometrySpec => ({
+      kind: "box", size: [0.5, 6.6, 7.4], at: [-9 + i * 2.3, 0, 0],
+    })),
+  ],
+  placements: [{ index: 1, position: [-2, 27, 9 ] }],
+  explodeDir: [0, 0.55, 1],
+  explodeDistance: 33,
+  blurb:
+    "A three-pass design that sits inside the engine's own coolant system rather than needing its own plumbing. Compressing air heats it, and hot air is thin air; cooling the charge back down before it reaches the cylinders is what makes it dense enough to burn the fuel the PT system is metering out.",
+  spec: [
+    { label: "Design", value: "Three-pass" },
+    { label: "Cooled by", value: "Engine coolant" },
+  ],
+};
+
+const WATER_PUMP: EnginePart = {
+  id: "water-pump",
+  name: "Water pump",
+  group: "Block",
+  material: "castIron",
+  geometry: [
+    { kind: "cylinder", rTop: 3.2, rBottom: 3.2, height: 4.2, segments: 24, spin: [0, 0, Math.PI / 2] },
+    { kind: "cylinder", rTop: 4.4, rBottom: 4.4, height: 1.2, segments: 26, at: [-3.2, 0, 0], spin: [0, 0, Math.PI / 2] },
+    { kind: "cylinder", rTop: 1.6, rBottom: 1.6, height: 3.4, segments: 16, at: [1.5, -3.2, 0] },
+  ],
+  placements: [{ index: 1, position: [-26, 9, 5.5] }],
+  explodeDir: [-1, 0.15, 0.5],
+  explodeDistance: 28,
+  blurb:
+    "Belt-driven and centrifugal, pushing coolant through large-volume passages that run around the liners, the valves and the injectors. Because the liners are wet, this pump's output is in direct contact with the outside of all six cylinders — there is no jacket wall in between.",
+  spec: [
+    { label: "Type", value: "Centrifugal, belt driven" },
+    { label: "Coolant capacity", value: "5.5 US gal / 20.8 L" },
+  ],
+};
+
+const OIL_COOLER: EnginePart = {
+  id: "oil-cooler",
+  name: "Oil cooler & filters",
+  group: "Block",
+  material: "castIron",
+  geometry: [
+    { kind: "box", size: [14, 5.5, 5] },
+    // Spin-on filter and corrosion resistor.
+    { kind: "cylinder", rTop: 2.2, rBottom: 2.2, height: 6, segments: 20, at: [-4, -1, 4.4], spin: [Math.PI / 2, 0, 0] },
+    { kind: "cylinder", rTop: 2.2, rBottom: 2.2, height: 6, segments: 20, at: [3, -1, 4.4], spin: [Math.PI / 2, 0, 0] },
+  ],
+  placements: [{ index: 1, position: [-4, 1.5, -10.5] }],
+  explodeDir: [0, -0.2, -1],
+  explodeDistance: 26,
+  blurb:
+    "Coolant runs through the lube oil cooler housing to pull heat out of the oil, and a spin-on corrosion resistor checks rust, controls acidity and strains out what the engine sheds. A pressure switch in the filter head watches for the full-flow element plugging — on an engine this determinedly mechanical, that switch is nearly the only part that reports anything.",
+  spec: [
+    { label: "Filtration", value: "Full flow and bypass" },
+    { label: "Corrosion resistor", value: "Spin-on" },
+  ],
+};
+
 /** Order is roughly the order you'd take it apart in, which also reads
  *  sensibly top-to-bottom in the part list. */
 export const ENGINE_PARTS: EnginePart[] = [
   BLOCK,
+  OIL_PAN,
   LINERS,
   PISTONS,
   CONNECTING_RODS,
   CRANKSHAFT,
+  GEAR_TRAIN,
   CAMSHAFT,
+  CAM_FOLLOWERS,
   CYLINDER_HEADS,
   VALVE_TRAIN,
   INJECTORS,
   PT_PUMP,
   EXHAUST_MANIFOLD,
   TURBOCHARGER,
+  AFTERCOOLER,
+  INTAKE_MANIFOLD,
+  WATER_PUMP,
+  OIL_COOLER,
   FLYWHEEL,
 ];
 
