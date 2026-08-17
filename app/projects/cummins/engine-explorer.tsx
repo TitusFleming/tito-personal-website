@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { ENGINE_PARTS, PICKABLE_PARTS } from "./engine-parts";
+import { ENGINE_PARTS } from "./engine-parts";
 
 const MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
@@ -133,44 +133,6 @@ export default function EngineExplorer() {
         </div>
       )}
 
-      <div className="engine-layout">
-        <ul className="engine-part-list" aria-label="Engine parts">
-          {PICKABLE_PARTS.map((part) => (
-            <li key={part.id}>
-              <button
-                type="button"
-                id={`part-${part.id}`}
-                className={`engine-part-button${part.id === selectedId ? " selected" : ""}`}
-                aria-pressed={part.id === selectedId}
-                aria-controls="engine-part-detail"
-                onClick={() => setSelectedId(part.id === selectedId ? null : part.id)}
-                onMouseEnter={() => setHoveredId(part.id)}
-                onMouseLeave={() => setHoveredId(null)}
-                // Wiring focus to hover is the good part: a keyboard user
-                // tabbing this list watches parts light up in the model one at
-                // a time, the same as a mouse user.
-                onFocus={() => setHoveredId(part.id)}
-                onBlur={() => setHoveredId(null)}
-              >
-                <span className="engine-part-name">{part.name}</span>
-                {part.placements.length > 1 ? (
-                  <span className="engine-part-count">×{part.placements.length}</span>
-                ) : null}
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        <p className="engine-note">
-          Modelled after <em>Exploded Engine</em>, which hangs in the lobby of
-          Cummins&apos; Corporate Office Building at 500 Jackson Street in
-          Columbus, Indiana: an NTC-400 Big Cam III — the largest diesel Cummins
-          built in the mid-1980s — pulled apart into more than 500 real
-          production parts and suspended in midair. Rudolph de Harak designed it
-          in 1984 and Cummins employees assembled it. I walked past it most days
-          of my internship there.
-        </p>
-      </div>
     </section>
   );
 }
