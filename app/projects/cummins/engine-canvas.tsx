@@ -20,9 +20,12 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 import { applyEmphasis, applyExplode, buildEngine } from "./build-engine";
 
+import type { EnginePart } from "./engine-parts";
+
 type EngineCanvasProps = {
   explode: number;
   selectedId: string | null;
+  selectedPart: EnginePart | null;
   hoveredId: string | null;
   autoRotate: boolean;
   reducedMotion: boolean;
@@ -45,6 +48,7 @@ type SceneHandle = {
 export default function EngineCanvas({
   explode,
   selectedId,
+  selectedPart,
   hoveredId,
   autoRotate,
   reducedMotion,
@@ -54,6 +58,15 @@ export default function EngineCanvas({
 }: EngineCanvasProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<SceneHandle | null>(null);
+  const calloutRef = useRef<HTMLDivElement | null>(null);
+  const leaderRef = useRef<SVGLineElement | null>(null);
+  const anchorDotRef = useRef<SVGCircleElement | null>(null);
+  // Read every frame by the leader-line updater, which lives inside the
+  // scene effect and so can never see a fresh prop directly.
+  const selectedIdRef = useRef(selectedId);
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
   // Callback props travel through refs, kept fresh by their own tiny effect,
   // so the scene effect can close over a stable reference forever.
@@ -269,6 +282,81 @@ export default function EngineCanvas({
     // any window resize event.
     observer.observe(stage);
 
+    // ── Leader line ────────────────────────────────────────────
+    // The callout is real DOM sitting over the canvas rather than a sprite in
+    // the scene: it has to hold a paragraph of selectable text, and text in
+    // WebGL is a texture-atlas problem nobody needs. Its position is written
+    // imperatively each frame — routing 60 transform updates a second through
+    // React state would re-render the part list along with it.
+    const centroid = new Vector3();
+    const scratch = new Vector3();
+
+    function updateCallout() {
+      const box = calloutRef.current;
+      const leader = leaderRef.current;
+      const dot = anchorDotRef.current;
+      if (!box || !leader || !dot) return;
+
+      const id = selectedIdRef.current;
+      if (!id) {
+        box.style.opacity = "0";
+        leader.style.opacity = "0";
+        dot.style.opacity = "0";
+        return;
+      }
+
+      centroid.set(0, 0, 0);
+      let count = 0;
+      for (const node of engine.nodes) {
+        if (node.partId !== id) continue;
+        scratch.setFromMatrixPosition(node.object.matrixWorld);
+        centroid.add(scratch);
+        count += 1;
+      }
+      if (count === 0) return;
+      centroid.divideScalar(count);
+
+      const projected = centroid.clone().project(camera);
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      const ax = ((projected.x + 1) / 2) * w;
+      const ay = ((-projected.y + 1) / 2) * h;
+
+      // Behind the camera: hide rather than draw a line to a mirrored ghost.
+      if (projected.z > 1) {
+        box.style.opacity = "0";
+        leader.style.opacity = "0";
+        dot.style.opacity = "0";
+        return;
+      }
+
+      const bw = box.offsetWidth;
+      const bh = box.offsetHeight;
+      const pad = 10;
+      // Prefer up-and-right of the part, then flip and clamp to stay in frame.
+      let bx = ax + 74;
+      let by = ay - bh - 34;
+      if (bx + bw > w - pad) bx = ax - 74 - bw;
+      if (bx < pad) bx = pad;
+      if (by < pad) by = ay + 34;
+      if (by + bh > h - pad) by = Math.max(pad, h - bh - pad);
+
+      box.style.transform = `translate(${Math.round(bx)}px, ${Math.round(by)}px)`;
+      box.style.opacity = "1";
+
+      // Meet the box on whichever vertical edge faces the part.
+      const attachX = bx + bw / 2 < ax ? bx + bw : bx;
+      const attachY = by + Math.min(bh / 2, 26);
+      leader.setAttribute("x1", String(ax));
+      leader.setAttribute("y1", String(ay));
+      leader.setAttribute("x2", String(attachX));
+      leader.setAttribute("y2", String(attachY));
+      leader.style.opacity = "1";
+      dot.setAttribute("cx", String(ax));
+      dot.setAttribute("cy", String(ay));
+      dot.style.opacity = "1";
+    }
+
     // ── Loop ───────────────────────────────────────────────────
     renderer.setAnimationLoop(() => {
       const cameraMoved = controls.update();
@@ -295,6 +383,7 @@ export default function EngineCanvas({
       if (!cameraMoved && !dirty) return;
       dirty = false;
       renderer.render(scene, camera);
+      updateCallout();
     });
 
     // Dev-only escape hatch. The render loop is driven by rAF, which browsers
@@ -313,7 +402,10 @@ export default function EngineCanvas({
           camera.updateProjectionMatrix();
           renderer.setSize(w, h, false);
         },
-        draw: () => renderer.render(scene, camera),
+        draw: () => {
+          renderer.render(scene, camera);
+          updateCallout();
+        },
         explodeTo: (t: number) => {
           explodeCurrent = t;
           explodeTarget = t;
@@ -329,6 +421,10 @@ export default function EngineCanvas({
       setEmphasis: (selected, hovered) => {
         applyEmphasis(engine.nodes, engine.sets, selected, hovered);
         dirty = true;
+        // Place the callout now rather than on the next frame. The loop is
+        // rAF-driven and a browser that isn't compositing won't run it, so
+        // waiting would leave the callout invisible until the camera moved.
+        updateCallout();
       },
       setAutoRotate: (on) => {
         controls.autoRotate = on;
@@ -389,6 +485,33 @@ export default function EngineCanvas({
     // The canvas is created and appended by the effect, not rendered here —
     // see the note on forceContextLoss above.
     <div className="engine-stage" ref={stageRef}>
+      {/* Overlay is inset to match the stage padding, so its coordinate space
+          is exactly the canvas box and projected points land where they look. */}
+      <div className="engine-overlay">
+        <svg className="engine-leader">
+          <line ref={leaderRef} style={{ opacity: 0 }} />
+          <circle ref={anchorDotRef} r={4} style={{ opacity: 0 }} />
+        </svg>
+        <div className="engine-callout" ref={calloutRef} style={{ opacity: 0 }}>
+          {selectedPart ? (
+            <>
+              <p className="eyebrow">{selectedPart.group}</p>
+              <h3>{selectedPart.name}</h3>
+              <p className="engine-callout-blurb">{selectedPart.blurb}</p>
+              {selectedPart.spec ? (
+                <dl className="engine-spec">
+                  {selectedPart.spec.map((row) => (
+                    <div key={row.label}>
+                      <dt>{row.label}</dt>
+                      <dd>{row.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      </div>
       <p className="visually-hidden" id="engine-canvas-help">
         Drag to rotate. With the model focused, arrow keys rotate it. Every part
         is also listed as a button below the model.

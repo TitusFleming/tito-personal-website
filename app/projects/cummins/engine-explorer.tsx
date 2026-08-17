@@ -84,59 +84,32 @@ export default function EngineExplorer() {
         )}
       </div>
 
-      {/* Model and detail sit side by side: the whole point is that clicking a
-          part tells you what it is, and a panel further down the page reads as
-          nothing having happened. */}
-      <div className="engine-main">
-        {webglFailed ? (
-          <div className="elections-status">
-            <p className="eyebrow">3D view unavailable</p>
-            <p>
-              Your browser couldn&apos;t start WebGL, so the model can&apos;t
-              render. Every part is still listed below, with the same
-              descriptions.
-            </p>
-          </div>
-        ) : (
-          <EngineCanvas
-            explode={explode}
-            selectedId={selectedId}
-            hoveredId={hoveredId}
-            autoRotate={autoRotate}
-            reducedMotion={reducedMotion}
-            onSelect={setSelectedId}
-            onHover={setHoveredId}
-            onUnavailable={() => setWebglFailed(true)}
-          />
-        )}
-
-        <div className="map-panel engine-detail" id="engine-part-detail" aria-live="polite">
-          {selected ? (
-            <>
-              <p className="eyebrow">{selected.group}</p>
-              <h3>{selected.name}</h3>
-              <p className="engine-detail-blurb">{selected.blurb}</p>
-              {selected.spec ? (
-                <dl className="engine-spec">
-                  {selected.spec.map((row) => (
-                    <div key={row.label}>
-                      <dt>{row.label}</dt>
-                      <dd>{row.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <p className="eyebrow">Click a part</p>
-              <p className="engine-detail-blurb">
-                Click anything in the model to read what it does. Drag to turn
-                the engine over, and use the slider to pull it apart.
-              </p>
-            </>
-          )}
+      {webglFailed ? (
+        <div className="elections-status">
+          <p className="eyebrow">3D view unavailable</p>
+          <p>
+            Your browser couldn&apos;t start WebGL, so the model can&apos;t
+            render. Every part is still listed below.
+          </p>
         </div>
+      ) : (
+        <EngineCanvas
+          explode={explode}
+          selectedId={selectedId}
+          selectedPart={selected}
+          hoveredId={hoveredId}
+          autoRotate={autoRotate}
+          reducedMotion={reducedMotion}
+          onSelect={setSelectedId}
+          onHover={setHoveredId}
+          onUnavailable={() => setWebglFailed(true)}
+        />
+      )}
+
+      {/* Screen-reader mirror of the callout, which is positioned imperatively
+          and lives over a canvas. */}
+      <div className="visually-hidden" id="engine-part-detail" aria-live="polite">
+        {selected ? `${selected.name}. ${selected.blurb}` : ""}
       </div>
 
       {webglFailed ? null : (

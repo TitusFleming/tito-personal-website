@@ -1797,17 +1797,66 @@ footer {
   opacity: 0.45;
 }
 
-/* Model beside its description, so a click visibly does something. */
-.engine-main {
-  align-items: stretch;
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: minmax(0, 2fr) minmax(15rem, 1fr);
-  margin-top: 1rem;
+.engine-hero {
+  padding-bottom: 1.25rem;
 }
 
-.engine-main .engine-stage {
-  margin-top: 0;
+/* Inset to the stage's padding so the overlay's coordinate space is exactly
+   the canvas box — projected points then land where they appear to. The
+   canvas is appended by three after these nodes, so the overlay needs an
+   explicit stacking order to sit on top of it. */
+.engine-overlay {
+  bottom: 0.75rem;
+  left: 0.75rem;
+  pointer-events: none;
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+  z-index: 2;
+}
+
+.engine-leader {
+  height: 100%;
+  left: 0;
+  overflow: visible;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.engine-leader line {
+  stroke: var(--brown);
+  stroke-width: 1.5;
+  transition: opacity 140ms ease;
+}
+
+.engine-leader circle {
+  fill: #7a3027;
+  transition: opacity 140ms ease;
+}
+
+.engine-callout {
+  background: var(--card);
+  border: 1px solid var(--brown);
+  box-shadow: 5px 5px 0 rgba(78, 54, 41, 0.18);
+  left: 0;
+  max-width: min(21rem, 70%);
+  padding: 0.8rem 0.9rem;
+  position: absolute;
+  top: 0;
+  transition: opacity 140ms ease;
+  width: max-content;
+}
+
+.engine-callout h3 {
+  margin-top: 0.35rem;
+}
+
+.engine-callout-blurb {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-top: 0.55rem;
 }
 
 .engine-layout {
@@ -1928,8 +1977,7 @@ footer {
 }
 
 @media (max-width: 900px) {
-  .map-layout,
-  .engine-main {
+  .map-layout {
     grid-template-columns: 1fr;
   }
 
