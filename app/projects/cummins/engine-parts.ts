@@ -135,6 +135,30 @@ const BLOCK: EnginePart = {
     { kind: "box", size: [45, 7, 15], at: [0, -3.5, 0] },
     // Oil pan.
     { kind: "box", size: [40, 5, 13], at: [0, -9, 0] },
+    // Head-bolt bosses down both deck rails.
+    ...[-5.4, 5.4].flatMap((z) =>
+      Array.from({ length: 13 }, (_, i): GeometrySpec => ({
+        kind: "cylinder", rTop: 0.72, rBottom: 0.72, height: 1.5, segments: 10,
+        at: [-19.5 + i * 3.25, 16.3, z],
+      })),
+    ),
+    // Cast ribbing down the crankcase flanks.
+    ...[6.7, -6.7].flatMap((z) =>
+      Array.from({ length: 7 }, (_, i): GeometrySpec => ({
+        kind: "box", size: [1.2, 13, 0.6], at: [-18 + i * 6, 5, z],
+      })),
+    ),
+    // Freeze plugs.
+    ...Array.from({ length: 4 }, (_, i): GeometrySpec => ({
+      kind: "cylinder", rTop: 1.6, rBottom: 1.6, height: 0.6, segments: 16,
+      at: [-14.5 + i * 9.5, 10.5, -6.9], spin: [Math.PI / 2, 0, 0],
+    })),
+    // Gear-train cover at the front of the block.
+    { kind: "cylinder", rTop: 6.2, rBottom: 6.2, height: 1.8, segments: 28, at: [-23.2, 3, 0], spin: [0, 0, Math.PI / 2] },
+    // Main bearing caps along the bottom of the crankcase.
+    ...Array.from({ length: 7 }, (_, i): GeometrySpec => ({
+      kind: "box", size: [3.2, 2.6, 7], at: [-19.5 + i * 6.5, -7.4, 0],
+    })),
   ],
   placements: [{ index: 1, position: [0, 0, 0] }],
   explodeDir: [0, 0, 0],
@@ -187,6 +211,12 @@ const PISTONS: EnginePart = {
     { kind: "torus", radius: BORE / 2 - 0.06, tube: 0.07, segments: 24, at: [0, 1.6, 0], spin: [Math.PI / 2, 0, 0] },
     { kind: "torus", radius: BORE / 2 - 0.06, tube: 0.07, segments: 24, at: [0, 1.2, 0], spin: [Math.PI / 2, 0, 0] },
     { kind: "torus", radius: BORE / 2 - 0.06, tube: 0.09, segments: 24, at: [0, 0.3, 0], spin: [Math.PI / 2, 0, 0] },
+    // Combustion bowl in the crown. This is a direct-injection diesel, so the
+    // chamber is a dish in the piston rather than a pocket in the head.
+    { kind: "torus", radius: 1.75, tube: 0.42, segments: 22, at: [0, 2.62, 0], spin: [Math.PI / 2, 0, 0] },
+    { kind: "cylinder", rTop: 1.5, rBottom: 1.95, height: 0.7, segments: 20, at: [0, 2.4, 0] },
+    // Pin bosses.
+    { kind: "cylinder", rTop: 0.95, rBottom: 0.95, height: 4.6, segments: 14, at: [0, -0.6, 0], spin: [0, 0, Math.PI / 2] },
   ],
   placements: sixCylinders((cyl) => ({
     index: cyl,
@@ -279,6 +309,9 @@ const CRANKSHAFT: EnginePart = {
         spin: [0, 0, Math.PI / 2],
       };
     }),
+    // Vibration damper at the front, output flange at the back.
+    { kind: "cylinder", rTop: 5.4, rBottom: 5.4, height: 2.4, segments: 32, at: [-24.5, 0, 0], spin: [0, 0, Math.PI / 2] },
+    { kind: "cylinder", rTop: 3.4, rBottom: 3.4, height: 1.4, segments: 26, at: [24, 0, 0], spin: [0, 0, Math.PI / 2] },
   ],
   placements: [{ index: 1, position: [0, 0, 0] }],
   explodeDir: [0, -1, 0.3],
@@ -337,6 +370,22 @@ const CYLINDER_HEADS: EnginePart = {
     { kind: "box", size: [12.4, 5.0, 13] },
     // Rocker housing riding on top.
     { kind: "box", size: [11.6, 3.4, 9], at: [0, 4.2, 0] },
+    // Head bolts.
+    ...[-5.6, 5.6].flatMap((z) =>
+      [-4.6, 0, 4.6].map((x): GeometrySpec => ({
+        kind: "cylinder", rTop: 0.5, rBottom: 0.5, height: 1.2, segments: 10, at: [x, 2.9, z],
+      })),
+    ),
+    // Exhaust ports out the back.
+    ...[-3.2, 3.2].map((x): GeometrySpec => ({
+      kind: "cylinder", rTop: 1.6, rBottom: 1.6, height: 3.4, segments: 16,
+      at: [x, 0.2, -7.6], spin: [Math.PI / 2, 0, 0],
+    })),
+    // Intake ports out the front.
+    ...[-3.2, 3.2].map((x): GeometrySpec => ({
+      kind: "cylinder", rTop: 1.7, rBottom: 1.7, height: 2.8, segments: 16,
+      at: [x, 0.2, 7.3], spin: [Math.PI / 2, 0, 0],
+    })),
   ],
   placements: threePairs((pair) => ({
     index: pair,
@@ -448,6 +497,11 @@ const TURBOCHARGER: EnginePart = {
   geometry: [
     // Turbine and compressor volutes either side of a bearing housing.
     { kind: "cylinder", rTop: 4.0, rBottom: 4.0, height: 3.2, segments: 26, spin: [0, 0, Math.PI / 2] },
+    // Turbine volute — the scroll that makes a turbo look like a turbo.
+    { kind: "torus", radius: 3.5, tube: 1.5, segments: 26, at: [0, 0, 0], spin: [0, Math.PI / 2, 0] },
+    { kind: "torus", radius: 3.1, tube: 1.3, segments: 26, at: [5.6, 0, 0], spin: [0, Math.PI / 2, 0] },
+    // Exhaust inlet flange.
+    { kind: "cylinder", rTop: 1.8, rBottom: 1.8, height: 2.6, segments: 16, at: [0, -3.6, 0] },
     { kind: "cylinder", rTop: 3.6, rBottom: 3.6, height: 3.0, segments: 26, at: [5.6, 0, 0], spin: [0, 0, Math.PI / 2] },
     { kind: "cylinder", rTop: 1.5, rBottom: 1.5, height: 2.8, segments: 18, at: [2.8, 0, 0], spin: [0, 0, Math.PI / 2] },
     // Compressor outlet.
@@ -488,6 +542,34 @@ const FLYWHEEL: EnginePart = {
   ],
 };
 
+const EXHAUST_MANIFOLD: EnginePart = {
+  id: "exhaust-manifold",
+  name: "Exhaust manifold",
+  group: "Air system",
+  material: "castIron",
+  geometry: [
+    // Log running most of the length of the engine.
+    { kind: "cylinder", rTop: 2.1, rBottom: 2.1, height: 40, segments: 20, spin: [0, 0, Math.PI / 2] },
+    // Six runners reaching up to the exhaust ports in the heads.
+    ...sixCylinders((cyl): GeometrySpec => ({
+      kind: "cylinder", rTop: 1.5, rBottom: 1.5, height: 3.6, segments: 14,
+      at: [cylX(cyl), 0.4, 1.8], spin: [Math.PI / 2, 0, 0],
+    })),
+    // Turbo mounting flange.
+    { kind: "box", size: [4.4, 4.4, 1.2], at: [6, 0, -2.6] },
+  ],
+  placements: [{ index: 1, position: [0, DECK + 2.7, -10.4] }],
+  explodeDir: [0, 0.15, -1],
+  explodeDistance: 27,
+  blurb:
+    "Cast iron, and the piece that turns six separate exhaust pulses into one stream the turbocharger can live on. Each runner comes off a port drilled through the head; the log collects them and hands the lot to the turbine. It is also the hottest part on the engine, which is why it is iron rather than anything lighter.",
+  spec: [
+    { label: "Runners", value: "One per cylinder" },
+    { label: "Material", value: "Cast iron" },
+    { label: "Feeds", value: "Holset turbine" },
+  ],
+};
+
 /** Order is roughly the order you'd take it apart in, which also reads
  *  sensibly top-to-bottom in the part list. */
 export const ENGINE_PARTS: EnginePart[] = [
@@ -501,6 +583,7 @@ export const ENGINE_PARTS: EnginePart[] = [
   VALVE_TRAIN,
   INJECTORS,
   PT_PUMP,
+  EXHAUST_MANIFOLD,
   TURBOCHARGER,
   FLYWHEEL,
 ];
