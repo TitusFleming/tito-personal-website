@@ -125,11 +125,15 @@ export default function EngineCanvas({
     scene.environment = envRT.texture;
     pmrem.dispose();
 
-    // Environment-only lighting is form-accurate but reads flat; one key light
-    // puts a directional highlight back on the machined surfaces.
-    const key = new DirectionalLight(0xfff3e0, 1.25);
-    key.position.set(-6, 10, 8);
+    // Environment-only lighting is form-accurate but reads flat; a warm key
+    // puts a directional highlight back on the machined surfaces, and a cool
+    // rim from behind stops the dark castings merging into one silhouette.
+    const key = new DirectionalLight(0xfff1dc, 2.1);
+    key.position.set(-8, 14, 10);
     scene.add(key);
+    const rim = new DirectionalLight(0xcddcf0, 0.9);
+    rim.position.set(9, 4, -12);
+    scene.add(rim);
 
     const engine = buildEngine();
     scene.add(engine.root);
@@ -152,13 +156,16 @@ export default function EngineCanvas({
     const sphere = new Box3().setFromObject(engine.root).getBoundingSphere(new Sphere());
     applyExplode(engine.nodes, explode);
 
+    // The bounding sphere of a tall exploded stack is mostly empty corners, so
+    // framing to it directly leaves the engine small in a sea of margin. Pull
+    // in past it and let the extremes sit near the edges.
     const fit = sphere.radius / Math.sin((camera.fov * Math.PI) / 360);
     camera.position
       .copy(sphere.center)
-      .add(new Vector3(1, 0.45, 1.15).normalize().multiplyScalar(fit * 1.1));
+      .add(new Vector3(1, 0.32, 1.25).normalize().multiplyScalar(fit * 0.72));
     controls.target.copy(sphere.center);
-    controls.minDistance = fit * 0.3;
-    controls.maxDistance = fit * 2.4;
+    controls.minDistance = fit * 0.2;
+    controls.maxDistance = fit * 1.8;
     controls.update();
 
     // ── Interaction ────────────────────────────────────────────
@@ -290,6 +297,31 @@ export default function EngineCanvas({
       renderer.render(scene, camera);
     });
 
+    // Dev-only escape hatch. The render loop is driven by rAF, which browsers
+    // suspend whenever the page isn't compositing — so in a hidden or
+    // headless window nothing ever draws and the scene can't be inspected.
+    // This makes it drivable by hand from the console.
+    if (process.env.NODE_ENV !== "production") {
+      (window as unknown as { __engine?: unknown }).__engine = {
+        renderer,
+        scene,
+        camera,
+        controls,
+        engine,
+        resize: (w: number, h: number) => {
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h, false);
+        },
+        draw: () => renderer.render(scene, camera),
+        explodeTo: (t: number) => {
+          explodeCurrent = t;
+          explodeTarget = t;
+          applyExplode(engine.nodes, t);
+        },
+      };
+    }
+
     handleRef.current = {
       setExplode: (t) => {
         explodeTarget = t;
@@ -328,6 +360,9 @@ export default function EngineCanvas({
       renderer.forceContextLoss();
       canvas.remove();
       handleRef.current = null;
+      if (process.env.NODE_ENV !== "production") {
+        delete (window as unknown as { __engine?: unknown }).__engine;
+      }
     };
     // Built once. Prop changes are pushed through handleRef by the effects
     // below; `explode` and `reducedMotion` are read here only as initial values.

@@ -44,12 +44,17 @@ type MaterialSet = {
  *  and desaturates everything, so a hex copied from globals.css does not
  *  land where you expect. */
 const PALETTE: Record<MaterialKey, { color: string; metalness: number; roughness: number }> = {
-  // Real cast iron is matte and dark. Keeping metalness low here is what stops
-  // the block reading as a chrome prop.
-  castIron: { color: "#5c5b57", metalness: 0.35, roughness: 0.78 },
-  steel: { color: "#c2c4c8", metalness: 0.9, roughness: 0.26 },
-  aluminum: { color: "#cfccc5", metalness: 0.82, roughness: 0.4 },
-  beige: { color: "#c4b393", metalness: 0.12, roughness: 0.62 },
+  // Real cast iron is matte and dark, and pushing it dark and warm is what
+  // separates the castings from the machined parts at a glance. An earlier
+  // pass had all four of these within a few percent of each other and the
+  // whole engine read as one grey mass.
+  castIron: { color: "#413b34", metalness: 0.22, roughness: 0.88 },
+  // Machined steel: the bright, cool, obviously-turned surfaces.
+  steel: { color: "#dfe3e9", metalness: 0.97, roughness: 0.15 },
+  // Aluminum sits between the two — light but warmer and softer than steel.
+  aluminum: { color: "#b3aca1", metalness: 0.72, roughness: 0.38 },
+  // Brass for the fuel system, which also ties it to the page's warm palette.
+  beige: { color: "#b08a45", metalness: 0.88, roughness: 0.3 },
 };
 
 /** Four variants per key, built once. All are MeshStandardMaterial with the
