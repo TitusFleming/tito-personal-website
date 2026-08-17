@@ -25,6 +25,15 @@ const projects = [
     tags: ["Next.js", "FastAPI", "Postgres", "d3-geo"],
   },
   {
+    title: "Big Cam",
+    type: "Digital tools",
+    status: "Internship",
+    description:
+      "An LLM fault-code assistant built at Cummins — and the 14-litre diesel from the lobby, rebuilt in code so you can pull it apart.",
+    href: "/projects/cummins",
+    tags: ["Android", "Java", "LLM", "Three.js"],
+  },
+  {
     title: "Retirement Cohort Models",
     type: "Data systems",
     status: "Internship",

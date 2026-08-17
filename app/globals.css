@@ -1665,9 +1665,266 @@ footer {
   width: 100%;
 }
 
+/* ── Cummins exploded engine ──────────────────────────────────── */
+
+.engine-prose p {
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.65;
+  margin-top: 0.9rem;
+  max-width: 42rem;
+}
+
+.engine-prose em {
+  font-style: italic;
+}
+
+.visually-hidden {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.engine-stage {
+  aspect-ratio: 16 / 10;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  margin-top: 1rem;
+  max-height: 70vh;
+  padding: 0.75rem;
+  position: relative;
+}
+
+.engine-canvas {
+  cursor: grab;
+  display: block;
+  height: 100%;
+  /* Pre-activation default. OrbitControls.connect() overwrites this inline
+     once the user opts in on touch. */
+  touch-action: pan-y;
+  width: 100%;
+}
+
+.engine-canvas:focus-visible {
+  outline: 2px solid var(--brown);
+  outline-offset: 2px;
+}
+
+/* Range input, written from scratch — the stylesheet had none. The two engines
+   disagree about everything: WebKit styles a track and then a thumb that has to
+   be hand-centered on it, Firefox centers its own. The selectors CANNOT be
+   grouped: an unrecognized pseudo-element invalidates the whole selector list
+   in both engines, so a combined rule silently applies to neither. */
+
+.engine-explode-control input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  min-height: 2.75rem;
+  width: 100%;
+}
+
+.engine-explode-control input[type="range"]::-webkit-slider-runnable-track {
+  background: rgba(255, 250, 240, 0.26);
+  border: 1px solid #fffaf0;
+  height: 0.5rem;
+}
+
+.engine-explode-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: #fffaf0;
+  border: 1px solid #fffaf0;
+  height: 1.5rem;
+  /* (track 0.5rem + 2 × 1px border − thumb 1.5rem) / 2 */
+  margin-top: -0.56rem;
+  width: 1rem;
+}
+
+.engine-explode-control input[type="range"]::-moz-range-track {
+  background: rgba(255, 250, 240, 0.26);
+  border: 1px solid #fffaf0;
+  height: 0.5rem;
+}
+
+.engine-explode-control input[type="range"]::-moz-range-thumb {
+  background: #fffaf0;
+  /* Firefox draws its own thumb border unless one is declared, and its own
+     rounding unless border-radius is zeroed — this stylesheet has exactly one
+     border-radius in it and a rounded thumb would be the second. */
+  border: 1px solid #fffaf0;
+  border-radius: 0;
+  height: 1.5rem;
+  width: 1rem;
+}
+
+.engine-explode-control input[type="range"]:focus-visible {
+  outline: 2px solid #fffaf0;
+  outline-offset: 3px;
+}
+
+.engine-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.engine-ghost-btn {
+  background: transparent;
+  border: 1px solid var(--brown);
+  color: var(--brown);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 2.6rem;
+  padding: 0 0.9rem;
+}
+
+.engine-ghost-btn:hover:not(:disabled),
+.engine-ghost-btn[aria-pressed="true"] {
+  background: var(--brown);
+  color: #fffaf0;
+}
+
+.engine-ghost-btn:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.engine-layout {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  margin-top: 1rem;
+}
+
+.engine-part-list {
+  display: grid;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.engine-part-button {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 0.75rem;
+  justify-content: space-between;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  transition: background 140ms ease, border-color 140ms ease;
+  width: 100%;
+}
+
+.engine-part-button:hover,
+.engine-part-button:focus-visible {
+  background: var(--tan);
+  border-color: var(--brown);
+  outline: none;
+}
+
+.engine-part-button.selected {
+  background: var(--brown);
+  border-color: var(--brown);
+  color: #fffaf0;
+}
+
+.engine-part-name {
+  font-weight: 700;
+}
+
+.engine-part-count {
+  color: #7a3027;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.engine-part-button.selected .engine-part-count {
+  color: #fffaf0;
+}
+
+.engine-detail {
+  /* Reserved from the start so the page never jumps between "nothing
+     selected" and "part selected" — this site has no height animations and a
+     jumping layout would be the first. */
+  min-height: 16rem;
+}
+
+.engine-detail h3 {
+  margin-top: 0.4rem;
+}
+
+.engine-detail-blurb {
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.6;
+  margin-top: 0.75rem;
+}
+
+.engine-spec {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding-top: 0.85rem;
+}
+
+.engine-spec div {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.engine-spec dt {
+  color: #7a3027;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.engine-spec dd {
+  color: var(--foreground);
+  font-weight: 700;
+  margin: 0;
+  text-align: right;
+}
+
+/* The stylesheet had no reduced-motion block. Scoped to things that actually
+   move; the hard offset drop-shadow on hover is a color change, not motion. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .engine-part-button {
+    transition: none;
+  }
+}
+
 @media (max-width: 900px) {
-  .map-layout {
+  .map-layout,
+  .engine-layout {
     grid-template-columns: 1fr;
+  }
+
+  .engine-stage {
+    aspect-ratio: 4 / 3;
   }
 }
 
