@@ -84,6 +84,11 @@ export default function MainMenu() {
           })}
         </ul>
       </nav>
+
+      <p className="gd-credit">
+        Menu backdrop and icons inspired by <strong>Geometry Dash</strong>. All
+        artwork here is drawn from scratch. Special thanks to RobTop Games.
+      </p>
     </div>
   );
 }

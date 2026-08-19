@@ -2064,9 +2064,10 @@ footer {
 
 /* ── Geometry-Dash-style menu backdrop ────────────────────────── */
 
-/* Original art, not RobTop's: a diagonal lattice, a parallax ground strip and
-   tumbling cubes. Every moving part is a compositor-friendly transform or
-   background-position, so this costs no JavaScript and no main-thread work. */
+/* Original art, not RobTop's: blue ground, a diagonal lattice, and icons that
+   pop when you click them. GD's default menu is blue, so this is too — the
+   content panel stays warm cream, which is also what keeps it readable
+   against it. */
 
 .menu-main {
   overflow-x: clip;
@@ -2074,104 +2075,100 @@ footer {
 }
 
 .gd-bg {
+  background:
+    radial-gradient(120% 90% at 50% 0%, #2f6fd0 0%, #1d4c9e 45%, #123467 100%);
   bottom: 0;
   left: 0;
   overflow: hidden;
-  pointer-events: none;
   position: fixed;
   right: 0;
   top: 0;
   z-index: 0;
 }
 
-.gd-lattice {
-  animation: gd-drift-lattice 38s linear infinite;
+/* Long thin streaks crossing at unrelated angles, cutting the field into big
+   irregular facets. The spacings are intentionally non-multiples of each other
+   so the lines never settle into a visible grid — a repeating lattice was what
+   made earlier attempts read as graph paper instead of a game backdrop. */
+.gd-streaks {
+  animation: gd-drift-streaks 34s linear infinite;
   background-image:
-    repeating-linear-gradient(45deg, rgba(78, 54, 41, 0.07) 0 2px, transparent 2px 34px),
-    repeating-linear-gradient(-45deg, rgba(78, 54, 41, 0.07) 0 2px, transparent 2px 34px);
-  inset: -20%;
+    repeating-linear-gradient(17deg, rgba(3, 16, 40, 0.22) 0 3px, transparent 3px 173px),
+    repeating-linear-gradient(74deg, rgba(3, 16, 40, 0.18) 0 2px, transparent 2px 241px),
+    repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.09) 0 2px, transparent 2px 197px),
+    repeating-linear-gradient(143deg, rgba(3, 16, 40, 0.2) 0 3px, transparent 3px 313px),
+    repeating-linear-gradient(96deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 269px);
+  inset: -25%;
+  pointer-events: none;
   position: absolute;
 }
 
-@keyframes gd-drift-lattice {
+@keyframes gd-drift-streaks {
   from {
-    background-position:
-      0 0,
-      0 0;
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
   }
   to {
-    background-position:
-      96px 0,
-      -96px 0;
+    background-position: 173px 0, -241px 0, 197px 0, -313px 0, 269px 0;
   }
 }
 
-.gd-cubes {
+/* Darkens the edges so the middle of the screen — where the menu sits — is
+   always the calmest part of the backdrop. */
+.gd-vignette {
+  background: radial-gradient(115% 80% at 50% 42%, transparent 30%, rgba(2, 12, 32, 0.62) 100%);
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.gd-canvas {
+  display: block;
+  height: 100%;
   inset: 0;
   position: absolute;
-}
-
-.gd-cube {
-  align-items: center;
-  animation: gd-cube-cross var(--duration) linear var(--delay) infinite;
-  background: rgba(122, 48, 39, 0.14);
-  border: 2px solid rgba(78, 54, 41, 0.16);
-  display: flex;
-  gap: 18%;
-  height: var(--size);
-  justify-content: center;
-  left: 0;
-  position: absolute;
-  top: var(--top);
-  width: var(--size);
-}
-
-.gd-cube-eye {
-  background: rgba(78, 54, 41, 0.22);
-  height: 16%;
-  width: 16%;
-}
-
-/* Right to left, tumbling. The --spin sign flips direction per cube so they
-   don't all roll the same way. */
-@keyframes gd-cube-cross {
-  from {
-    transform: translateX(110vw) rotate(0deg);
-  }
-  to {
-    transform: translateX(-20vw) rotate(calc(var(--spin) * 540deg));
-  }
+  width: 100%;
 }
 
 .gd-ground {
-  background: rgba(78, 54, 41, 0.1);
-  border-top: 3px solid rgba(78, 54, 41, 0.22);
+  background: linear-gradient(180deg, #16386c 0%, #0a1f3d 100%);
   bottom: 0;
-  height: 14vh;
+  height: 16vh;
   left: 0;
+  pointer-events: none;
   position: absolute;
   right: 0;
 }
 
-/* Scrolls faster than the lattice — that speed difference is the parallax,
-   and it's most of why the backdrop reads as a game and not as wallpaper. */
-.gd-ground-texture {
-  animation: gd-drift-ground 9s linear infinite;
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgba(78, 54, 41, 0.14) 0 3px,
-    transparent 3px 46px
-  );
+/* The bright line where ground meets sky, which is the single most
+   recognisable edge in the whole backdrop. */
+.gd-ground::before {
+  background: #ffd23f;
+  box-shadow: 0 0 14px 2px rgba(255, 210, 63, 0.6);
+  content: "";
+  height: 3px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+/* Scrolls several times faster than the sky. That speed difference is the
+   parallax, and it is most of why this reads as a game and not as wallpaper. */
+.gd-ground-streaks {
+  animation: gd-drift-ground 8s linear infinite;
+  background-image:
+    repeating-linear-gradient(28deg, rgba(255, 255, 255, 0.1) 0 3px, transparent 3px 131px),
+    repeating-linear-gradient(152deg, rgba(2, 12, 32, 0.28) 0 3px, transparent 3px 167px);
   inset: 0;
   position: absolute;
 }
 
 @keyframes gd-drift-ground {
   from {
-    background-position: 0 0;
+    background-position: 0 0, 0 0;
   }
   to {
-    background-position: -46px 0;
+    background-position: -131px 0, 167px 0;
   }
 }
 
@@ -2191,12 +2188,47 @@ footer {
 
 .menu-nav {
   align-self: center;
+  /* A panel behind the nav, the way GD's menu buttons are solid plates. Without
+     it the labels sit straight on the pattern and icons drift over the text —
+     which is exactly the blending this backdrop risks. */
+  background: rgba(9, 28, 58, 0.86);
+  border: 2px solid rgba(120, 190, 255, 0.35);
   grid-column: 2;
   grid-row: 1;
+  padding: clamp(1rem, 2vw, 1.5rem);
 }
 
 .menu-identity {
   margin-bottom: clamp(1.25rem, 3vw, 2rem);
+}
+
+/* The nav sits directly on the blue, so its colours come from a light set
+   rather than the warm tokens used inside the panel. */
+.menu-nav .eyebrow {
+  color: #ffd23f;
+}
+
+.menu-identity h1 {
+  color: #ffffff;
+  text-shadow: 0 3px 0 rgba(8, 26, 52, 0.45);
+}
+
+.menu-item {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.menu-item:hover,
+.menu-item:focus-visible,
+.menu-item.selected {
+  color: #ffffff;
+}
+
+.menu-item.selected {
+  border-left-color: #ffd23f;
+}
+
+.menu-arrow {
+  color: #ffd23f;
 }
 
 .menu-identity h1 {
@@ -2473,9 +2505,22 @@ footer {
 
 @media (prefers-reduced-motion: reduce) {
   .menu-item.selected .menu-arrow,
-  .gd-lattice,
-  .gd-cube,
-  .gd-ground-texture {
+  .gd-streaks,
+  .gd-ground-streaks {
     animation: none;
   }
+}
+
+.gd-credit {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.76rem;
+  grid-column: 1 / -1;
+  line-height: 1.5;
+  margin-top: 1.25rem;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(3, 16, 40, 0.7);
+}
+
+.gd-credit strong {
+  color: rgba(255, 255, 255, 0.85);
 }
