@@ -1,217 +1,229 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useRef, useState } from "react";
 
-type MenuEntry = {
-  id: string;
-  label: string;
-  meta: string;
-  blurb: string;
-  tags: string[];
-  href?: string;
-  external?: boolean;
-};
+import { PROJECT_GROUPS, RESUME } from "./menu-data";
 
-const ENTRIES: MenuEntry[] = [
-  {
-    id: "cummins",
-    label: "Big Cam",
-    meta: "Internship · Digital tools",
-    blurb:
-      "An LLM fault-code assistant built at Cummins — and the 14-litre diesel from the lobby, rebuilt in code so you can pull it apart.",
-    tags: ["Android", "Java", "LLM", "Three.js"],
-    href: "/projects/cummins",
-  },
-  {
-    id: "elections",
-    label: "yourElections",
-    meta: "Live project · Civic tech",
-    blurb:
-      "An interactive map of the 2026 primaries — click your state and district to see every race and candidate.",
-    tags: ["Next.js", "FastAPI", "Postgres", "d3-geo"],
-    href: "/projects/yourElections",
-  },
-  {
-    id: "epl",
-    label: "EPL Brief",
-    meta: "Live project · Football data",
-    blurb: "A Premier League team form tracker for fans who have not watched every match.",
-    tags: ["Next.js", "Runtime API", "Football"],
-    href: "/projects/epl-brief",
-  },
-  {
-    id: "gddl",
-    label: "GDDL Higher or Lower",
-    meta: "Live project · Browser game",
-    blurb:
-      "Pick a tier range and guess which GD level ranks harder on the GDDL. Go until you get one wrong.",
-    tags: ["Geometry Dash", "GDDL", "Browser game"],
-    href: "/projects/gd-tier-game",
-  },
-  {
-    id: "fidelity",
-    label: "Retirement Cohort Models",
-    meta: "Internship · Data systems",
-    blurb: "Snowflake models for analyzing retirement customer behavior at Fidelity Investments.",
-    tags: ["SQL", "Snowflake", "Analytics"],
-  },
-  {
-    id: "battery",
-    label: "Battery Storage Analysis",
-    meta: "Research · Energy",
-    blurb: "Feasibility and incentive research for a 400MWh battery energy storage project.",
-    tags: ["Energy", "Markets", "Policy"],
-  },
-  {
-    id: "about",
-    label: "About",
-    meta: "Brown University · Computer Science",
-    blurb:
-      "I like projects with a little bit of data and a little bit of personality. Currently at Brown, making software, data projects and technical experiments.",
-    tags: [],
-  },
-  {
-    id: "contact",
-    label: "Contact",
-    meta: "richard_fleming@brown.edu",
-    blurb: "Say hello, or ask about anything on this menu.",
-    tags: [],
-    href: "mailto:richard_fleming@brown.edu",
-    external: true,
-  },
+type SectionId = "about" | "resume" | "projects" | "contact";
+
+const SECTIONS: { id: SectionId; label: string }[] = [
+  { id: "about", label: "About" },
+  { id: "resume", label: "Resume" },
+  { id: "projects", label: "Projects" },
+  { id: "contact", label: "Contact" },
 ];
 
-/** A pointer that can't hover has no way to preview an entry before committing
- *  to it, which is the whole point of this layout. Detected rather than
- *  guessed from width, because a touchscreen laptop is neither. */
-const COARSE = "(pointer: coarse)";
-
-function subscribeToPointer(onChange: () => void) {
-  const query = window.matchMedia(COARSE);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
 export default function MainMenu() {
-  const [index, setIndex] = useState(0);
+  const [active, setActive] = useState<SectionId>("about");
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const coarsePointer = useSyncExternalStore(
-    subscribeToPointer,
-    () => window.matchMedia(COARSE).matches,
-    () => false,
-  );
-
-  const selected = ENTRIES[index];
-
   const move = useCallback((next: number) => {
-    // Wrap around, the way every game menu since the cartridge era has.
-    const wrapped = (next + ENTRIES.length) % ENTRIES.length;
-    setIndex(wrapped);
+    // Wrap at both ends, the way every game menu since the cartridge era has.
+    const wrapped = (next + SECTIONS.length) % SECTIONS.length;
+    setActive(SECTIONS[wrapped].id);
     itemRefs.current[wrapped]?.focus();
   }, []);
 
   const handleKeyDown = (event: React.KeyboardEvent, i: number) => {
-    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
-      event.preventDefault();
-      move(i + 1);
-    } else if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
-      event.preventDefault();
-      move(i - 1);
-    } else if (event.key === "Home") {
-      event.preventDefault();
-      move(0);
-    } else if (event.key === "End") {
-      event.preventDefault();
-      move(ENTRIES.length - 1);
-    }
+    const keys: Record<string, number> = {
+      ArrowDown: i + 1,
+      ArrowRight: i + 1,
+      ArrowUp: i - 1,
+      ArrowLeft: i - 1,
+      Home: 0,
+      End: SECTIONS.length - 1,
+    };
+    if (!(event.key in keys)) return;
+    event.preventDefault();
+    move(keys[event.key]);
   };
 
   return (
     <div className="menu-screen">
-      <div className="menu-side">
+      <div className="menu-panel" id="menu-panel" aria-live="polite">
+        {active === "about" ? <AboutSection /> : null}
+        {active === "resume" ? <ResumeSection /> : null}
+        {active === "projects" ? <ProjectsSection /> : null}
+        {active === "contact" ? <ContactSection /> : null}
+      </div>
+
+      <nav className="menu-nav" aria-label="Main menu">
         <div className="menu-identity">
-          <div className="menu-portrait" aria-hidden="true" />
           <p className="eyebrow">Richard &quot;Tito&quot; Fleming</p>
           <h1>Tito Fleming</h1>
         </div>
 
         <ul className="menu-list">
-          {ENTRIES.map((entry, i) => {
-            const isSelected = i === index;
+          {SECTIONS.map((section, i) => {
+            const isActive = section.id === active;
             return (
-              <li key={entry.id}>
+              <li key={section.id}>
                 <button
                   type="button"
                   ref={(node) => {
                     itemRefs.current[i] = node;
                   }}
-                  className={`menu-item${isSelected ? " selected" : ""}`}
-                  // Roving tabindex: one stop for the whole menu, then arrows
-                  // move within it — the same contract a game pad gives you.
-                  tabIndex={isSelected ? 0 : -1}
-                  aria-current={isSelected ? "true" : undefined}
-                  aria-describedby="menu-preview"
+                  className={`menu-item${isActive ? " selected" : ""}`}
+                  // Roving tabindex: the menu is one tab stop, arrows move
+                  // inside it — the contract a gamepad gives you.
+                  tabIndex={isActive ? 0 : -1}
+                  aria-current={isActive ? "true" : undefined}
+                  aria-controls="menu-panel"
                   onKeyDown={(event) => handleKeyDown(event, i)}
-                  onMouseEnter={() => !coarsePointer && setIndex(i)}
-                  onFocus={() => setIndex(i)}
-                  onClick={() => setIndex(i)}
+                  onClick={() => setActive(section.id)}
+                  onFocus={() => setActive(section.id)}
                 >
                   <span className="menu-arrow" aria-hidden="true">
                     ▸
                   </span>
-                  <span className="menu-label">{entry.label}</span>
+                  <span className="menu-label">{section.label}</span>
                 </button>
-
-                {/* On touch the preview can't live in a side pane the user
-                    never sees, so it unfolds under the highlighted row. */}
-                {coarsePointer && isSelected ? (
-                  <div className="menu-inline-preview">
-                    <p className="menu-meta">{entry.meta}</p>
-                    <p className="menu-blurb">{entry.blurb}</p>
-                    <MenuAction entry={entry} />
-                  </div>
-                ) : null}
               </li>
             );
           })}
         </ul>
-      </div>
+      </nav>
+    </div>
+  );
+}
 
-      <div className="menu-preview" id="menu-preview" aria-live="polite">
-        <div className="menu-preview-inner">
-          <p className="eyebrow">{selected.meta}</p>
-          <h2>{selected.label}</h2>
-          <p className="menu-blurb">{selected.blurb}</p>
-          {selected.tags.length > 0 ? (
-            <div className="tag-row">
-              {selected.tags.map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </div>
-          ) : null}
-          <MenuAction entry={selected} />
+function AboutSection() {
+  return (
+    <div className="menu-section">
+      <p className="eyebrow">About</p>
+      <h2>A little bit of data, a little bit of personality</h2>
+      <div className="about-body">
+        <div className="menu-portrait" aria-hidden="true" />
+        <div>
+          <p className="menu-blurb">
+            I&apos;m a computer science student at Brown, making software, data
+            projects and technical experiments — usually things I want to exist
+            and then have to build to find out whether they work.
+          </p>
+          <p className="menu-blurb">
+            Most recently at Cummins in Columbus, Indiana, building diagnostic
+            tooling for diesel technicians. Before that, retirement data models
+            at Fidelity.
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-function MenuAction({ entry }: { entry: MenuEntry }) {
-  if (!entry.href) {
-    return <p className="menu-locked">No write-up yet</p>;
-  }
-  if (entry.external) {
-    return (
-      <a className="menu-open" href={entry.href}>
-        Open
-      </a>
-    );
-  }
+function ResumeSection() {
   return (
-    <Link className="menu-open" href={entry.href}>
-      Open
-    </Link>
+    <div className="menu-section">
+      <p className="eyebrow">Resume</p>
+      <h2>Education &amp; experience</h2>
+
+      <h3 className="resume-heading">Education</h3>
+      <ul className="resume-list">
+        {RESUME.education.map((row) => (
+          <li key={row.place}>
+            <span className="resume-place">{row.place}</span>
+            <span className="resume-when">{row.when}</span>
+            <p className="menu-blurb">{row.detail}</p>
+          </li>
+        ))}
+      </ul>
+
+      <h3 className="resume-heading">Experience</h3>
+      <ul className="resume-list">
+        {RESUME.experience.map((row) => (
+          <li key={row.place}>
+            <span className="resume-place">{row.place}</span>
+            <span className="resume-when">{row.when}</span>
+            <p className="menu-blurb">{row.detail}</p>
+          </li>
+        ))}
+      </ul>
+
+      <h3 className="resume-heading">Skills</h3>
+      <div className="tag-row">
+        {RESUME.skills.map((skill) => (
+          <span key={skill}>{skill}</span>
+        ))}
+      </div>
+
+      {/* Points at a file that isn't committed yet — drop resume.pdf into
+          public/ and this starts working with no code change. */}
+      <a className="menu-open" href="/resume.pdf" download>
+        Download PDF
+      </a>
+    </div>
+  );
+}
+
+function ProjectsSection() {
+  return (
+    <div className="menu-section">
+      <p className="eyebrow">Projects</p>
+      <h2>Things I&apos;ve built</h2>
+
+      {PROJECT_GROUPS.map((group) => (
+        <section className="project-group" key={group.title}>
+          <h3 className="resume-heading">{group.title}</h3>
+          <ul className="project-list">
+            {group.items.map((item) => (
+              <li className="project-row" key={item.label}>
+                <div className="project-row-head">
+                  <span className="project-row-name">{item.label}</span>
+                  <span className="menu-meta">{item.meta}</span>
+                </div>
+                <p className="menu-blurb">{item.blurb}</p>
+                <div className="tag-row">
+                  {item.tags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+                {item.href ? (
+                  <Link className="menu-open" href={item.href}>
+                    Open
+                  </Link>
+                ) : (
+                  <p className="menu-locked">No write-up yet</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function ContactSection() {
+  return (
+    <div className="menu-section">
+      <p className="eyebrow">Contact</p>
+      <h2>Get in touch</h2>
+      <p className="menu-blurb">
+        Say hello, or ask about anything on this menu.
+      </p>
+      <ul className="contact-list">
+        <li>
+          <span className="menu-meta">Email</span>
+          <a href="mailto:richard_fleming@brown.edu">richard_fleming@brown.edu</a>
+        </li>
+        <li>
+          <span className="menu-meta">LinkedIn</span>
+          <a
+            href="https://www.linkedin.com/in/tito-fleming/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            /in/tito-fleming
+          </a>
+        </li>
+        <li>
+          <span className="menu-meta">GitHub</span>
+          <a href="https://github.com/TitusFleming" target="_blank" rel="noopener noreferrer">
+            @TitusFleming
+          </a>
+        </li>
+      </ul>
+    </div>
   );
 }
