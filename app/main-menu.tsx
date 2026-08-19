@@ -50,7 +50,6 @@ export default function MainMenu() {
 
       <nav className="menu-nav" aria-label="Main menu">
         <div className="menu-identity">
-          <p className="eyebrow">Richard &quot;Tito&quot; Fleming</p>
           <h1>Tito Fleming</h1>
         </div>
 
@@ -66,7 +65,7 @@ export default function MainMenu() {
                   }}
                   className={`menu-item${isActive ? " selected" : ""}`}
                   // Roving tabindex: the menu is one tab stop, arrows move
-                  // inside it — the contract a gamepad gives you.
+                  // inside it, the contract a gamepad gives you.
                   tabIndex={isActive ? 0 : -1}
                   aria-current={isActive ? "true" : undefined}
                   aria-controls="menu-panel"
@@ -97,13 +96,12 @@ function AboutSection() {
   return (
     <div className="menu-section">
       <p className="eyebrow">About</p>
-      <h2>A little bit of data, a little bit of personality</h2>
       <div className="about-body">
         <div className="menu-portrait" aria-hidden="true" />
         <div>
           <p className="menu-blurb">
             I&apos;m a computer science student at Brown, making software, data
-            projects and technical experiments — usually things I want to exist
+            projects and technical experiments. Usually things I want to exist
             and then have to build to find out whether they work.
           </p>
           <p className="menu-blurb">
@@ -152,7 +150,7 @@ function ResumeSection() {
         ))}
       </div>
 
-      {/* Points at a file that isn't committed yet — drop resume.pdf into
+      {/* Points at a file that isn't committed yet, drop resume.pdf into
           public/ and this starts working with no code change. */}
       <a className="menu-open" href="/resume.pdf" download>
         Download PDF

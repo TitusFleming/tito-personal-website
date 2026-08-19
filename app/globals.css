@@ -2524,3 +2524,73 @@ footer {
 .gd-credit strong {
   color: rgba(255, 255, 255, 0.85);
 }
+
+/* ── Menu colour overrides ────────────────────────────────────
+   The menu screen lives on deep blue, so it cannot borrow the warm tokens the
+   project pages use. Everything here is scoped to .menu-screen so those pages
+   are untouched. */
+
+.menu-panel {
+  background: #0f2f5c;
+  border-color: rgba(120, 190, 255, 0.45);
+  box-shadow: 8px 8px 0 rgba(3, 14, 36, 0.45);
+  /* Base inherited colour, so anything not caught by a rule below still lands
+     light on the blue rather than defaulting to the warm foreground token. */
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.menu-screen .eyebrow,
+.menu-screen .menu-meta,
+.menu-screen .resume-heading {
+  color: #5fe0f5;
+}
+
+.menu-screen h2,
+.menu-screen h3,
+.menu-screen .project-row-name,
+.menu-screen .resume-place {
+  color: #ffffff;
+}
+
+.menu-screen .menu-blurb,
+.menu-screen .resume-when {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.menu-screen .resume-heading {
+  border-bottom-color: rgba(120, 190, 255, 0.3);
+}
+
+.menu-screen .project-row {
+  border-left-color: rgba(120, 190, 255, 0.35);
+}
+
+/* Tag chips were tan-on-brown, carried over from the old warm site. */
+.menu-screen .tag-row span {
+  background: rgba(9, 28, 58, 0.85);
+  border: 1px solid rgba(120, 190, 255, 0.4);
+  color: #9fe8f8;
+}
+
+.menu-screen .menu-open {
+  background: #7ee63f;
+  color: #0b1220;
+}
+
+.menu-screen .menu-open:hover,
+.menu-screen .menu-open:focus-visible {
+  box-shadow: 5px 5px 0 rgba(3, 14, 36, 0.45);
+}
+
+.menu-screen .menu-locked {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.menu-screen .contact-list a {
+  color: #9fe8f8;
+}
+
+.menu-portrait {
+  border-color: rgba(120, 190, 255, 0.55);
+  box-shadow: 6px 6px 0 rgba(3, 14, 36, 0.45);
+}

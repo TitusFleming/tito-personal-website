@@ -21,7 +21,7 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
         label: "yourElections",
         meta: "Civic tech",
         blurb:
-          "An interactive map of the 2026 primaries — click your state and district to see every race and candidate. There's a voice agent on the other end of the same data.",
+          "An interactive map of the 2026 primaries. Click your state and district to see every race and candidate. There's a voice agent on the other end of the same data.",
         tags: ["Next.js", "FastAPI", "Postgres", "d3-geo"],
         href: "/projects/yourElections",
       },
@@ -46,7 +46,7 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
     title: "Internships",
     items: [
       {
-        label: "Cummins — Big Cam",
+        label: "Cummins: Big Cam",
         meta: "Digital Tools Intern · Columbus, IN",
         blurb:
           "Built an LLM fault-code assistant into the Guidanz mobile app, so a technician can ask about an ECM code in plain language. Android Studio, Java and C++. The page is the other half: the NTC-400 from the lobby, rebuilt in code so you can pull it apart.",
@@ -86,7 +86,7 @@ export const RESUME = {
     {
       place: "Cummins Inc.",
       detail:
-        "Digital Tools Intern, Guidanz team — Fuel Systems facility. Built an LLM-backed diagnostic feature in the Guidanz mobile app for reading ECM fault codes, in Java and C++.",
+        "Digital Tools Intern on the Guidanz team at the Fuel Systems facility. Built an LLM-backed diagnostic feature in the Guidanz mobile app for reading ECM fault codes, in Java and C++.",
       when: "Columbus, IN",
     },
     {

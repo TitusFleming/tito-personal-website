@@ -4,16 +4,16 @@ import { useEffect, useRef } from "react";
 
 /** Geometry-Dash-flavoured menu backdrop.
  *
- *  Every shape here is drawn with canvas paths — nothing is extracted from the
- *  game's files. The forms (cube, ship, ball, UFO, swing, spider) and the death
- *  spray are rendered from scratch in the site's own colours. Credited on the
- *  page; see the "special thanks" line.
- *
- *  Only one or two icons are alive at once, so the backdrop stays quiet enough
- *  to read the menu over.
+ *  Every shape is drawn from canvas paths. Nothing is extracted from the game's
+ *  files. The visual grammar copied is the obvious stuff: very heavy black
+ *  outlines, flat two-tone fills, and the nested-square motif the default icons
+ *  use in place of a face.
  */
 
-const ICON_COLORS = ["#3ddc97", "#ffd23f", "#ff6b5b", "#4fc3ff", "#c77dff", "#ff9f45"];
+const BODY_COLORS = ["#7ee63f", "#3ddc97", "#ffd23f", "#ff6b5b", "#c77dff", "#ff9f45"];
+const ACCENT = "#5fe0f5";
+const OUTLINE = "#0b1220";
+
 const FORMS = ["cube", "ship", "ball", "ufo", "swing", "spider"] as const;
 type Form = (typeof FORMS)[number];
 
@@ -22,15 +22,13 @@ type Icon = {
   size: number; angle: number; spin: number;
   color: string; form: Form; dead: number;
 };
-
 type Particle = {
   x: number; y: number; vx: number; vy: number;
   size: number; life: number; maxLife: number; color: string;
 };
+type Flash = { x: number; y: number; life: number };
 
-type Flash = { x: number; y: number; life: number; color: string };
-
-/** Two on screen at most — the backdrop sits behind a menu, not a level. */
+/** Two at a time. The backdrop sits behind a menu, not a level. */
 const ICON_COUNT = 2;
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
@@ -55,27 +53,27 @@ export default function GdBackground() {
     const flashes: Flash[] = [];
 
     function spawn(icon: Icon, fromEdge: boolean) {
-      icon.size = rand(38, 74);
-      icon.color = ICON_COLORS[Math.floor(rand(0, ICON_COLORS.length))];
+      icon.size = rand(46, 82);
+      icon.color = BODY_COLORS[Math.floor(rand(0, BODY_COLORS.length))];
       icon.form = FORMS[Math.floor(rand(0, FORMS.length))];
-      icon.angle = rand(-0.4, 0.4);
-      icon.spin = rand(-0.01, 0.01);
-      icon.vx = rand(0.5, 1.15) * (Math.random() < 0.5 ? -1 : 1);
-      icon.vy = rand(-0.22, 0.22);
+      icon.angle = rand(-0.3, 0.3);
+      icon.spin = rand(-0.008, 0.008);
+      icon.vx = rand(0.5, 1.1) * (Math.random() < 0.5 ? -1 : 1);
+      icon.vy = rand(-0.2, 0.2);
       icon.dead = 0;
       if (fromEdge) {
         icon.x = icon.vx > 0 ? -icon.size : width + icon.size;
-        icon.y = rand(icon.size, Math.max(icon.size + 1, height * 0.8));
+        icon.y = rand(icon.size, Math.max(icon.size + 1, height * 0.82));
       } else {
-        icon.x = rand(width * 0.15, width * 0.85);
-        icon.y = rand(height * 0.15, height * 0.7);
+        icon.x = rand(width * 0.1, width * 0.9);
+        icon.y = rand(height * 0.1, height * 0.75);
       }
     }
 
     function resize() {
-      // Measure the WRAPPER, never the canvas: a canvas with no CSS size takes
+      // Measure the wrapper, never the canvas: a canvas with no CSS size takes
       // its layout size from its attributes, so measuring it to set them feeds
-      // back on itself and the element grows without bound.
+      // back on itself and it grows without bound.
       const rect = wrap!.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
       width = rect.width;
@@ -93,11 +91,9 @@ export default function GdBackground() {
       }
     }
 
-    // ── form drawing ──────────────────────────────────────────
-    const OUTLINE = "rgba(6, 20, 44, 0.85)";
-    const FACE = "rgba(6, 20, 44, 0.82)";
-
-    function rounded(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+    // ── shapes ────────────────────────────────────────────────
+    function box(x: number, y: number, w: number, h: number, r: number) {
+      const c = ctx!;
       c.beginPath();
       c.moveTo(x + r, y);
       c.arcTo(x + w, y, x + w, y + h, r);
@@ -107,73 +103,102 @@ export default function GdBackground() {
       c.closePath();
     }
 
-    function face(c: CanvasRenderingContext2D, s: number, cy = 0) {
-      c.fillStyle = FACE;
-      const e = s * 0.13;
-      c.fillRect(-s * 0.22, cy - e * 0.6, e, e * 1.4);
-      c.fillRect(s * 0.09, cy - e * 0.6, e, e * 1.4);
-      c.fillRect(-s * 0.15, cy + e * 1.2, s * 0.3, e * 0.55);
+    /** The default icons have no face. They have a square inside a square
+     *  inside a square, and that motif is most of what makes them readable. */
+    function nested(cx: number, cy: number, s: number) {
+      const c = ctx!;
+      c.fillStyle = OUTLINE;
+      c.fillRect(cx - s * 0.3, cy - s * 0.3, s * 0.6, s * 0.6);
+      c.fillStyle = ACCENT;
+      c.fillRect(cx - s * 0.16, cy - s * 0.16, s * 0.32, s * 0.32);
+    }
+
+    function star(cx: number, cy: number, outer: number, inner: number, points: number) {
+      const c = ctx!;
+      c.beginPath();
+      for (let i = 0; i < points * 2; i += 1) {
+        const r = i % 2 === 0 ? outer : inner;
+        const a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
+        const px = cx + Math.cos(a) * r;
+        const py = cy + Math.sin(a) * r;
+        if (i === 0) c.moveTo(px, py);
+        else c.lineTo(px, py);
+      }
+      c.closePath();
     }
 
     function drawForm(icon: Icon) {
       const c = ctx!;
       const s = icon.size;
       const h = s / 2;
-      c.fillStyle = icon.color;
       c.strokeStyle = OUTLINE;
-      c.lineWidth = Math.max(2.5, s * 0.075);
+      c.lineJoin = "round";
+      // Heavy outline: the single most characteristic thing about these icons.
+      c.lineWidth = Math.max(3, s * 0.1);
+      c.fillStyle = icon.color;
 
       if (icon.form === "cube") {
-        rounded(c, -h, -h, s, s, s * 0.16);
+        box(-h, -h, s, s, s * 0.1);
         c.fill(); c.stroke();
-        face(c, s);
+        nested(0, 0, s * 0.62);
       } else if (icon.form === "ball") {
-        c.beginPath(); c.arc(0, 0, h, 0, Math.PI * 2);
+        star(0, 0, h, h * 0.62, 8);
         c.fill(); c.stroke();
-        c.beginPath(); c.arc(0, 0, h * 0.62, 0, Math.PI * 2); c.stroke();
-        face(c, s);
+        c.fillStyle = ACCENT;
+        star(0, 0, h * 0.5, h * 0.26, 8);
+        c.fill(); c.stroke();
       } else if (icon.form === "ship") {
-        // Wedge with a cockpit dome.
-        c.beginPath();
-        c.moveTo(h, 0); c.lineTo(-h * 0.6, h * 0.55);
-        c.lineTo(-h, h * 0.1); c.lineTo(-h * 0.6, -h * 0.5);
-        c.closePath(); c.fill(); c.stroke();
-        c.beginPath(); c.arc(-h * 0.05, -h * 0.1, h * 0.34, Math.PI, 0);
+        // Hull along the bottom, cockpit block above it.
+        box(-h, h * 0.1, s, h * 0.62, s * 0.1);
         c.fill(); c.stroke();
-        face(c, s * 0.7, -h * 0.25);
+        c.fillStyle = ACCENT;
+        box(-h * 0.95, h * 0.22, s * 0.34, h * 0.4, s * 0.06);
+        c.fill(); c.stroke();
+        c.fillStyle = icon.color;
+        box(-h * 0.42, -h * 0.85, s * 0.6, h * 0.95, s * 0.08);
+        c.fill(); c.stroke();
+        nested(-h * 0.12, -h * 0.36, s * 0.4);
       } else if (icon.form === "ufo") {
-        // Dome over a wide saucer.
-        c.beginPath(); c.arc(0, 0, h * 0.55, Math.PI, 0); c.fill(); c.stroke();
-        rounded(c, -h, -h * 0.06, s, h * 0.42, h * 0.2);
+        // Dome, then the saucer across the middle.
+        c.fillStyle = ACCENT;
+        c.beginPath(); c.arc(0, 0, h * 0.66, Math.PI, 0);
         c.fill(); c.stroke();
-        face(c, s * 0.72, -h * 0.28);
+        c.fillStyle = icon.color;
+        box(-h, -h * 0.02, s, h * 0.44, h * 0.2);
+        c.fill(); c.stroke();
+        nested(0, -h * 0.3, s * 0.4);
+        c.fillStyle = ACCENT;
+        c.beginPath(); c.arc(0, h * 0.2, h * 0.19, 0, Math.PI * 2);
+        c.fill(); c.stroke();
       } else if (icon.form === "swing") {
-        // Body with a propeller nub each side.
-        rounded(c, -h * 0.72, -h * 0.62, s * 0.72, s * 0.62, s * 0.14);
+        box(-h * 0.62, -h * 0.55, s * 0.62, s * 0.62, s * 0.1);
         c.fill(); c.stroke();
-        c.lineWidth = Math.max(2, s * 0.06);
+        c.lineWidth = Math.max(3, s * 0.085);
         c.beginPath();
-        c.moveTo(-h * 0.95, -h * 0.72); c.lineTo(h * 0.5, -h * 0.72);
+        c.moveTo(-h * 0.98, -h * 0.78); c.lineTo(h * 0.58, -h * 0.78);
         c.stroke();
-        c.beginPath(); c.arc(-h * 0.36, h * 0.5, h * 0.16, 0, Math.PI * 2);
+        c.fillStyle = ACCENT;
+        c.beginPath(); c.arc(-h * 0.2, h * 0.62, h * 0.2, 0, Math.PI * 2);
         c.fill(); c.stroke();
-        face(c, s * 0.6, -h * 0.28);
+        nested(-h * 0.3, -h * 0.24, s * 0.36);
       } else {
-        // spider — squat body on four legs
-        c.lineWidth = Math.max(2, s * 0.06);
-        for (const dx of [-h * 0.72, -h * 0.28, h * 0.28, h * 0.72]) {
-          c.beginPath(); c.moveTo(dx * 0.7, h * 0.1); c.lineTo(dx, h * 0.92); c.stroke();
+        // spider: squat body, angular legs
+        c.lineWidth = Math.max(3, s * 0.085);
+        for (const dx of [-h * 0.82, -h * 0.3, h * 0.3, h * 0.82]) {
+          c.beginPath();
+          c.moveTo(dx * 0.62, h * 0.05);
+          c.lineTo(dx, h * 0.55);
+          c.lineTo(dx * 1.05, h * 0.95);
+          c.stroke();
         }
-        c.lineWidth = Math.max(2.5, s * 0.075);
-        rounded(c, -h * 0.78, -h * 0.62, s * 0.78, s * 0.72, s * 0.16);
+        c.lineWidth = Math.max(3, s * 0.1);
+        box(-h * 0.8, -h * 0.7, s * 0.8, s * 0.72, s * 0.12);
         c.fill(); c.stroke();
-        face(c, s * 0.66, -h * 0.18);
+        nested(-h * 0.4, -h * 0.34, s * 0.44);
       }
     }
 
     function burst(icon: Icon) {
-      // The death spray: pieces thrown out in every direction, plus a bright
-      // ring that expands and fades — the read is "popped", not "faded out".
       for (let i = 0; i < 26; i += 1) {
         const a = (i / 26) * Math.PI * 2 + rand(-0.22, 0.22);
         const sp = rand(1.8, 6.4);
@@ -185,22 +210,32 @@ export default function GdBackground() {
           color: Math.random() < 0.3 ? "#ffffff" : icon.color,
         });
       }
-      flashes.push({ x: icon.x, y: icon.y, life: 0, color: icon.color });
+      flashes.push({ x: icon.x, y: icon.y, life: 0 });
     }
 
-    function handleClick(event: PointerEvent) {
-      const rect = canvas!.getBoundingClientRect();
-      const px = event.clientX - rect.left;
-      const py = event.clientY - rect.top;
+    function popAtPoint(px: number, py: number) {
       for (const icon of icons) {
         if (icon.dead > 0) continue;
-        const h = icon.size / 2 + 8;
+        const h = icon.size / 2 + 10;
         if (Math.abs(px - icon.x) <= h && Math.abs(py - icon.y) <= h) {
           burst(icon);
           icon.dead = Math.round(rand(40, 90));
-          break;
+          return true;
         }
       }
+      return false;
+    }
+
+    /** Listen on the window, not the canvas. The page's layout wrapper is a
+     *  transparent element stretched over most of the viewport, so it — not the
+     *  canvas — is what a real click actually lands on; a canvas-bound listener
+     *  never fires for icons drifting inside that column. Clicks on genuine
+     *  controls are skipped so popping never steals a menu press. */
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("a, button, input, [role='button']")) return;
+      const rect = canvas!.getBoundingClientRect();
+      popAtPoint(event.clientX - rect.left, event.clientY - rect.top);
     }
 
     let frame = 0;
@@ -262,7 +297,7 @@ export default function GdBackground() {
     const observer = new ResizeObserver(resize);
     observer.observe(wrap);
     resize();
-    canvas.addEventListener("pointerdown", handleClick);
+    window.addEventListener("pointerdown", handlePointerDown);
     motionQuery.addEventListener("change", onMotionChange);
     frame = requestAnimationFrame(tick);
 
@@ -270,15 +305,14 @@ export default function GdBackground() {
       (window as unknown as { __gd?: unknown }).__gd = {
         icons, particles, flashes, FORMS,
         step: (n = 1) => { for (let i = 0; i < n; i += 1) tick(); cancelAnimationFrame(frame); },
-        popAt: (x: number, y: number) => handleClick({ clientX: x, clientY: y } as PointerEvent),
-        setForm: (i: number, f: Form) => { icons[i].form = f; },
+        popAt: (x: number, y: number) => popAtPoint(x, y),
       };
     }
 
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
-      canvas.removeEventListener("pointerdown", handleClick);
+      window.removeEventListener("pointerdown", handlePointerDown);
       motionQuery.removeEventListener("change", onMotionChange);
       if (process.env.NODE_ENV !== "production") {
         delete (window as unknown as { __gd?: unknown }).__gd;
