@@ -483,3 +483,13 @@ test("a restart drops the coins taken on the failed attempt", () => {
   sim.reset();
   assert.equal(sim.coins.size, 0, "a coin only counts if you carry it home");
 });
+
+test("coins keep their real off-grid position", () => {
+  // GD places the secret coins deliberately off the integer grid. Rounding x to
+  // whole tiles put two of Stereo Madness's three up to 14px left of where the
+  // level puts them — enough to change whether a route lines up.
+  const w = world([{ t: "coin", x: 6.5, y: 2.25 }]);
+  const coin = w.columns[6]!.triggers.find((t) => (t as { kind: string }).kind === "coin")!;
+  assert.equal(coin.cell.x, 6.5 * TILE, "fractional x survives compilation");
+  assert.equal(coin.cell.y, 2.25 * TILE, "and so does fractional y");
+});

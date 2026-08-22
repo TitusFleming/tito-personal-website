@@ -46,7 +46,10 @@ test("every authored object lands in a category, counted by kind", () => {
     }
   }
 
-  assert.equal(buckets.solids, 312, "block spans");
+  // 314 rather than 312 because x now keeps quarter-tile precision: nine blocks
+  // in this level are genuinely placed off-grid, and two runs that used to be
+  // merged by rounding are correctly kept separate.
+  assert.equal(buckets.solids, 314, "block spans");
   assert.equal(buckets.hazards, 187, "spikes");
   assert.equal(buckets.decor, 423, "pits");
   assert.equal(kinds.portal, 4, "mode portals");

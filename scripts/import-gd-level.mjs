@@ -115,8 +115,16 @@ function parseObjects(text) {
   return out;
 }
 
-/** GD positions objects by centre; our grid indexes by bottom-left cell. */
-const toGrid = (px) => Math.round(px / TILE - 0.5);
+/**
+ * GD positions objects by centre; our grid indexes by bottom-left cell.
+ *
+ * Quantised to quarter tiles, the SAME precision the y axis already used.
+ * Forcing x to whole tiles was an assumption that everything sits on the
+ * integer grid — true of blocks and spikes, which land on integers here
+ * anyway, and false of the secret coins, which are deliberately placed off-grid
+ * and were landing up to 14px left of where the level puts them.
+ */
+const toGrid = (px) => Math.round((px / TILE - 0.5) * 4) / 4;
 
 /** Merge runs of same-height blocks on the same row into spans, for a readable file. */
 function mergeBlockRuns(blocks) {
@@ -157,11 +165,6 @@ function convert(objects, meta) {
   const unknown = new Map();
   let maxX = 0;
 
-  // The secret coins. The object table types them as `deco` because they carry
-  // no collision, but they are the whole reason the alternate routes exist, so
-  // they are matched by id before the type switch gets a say.
-  const COIN_IDS = new Set([142, 1329]);
-
   for (const o of objects) {
     const def = OBJECTS[String(o.id)];
     if (!def) {
@@ -191,11 +194,6 @@ function convert(objects, meta) {
     const y = Math.round((o.y / TILE - gh / 2) * 4) / 4;
     if (x < 0 || y < -2) continue;
     maxX = Math.max(maxX, x);
-
-    if (COIN_IDS.has(o.id)) {
-      rest.push({ t: "coin", x, y });
-      continue;
-    }
 
     switch (def.type) {
       case "solid":
@@ -269,6 +267,13 @@ function convert(objects, meta) {
 
       case "ring":
         rest.push({ t: "ring", x, y });
+        break;
+
+      // Secret coins. Typed in the object table like everything else, rather
+      // than matched by id here — the table is the one place object identity
+      // is decided.
+      case "coin":
+        rest.push({ t: "coin", x, y });
         break;
 
       default:
