@@ -35,6 +35,21 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const TILE = 30;
+
+/**
+ * kA4 speed values map onto our SPEEDS table: the game writes 0 for 1x, then
+ * 1 for 0.5x, 2 for 2x, 3 for 3x, 4 for 4x.
+ */
+const SPEED_INDEX = { 0: 1, 1: 0, 2: 2, 3: 3, 4: 4 };
+
+/**
+ * A flying section's height when the level puts nothing in it to measure.
+ *
+ * Only a fallback — a corridor with any geometry is measured from that
+ * geometry. This is the game's standard ship border height and is the one
+ * number here that is a convention rather than a reading.
+ */
+const EMPTY_SECTION_TILES = 10;
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OBJECTS = JSON.parse(
   readFileSync(join(HERE, "../app/projects/fleming-dash/levels/gd-objects.json"), "utf8"),
@@ -61,8 +76,19 @@ function parseHeaderColors(text) {
     const [r, g, b] = [q["1"], q["2"], q["3"]].map(Number);
     return [r, g, b].every((n) => Number.isFinite(n)) ? [r, g, b] : fallback;
   };
-  return { bg: rgb(kv.kS29, [40, 62, 255]), ground: rgb(kv.kS30, [0, 19, 200]) };
+  return {
+    bg: rgb(kv.kS29, [40, 62, 255]),
+    ground: rgb(kv.kS30, [0, 19, 200]),
+    // kA2 is the starting gamemode and kA4 the starting speed. Both were
+    // hardcoded to cube / 1x, which is right for the first two levels and
+    // silently wrong for any level that opens in another mode or speed.
+    startMode: START_MODES[kv.kA2] ?? "cube",
+    speed: Number(kv.kA4) || 0,
+  };
 }
+
+/** kA2 values, in the game's own order. */
+const START_MODES = ["cube", "ship", "ball", "ufo", "wave", "robot", "spider"];
 
 function parseObjects(text) {
   const [, ...chunks] = text.split(";");
@@ -271,6 +297,7 @@ function convert(objects, meta) {
     // literally unreachable, since the simulation clamps the ship at the
     // ceiling. Measuring per corridor fixes that here and in any level.
     const start = portals[i].x;
+    const start_y = portals[i].y ?? 0;
     let roof = 0;
     for (const o of [...blocks, ...rest]) {
       // Colour triggers carry an x but no y — they are events, not geometry.
@@ -278,9 +305,13 @@ function convert(objects, meta) {
       if (typeof o.y !== "number" || o.x < start || o.x >= end) continue;
       roof = Math.max(roof, o.y + (typeof o.h === "number" ? o.h : 1));
     }
-    // A tile of clearance above the tallest thing, and never lower than a
-    // standard corridor so an empty stretch still feels like one.
-    const ceilingY = Math.max(10, Math.ceil(roof) + 1);
+    // A tile of clearance above the tallest thing in the corridor. The floor of
+    // 10 that used to sit here was the original hardcoded corridor height in
+    // disguise: it silently overrode any corridor shorter than ten tiles.
+    // Only a corridor with nothing in it to measure falls back to a convention,
+    // and then it is anchored to the portal rather than to the ground.
+    const ceilingY =
+      roof > 0 ? Math.ceil(roof) + 1 : Math.ceil(start_y) + EMPTY_SECTION_TILES;
     zones.push({ t: "zone", x: start, w: Math.max(1, end - start), ceilingY });
   }
 
@@ -301,8 +332,8 @@ function convert(objects, meta) {
       name: meta.name,
       author: "RobTop Games",
       credit: "Level design by RobTop Games. Recreated for a portfolio project.",
-      startMode: "cube",
-      speed: 1,
+      startMode: meta.colors.startMode,
+      speed: SPEED_INDEX[meta.colors.speed] ?? 1,
       groundY: 0,
       ceilingY: null,
       bgColor: meta.colors.bg,

@@ -202,7 +202,11 @@ export function updateCamera(
   const { floor } = world.playBounds(view.x);
 
   let desired: number;
-  if (p.def.camera === "free") {
+  if (p.def.camera === "anchored" && p.sectionAnchorY !== null) {
+    // Locked to the portal that started this section. Nothing the player does
+    // moves it; the level was built around this window.
+    desired = p.sectionAnchorY;
+  } else if (p.def.camera === "free" || p.def.camera === "anchored") {
     // Flying modes: follow continuously, led slightly by velocity. Holding the
     // view still through a ship section hides the route you are climbing for —
     // which is how a coin above the usual line becomes unreachable in practice.

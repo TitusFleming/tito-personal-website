@@ -14,7 +14,7 @@
 import { SIZE_MINI, SIZE_NORMAL, TILE } from "../constants.ts";
 import { aabb, type Aabb } from "../core/aabb.ts";
 import { TriggerObject, type TouchContext } from "./object.ts";
-import type { GameMode } from "../modes/mode.ts";
+import { MODES, type GameMode } from "../modes/mode.ts";
 import type { Player } from "../player.ts";
 import type { SpeedIndex } from "../types.ts";
 
@@ -69,6 +69,12 @@ export class ModePortal extends Portal {
     });
     p.rot = 0;
     p.onGround = false;
+    // A mode with a locked camera is framed by the portal that started it.
+    // Modes that do not lock clear the anchor, so walking out of a ship section
+    // hands the view back to the ground camera.
+    p.sectionAnchorY = MODES[this.mode].camera === "anchored"
+      ? this.box.y + this.box.h / 2
+      : null;
     ctx.events.push({ type: "portal", mode: this.mode });
   }
 }

@@ -31,6 +31,15 @@ export class Player {
   /** Index into SPEEDS, set by speed portals. */
   speedIndex: SpeedIndex = SPEED_NORMAL;
 
+  /**
+   * World y of the portal that started the current section, or null on foot.
+   *
+   * This is what a locked camera locks TO. In the real game a ship section's
+   * view is fixed by where the portal put you, not by the level's scenery, so
+   * the anchor travels with the player and is set by the portal itself.
+   */
+  sectionAnchorY: number | null = null;
+
   onGround = true;
   /**
    * Rotation in WORLD space: radians, counter-clockwise positive, y-up.
@@ -90,5 +99,6 @@ export class Player {
     this.speedIndex = speed;
     this.onGround = true;
     this.rot = 0;
+    this.sectionAnchorY = null;
   }
 }

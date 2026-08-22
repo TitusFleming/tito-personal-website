@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { CAM_RISE_TILES, GROUND_BAND_TILES, TILE, VIEW_TILES } from "../engine/constants.ts";
 import { Simulation } from "../engine/simulate.ts";
 import { World } from "../engine/world.ts";
-import { world as makeWorld } from "../engine/test-support.ts";
+import { runUntil, world as makeWorld } from "../engine/test-support.ts";
 import { CanvasRecorder } from "./canvas-recorder.ts";
 import { PALETTE } from "./sprites.ts";
 import { createCamera, draw, interpolate, snapCamera } from "./renderer.ts";
@@ -360,14 +360,55 @@ test("a flying mode's camera follows the player; a grounded one holds still", ()
     settledCamY(w, 10 * TILE, low + TILE * 2, "cube"),
     "a grounded mode ignores small climbs",
   );
+  // The ship's camera is ANCHORED, so with no portal entered it falls back to
+  // following; the portal-locked case is covered below.
   assert.ok(
     settledCamY(w, 10 * TILE, high, "ship") > settledCamY(w, 10 * TILE, low, "ship") + TILE,
-    "a flying mode follows the climb",
+    "with no section anchor the ship camera follows",
   );
+});
+
+test("entering a ship portal locks the camera to the portal, not the player", () => {
+  // The section is composed around the window the portal establishes. Flying up
+  // and down inside it must not move the view at all.
+  const w = makeWorld(
+    [{ t: "ship", x: 4, y: 0 }, { t: "zone", x: 0, w: 60, ceilingY: 22 }],
+    { ceilingY: 22 },
+  );
+  const sim = new Simulation(w);
+  runUntil(sim, (s) => s.player.mode === "ship");
+  assert.notEqual(sim.player.sectionAnchorY, null, "the portal must set an anchor");
+
+  const cam = createCamera(w);
+  snapCamera(cam, sim.player, w, VIEW.w, VIEW.h);
+  const seen = new Set<number>();
+  for (const y of [TILE * 4, TILE * 8, TILE * 12, TILE * 16]) {
+    sim.player.y = y;
+    for (let i = 0; i < 200; i++) {
+      updateCamera(cam, sim.player, { x: sim.player.x, y, rot: 0 }, w, VIEW.w, VIEW.h, 1 / 60);
+    }
+    seen.add(Math.round(cam.y * 100));
+  }
+  assert.equal(seen.size, 1, `camera moved with the player inside a locked section: ${[...seen]}`);
+});
+
+test("leaving a locked section hands the view back to the ground camera", () => {
+  const w = makeWorld(
+    [{ t: "ship", x: 4, y: 0 }, { t: "cube", x: 20, y: 0 }, { t: "zone", x: 0, w: 18, ceilingY: 22 }],
+    { ceilingY: null },
+  );
+  const sim = new Simulation(w);
+  runUntil(sim, (s) => s.player.mode === "ship");
+  assert.notEqual(sim.player.sectionAnchorY, null);
+  runUntil(sim, (s) => s.player.mode === "cube");
+  assert.equal(sim.player.sectionAnchorY, null, "a cube portal clears the anchor");
 });
 
 test("every mode declares a camera behaviour", () => {
   for (const [id, def] of Object.entries(MODES)) {
-    assert.ok(def.camera === "ground" || def.camera === "free", `${id} has no camera behaviour`);
+    assert.ok(
+      ["ground", "anchored", "free"].includes(def.camera),
+      `${id} has no camera behaviour`,
+    );
   }
 });
