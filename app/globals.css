@@ -1665,9 +1665,338 @@ footer {
   width: 100%;
 }
 
+/* ── Cummins exploded engine ──────────────────────────────────── */
+
+.engine-prose p {
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.65;
+  margin-top: 0.9rem;
+  max-width: 42rem;
+}
+
+.engine-prose em {
+  font-style: italic;
+}
+
+.visually-hidden {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.engine-stage {
+  aspect-ratio: 16 / 10;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  margin-top: 1rem;
+  max-height: 70vh;
+  padding: 0.75rem;
+  position: relative;
+}
+
+.engine-canvas {
+  cursor: grab;
+  display: block;
+  height: 100%;
+  /* Pre-activation default. OrbitControls.connect() overwrites this inline
+     once the user opts in on touch. */
+  touch-action: pan-y;
+  width: 100%;
+}
+
+.engine-canvas:focus-visible {
+  outline: 2px solid var(--brown);
+  outline-offset: 2px;
+}
+
+/* Range input, written from scratch — the stylesheet had none. The two engines
+   disagree about everything: WebKit styles a track and then a thumb that has to
+   be hand-centered on it, Firefox centers its own. The selectors CANNOT be
+   grouped: an unrecognized pseudo-element invalidates the whole selector list
+   in both engines, so a combined rule silently applies to neither. */
+
+.engine-explode-control input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  min-height: 2.75rem;
+  width: 100%;
+}
+
+.engine-explode-control input[type="range"]::-webkit-slider-runnable-track {
+  background: rgba(255, 250, 240, 0.26);
+  border: 1px solid #fffaf0;
+  height: 0.5rem;
+}
+
+.engine-explode-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: #fffaf0;
+  border: 1px solid #fffaf0;
+  height: 1.5rem;
+  /* (track 0.5rem + 2 × 1px border − thumb 1.5rem) / 2 */
+  margin-top: -0.56rem;
+  width: 1rem;
+}
+
+.engine-explode-control input[type="range"]::-moz-range-track {
+  background: rgba(255, 250, 240, 0.26);
+  border: 1px solid #fffaf0;
+  height: 0.5rem;
+}
+
+.engine-explode-control input[type="range"]::-moz-range-thumb {
+  background: #fffaf0;
+  /* Firefox draws its own thumb border unless one is declared, and its own
+     rounding unless border-radius is zeroed — this stylesheet has exactly one
+     border-radius in it and a rounded thumb would be the second. */
+  border: 1px solid #fffaf0;
+  border-radius: 0;
+  height: 1.5rem;
+  width: 1rem;
+}
+
+.engine-explode-control input[type="range"]:focus-visible {
+  outline: 2px solid #fffaf0;
+  outline-offset: 3px;
+}
+
+.engine-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.engine-ghost-btn {
+  background: transparent;
+  border: 1px solid var(--brown);
+  color: var(--brown);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 2.6rem;
+  padding: 0 0.9rem;
+}
+
+.engine-ghost-btn:hover:not(:disabled),
+.engine-ghost-btn[aria-pressed="true"] {
+  background: var(--brown);
+  color: #fffaf0;
+}
+
+.engine-ghost-btn:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.engine-hero {
+  padding-bottom: 1.25rem;
+}
+
+/* Inset to the stage's padding so the overlay's coordinate space is exactly
+   the canvas box — projected points then land where they appear to. The
+   canvas is appended by three after these nodes, so the overlay needs an
+   explicit stacking order to sit on top of it. */
+.engine-overlay {
+  bottom: 0.75rem;
+  left: 0.75rem;
+  pointer-events: none;
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+  z-index: 2;
+}
+
+.engine-leader {
+  height: 100%;
+  left: 0;
+  overflow: visible;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.engine-leader line {
+  stroke: var(--brown);
+  stroke-width: 1.5;
+  transition: opacity 140ms ease;
+}
+
+.engine-leader circle {
+  fill: #7a3027;
+  transition: opacity 140ms ease;
+}
+
+.engine-callout {
+  background: var(--card);
+  border: 1px solid var(--brown);
+  box-shadow: 5px 5px 0 rgba(78, 54, 41, 0.18);
+  left: 0;
+  max-width: min(21rem, 70%);
+  padding: 0.8rem 0.9rem;
+  position: absolute;
+  top: 0;
+  transition: opacity 140ms ease;
+  width: max-content;
+}
+
+.engine-callout h3 {
+  margin-top: 0.35rem;
+}
+
+.engine-callout-blurb {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-top: 0.55rem;
+}
+
+.engine-layout {
+  margin-top: 1rem;
+}
+
+.engine-note {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-top: 1.5rem;
+  max-width: 46rem;
+  padding-top: 1rem;
+}
+
+.engine-note em {
+  font-style: italic;
+}
+
+.engine-part-list {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.engine-part-button {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 0.75rem;
+  justify-content: space-between;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  transition: background 140ms ease, border-color 140ms ease;
+  width: 100%;
+}
+
+.engine-part-button:hover,
+.engine-part-button:focus-visible {
+  background: var(--tan);
+  border-color: var(--brown);
+  outline: none;
+}
+
+.engine-part-button.selected {
+  background: var(--brown);
+  border-color: var(--brown);
+  color: #fffaf0;
+}
+
+.engine-part-name {
+  font-weight: 700;
+}
+
+.engine-part-count {
+  color: #7a3027;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.engine-part-button.selected .engine-part-count {
+  color: #fffaf0;
+}
+
+.engine-detail {
+  /* Reserved from the start so the page never jumps between "nothing
+     selected" and "part selected" — this site has no height animations and a
+     jumping layout would be the first. */
+  min-height: 16rem;
+}
+
+.engine-detail h3 {
+  margin-top: 0.4rem;
+}
+
+.engine-detail-blurb {
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.6;
+  margin-top: 0.75rem;
+}
+
+.engine-spec {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding-top: 0.85rem;
+}
+
+.engine-spec div {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.engine-spec dt {
+  color: #7a3027;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.engine-spec dd {
+  color: var(--foreground);
+  font-weight: 700;
+  margin: 0;
+  text-align: right;
+}
+
+/* The stylesheet had no reduced-motion block. Scoped to things that actually
+   move; the hard offset drop-shadow on hover is a color change, not motion. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .engine-part-button {
+    transition: none;
+  }
+}
+
 @media (max-width: 900px) {
   .map-layout {
     grid-template-columns: 1fr;
+  }
+
+  .engine-stage {
+    aspect-ratio: 4 / 3;
   }
 }
 
@@ -1984,4 +2313,536 @@ footer {
   border-color: #3be86b;
   color: #08122c;
   font-weight: 700;
+}
+/* ── Geometry-Dash-style menu backdrop ────────────────────────── */
+
+/* Original art, not RobTop's: blue ground, a diagonal lattice, and icons that
+   pop when you click them. GD's default menu is blue, so this is too — the
+   content panel stays warm cream, which is also what keeps it readable
+   against it. */
+
+.menu-main {
+  overflow-x: clip;
+  position: relative;
+}
+
+.gd-bg {
+  background:
+    radial-gradient(120% 90% at 50% 0%, #2f6fd0 0%, #1d4c9e 45%, #123467 100%);
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 0;
+}
+
+/* Long thin streaks crossing at unrelated angles, cutting the field into big
+   irregular facets. The spacings are intentionally non-multiples of each other
+   so the lines never settle into a visible grid — a repeating lattice was what
+   made earlier attempts read as graph paper instead of a game backdrop. */
+.gd-streaks {
+  animation: gd-drift-streaks 34s linear infinite;
+  background-image:
+    repeating-linear-gradient(17deg, rgba(3, 16, 40, 0.22) 0 3px, transparent 3px 173px),
+    repeating-linear-gradient(74deg, rgba(3, 16, 40, 0.18) 0 2px, transparent 2px 241px),
+    repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.09) 0 2px, transparent 2px 197px),
+    repeating-linear-gradient(143deg, rgba(3, 16, 40, 0.2) 0 3px, transparent 3px 313px),
+    repeating-linear-gradient(96deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 269px);
+  inset: -25%;
+  pointer-events: none;
+  position: absolute;
+}
+
+@keyframes gd-drift-streaks {
+  from {
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
+  }
+  to {
+    background-position: 173px 0, -241px 0, 197px 0, -313px 0, 269px 0;
+  }
+}
+
+/* Darkens the edges so the middle of the screen — where the menu sits — is
+   always the calmest part of the backdrop. */
+.gd-vignette {
+  background: radial-gradient(115% 80% at 50% 42%, transparent 30%, rgba(2, 12, 32, 0.62) 100%);
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.gd-canvas {
+  display: block;
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.gd-ground {
+  background: linear-gradient(180deg, #16386c 0%, #0a1f3d 100%);
+  bottom: 0;
+  height: 16vh;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
+/* The bright line where ground meets sky, which is the single most
+   recognisable edge in the whole backdrop. */
+.gd-ground::before {
+  background: #ffd23f;
+  box-shadow: 0 0 14px 2px rgba(255, 210, 63, 0.6);
+  content: "";
+  height: 3px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+/* Scrolls several times faster than the sky. That speed difference is the
+   parallax, and it is most of why this reads as a game and not as wallpaper. */
+.gd-ground-streaks {
+  animation: gd-drift-ground 8s linear infinite;
+  background-image:
+    repeating-linear-gradient(28deg, rgba(255, 255, 255, 0.1) 0 3px, transparent 3px 131px),
+    repeating-linear-gradient(152deg, rgba(2, 12, 32, 0.28) 0 3px, transparent 3px 167px);
+  inset: 0;
+  position: absolute;
+}
+
+@keyframes gd-drift-ground {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: -131px 0, 167px 0;
+  }
+}
+
+/* ── Main menu ────────────────────────────────────────────────── */
+
+.menu-screen {
+  align-content: center;
+  display: grid;
+  /* Content left, menu right. */
+  gap: clamp(1.5rem, 4vw, 3rem);
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 0.85fr);
+  min-height: calc(100vh - 4rem);
+  padding: clamp(1.5rem, 4vw, 3rem) 0;
+  position: relative;
+  z-index: 1;
+}
+
+.menu-nav {
+  align-self: center;
+  /* A panel behind the nav, the way GD's menu buttons are solid plates. Without
+     it the labels sit straight on the pattern and icons drift over the text —
+     which is exactly the blending this backdrop risks. */
+  background: rgba(9, 28, 58, 0.86);
+  border: 2px solid rgba(120, 190, 255, 0.35);
+  grid-column: 2;
+  grid-row: 1;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.menu-identity {
+  margin-bottom: clamp(1.25rem, 3vw, 2rem);
+}
+
+/* The nav sits directly on the blue, so its colours come from a light set
+   rather than the warm tokens used inside the panel. */
+.menu-nav .eyebrow {
+  color: #ffd23f;
+}
+
+.menu-identity h1 {
+  color: #ffffff;
+  text-shadow: 0 3px 0 rgba(8, 26, 52, 0.45);
+}
+
+.menu-item {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.menu-item:hover,
+.menu-item:focus-visible,
+.menu-item.selected {
+  color: #ffffff;
+}
+
+.menu-item.selected {
+  border-left-color: #ffd23f;
+}
+
+.menu-arrow {
+  color: #ffd23f;
+}
+
+.menu-identity h1 {
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  margin-top: 0.35rem;
+}
+
+.menu-list {
+  display: grid;
+  gap: 0.15rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-item {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+  font-weight: 760;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease;
+  width: 100%;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  color: var(--brown);
+  outline: none;
+}
+
+.menu-item.selected {
+  border-left-color: var(--brown);
+  color: var(--brown);
+}
+
+/* Hidden rather than removed, so rows never shift sideways as the highlight
+   moves — the arrow keeps its slot either way. */
+.menu-arrow {
+  color: #7a3027;
+  flex: none;
+  opacity: 0;
+  width: 1ch;
+}
+
+.menu-item.selected .menu-arrow {
+  animation: menu-arrow-nudge 900ms ease-in-out infinite;
+  opacity: 1;
+}
+
+@keyframes menu-arrow-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+/* Solid card on top of a busy backdrop. This is the whole reason the content
+   stays readable — the panel is opaque, not tinted. */
+.menu-panel {
+  background: var(--card);
+  border: 1px solid var(--brown);
+  box-shadow: 8px 8px 0 rgba(78, 54, 41, 0.16);
+  grid-column: 1;
+  grid-row: 1;
+  max-height: min(78vh, 46rem);
+  overflow-y: auto;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.menu-section h2 {
+  margin-top: 0.4rem;
+}
+
+.menu-blurb {
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.6;
+  margin-top: 0.85rem;
+  max-width: 38rem;
+}
+
+.menu-meta {
+  color: #7a3027;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.about-body {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  margin-top: 1.25rem;
+}
+
+/* Key art on a menu screen, not the subject — smaller than the old hero. */
+.menu-portrait {
+  aspect-ratio: 1;
+  background:
+    linear-gradient(rgba(78, 54, 41, 0.08), rgba(78, 54, 41, 0.08)),
+    url("/profile-picture.png") center 34% / cover no-repeat,
+    var(--brown);
+  border: 1px solid var(--brown);
+  box-shadow: 6px 6px 0 rgba(78, 54, 41, 0.16);
+  width: 100%;
+}
+
+.resume-heading {
+  border-bottom: 1px solid var(--line);
+  color: #7a3027;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-top: 1.75rem;
+  padding-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+
+.resume-list,
+.project-list,
+.contact-list {
+  display: grid;
+  gap: 1.1rem;
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+}
+
+.resume-place {
+  color: var(--foreground);
+  font-weight: 760;
+  margin-right: 0.6rem;
+}
+
+.resume-when {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.project-group {
+  margin-top: 0.5rem;
+}
+
+.project-row {
+  border-left: 2px solid var(--line);
+  padding-left: 1rem;
+}
+
+.project-row-head {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.project-row-name {
+  color: var(--brown);
+  font-size: 1.15rem;
+  font-weight: 760;
+}
+
+.project-list .tag-row,
+.menu-section .tag-row {
+  margin-top: 0.75rem;
+}
+
+.contact-list li {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.contact-list a {
+  font-weight: 700;
+}
+
+.menu-open {
+  align-items: center;
+  background: var(--brown);
+  color: #fffaf0;
+  display: inline-flex;
+  font-weight: 800;
+  justify-content: center;
+  margin-top: 1rem;
+  min-height: 2.75rem;
+  padding: 0 1.1rem;
+  text-decoration: none;
+}
+
+.menu-open::after {
+  content: "→";
+  margin-left: 0.5rem;
+}
+
+.menu-open:hover,
+.menu-open:focus-visible {
+  box-shadow: 5px 5px 0 rgba(78, 54, 41, 0.18);
+  outline: none;
+}
+
+.menu-locked {
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .menu-screen {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    /* Menu above the panel on a phone: it's the navigation, and it should be
+       the first thing under the name rather than buried past the content. */
+    padding-bottom: 3rem;
+  }
+
+  .menu-nav {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .menu-panel {
+    grid-column: 1;
+    grid-row: 2;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .menu-list {
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+  }
+
+  .menu-item {
+    font-size: 0.95rem;
+    justify-content: center;
+    padding: 0.35rem 0.15rem;
+  }
+
+  .menu-arrow {
+    display: none;
+  }
+
+  .menu-item.selected {
+    border-bottom: 2px solid var(--brown);
+    border-left-color: transparent;
+  }
+
+  .about-body {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-portrait {
+    max-width: 9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-item.selected .menu-arrow,
+  .gd-streaks,
+  .gd-ground-streaks {
+    animation: none;
+  }
+}
+
+.gd-credit {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.76rem;
+  grid-column: 1 / -1;
+  line-height: 1.5;
+  margin-top: 1.25rem;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(3, 16, 40, 0.7);
+}
+
+.gd-credit strong {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Menu colour overrides ────────────────────────────────────
+   The menu screen lives on deep blue, so it cannot borrow the warm tokens the
+   project pages use. Everything here is scoped to .menu-screen so those pages
+   are untouched. */
+
+.menu-panel {
+  background: #0f2f5c;
+  border-color: rgba(120, 190, 255, 0.45);
+  box-shadow: 8px 8px 0 rgba(3, 14, 36, 0.45);
+  /* Base inherited colour, so anything not caught by a rule below still lands
+     light on the blue rather than defaulting to the warm foreground token. */
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.menu-screen .eyebrow,
+.menu-screen .menu-meta,
+.menu-screen .resume-heading {
+  color: #5fe0f5;
+}
+
+.menu-screen h2,
+.menu-screen h3,
+.menu-screen .project-row-name,
+.menu-screen .resume-place {
+  color: #ffffff;
+}
+
+.menu-screen .menu-blurb,
+.menu-screen .resume-when {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.menu-screen .resume-heading {
+  border-bottom-color: rgba(120, 190, 255, 0.3);
+}
+
+.menu-screen .project-row {
+  border-left-color: rgba(120, 190, 255, 0.35);
+}
+
+/* Tag chips were tan-on-brown, carried over from the old warm site. */
+.menu-screen .tag-row span {
+  background: rgba(9, 28, 58, 0.85);
+  border: 1px solid rgba(120, 190, 255, 0.4);
+  color: #9fe8f8;
+}
+
+.menu-screen .menu-open {
+  background: #7ee63f;
+  color: #0b1220;
+}
+
+.menu-screen .menu-open:hover,
+.menu-screen .menu-open:focus-visible {
+  box-shadow: 5px 5px 0 rgba(3, 14, 36, 0.45);
+}
+
+.menu-screen .menu-locked {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.menu-screen .contact-list a {
+  color: #9fe8f8;
+}
+
+.menu-portrait {
+  border-color: rgba(120, 190, 255, 0.55);
+  box-shadow: 6px 6px 0 rgba(3, 14, 36, 0.45);
 }
