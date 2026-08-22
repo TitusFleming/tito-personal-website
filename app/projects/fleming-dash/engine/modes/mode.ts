@@ -49,6 +49,20 @@ export type ModeDef = {
   readonly body: Shape;
   /** How hard the camera chases this mode. Flying modes need a tighter follow. */
   readonly cameraK: number;
+  /**
+   * How the camera tracks this mode.
+   *
+   * "ground" — the view holds still until the player climbs past a threshold.
+   *            Right for modes that live on a surface, where every jump would
+   *            otherwise bob the screen.
+   * "free"   — the view follows the player continuously. Right for modes that
+   *            fly, where vertical position IS the gameplay and pinning the
+   *            camera hides the route you are climbing for.
+   *
+   * Declared here so a new mode picks its camera the same way it picks its
+   * body, rather than the renderer growing another `mode === "ship"` branch.
+   */
+  readonly camera: "ground" | "free";
   /** Whether this mode rests on surfaces. Flying modes never report onGround. */
   readonly grounded: boolean;
   /** Vertical acceleration and clamp for one step. Mutates the player. */
@@ -71,6 +85,7 @@ const cube: ModeDef = {
   label: "Cube",
   body: shape(1, 1),
   cameraK: CAM_K_CUBE,
+  camera: "ground",
   grounded: true,
   applyInput(p, input, dt, out) {
     // The jump condition is `held`, not a press edge. That is the actual rule,
@@ -109,6 +124,7 @@ const ship: ModeDef = {
   // its name; see core/hitbox.ts for why this is a scale and not a fixed size.
   body: shape(1, 2 / 3),
   cameraK: CAM_K_SHIP,
+  camera: "free",
   grounded: false,
   applyInput(p, input, dt) {
     p.vy += (input.held ? SHIP_THRUST : SHIP_GRAVITY) * p.gravitySign * dt;
@@ -133,6 +149,7 @@ const ball: ModeDef = {
   label: "Ball",
   body: shape(1, 1),
   cameraK: 12,
+  camera: "ground",
   grounded: true,
   applyInput(p, input, dt, out) {
     // A tap flips gravity instead of launching. Edge-triggered: holding must
@@ -157,6 +174,7 @@ const ufo: ModeDef = {
   label: "UFO",
   body: shape(1, 1),
   cameraK: 16,
+  camera: "free",
   grounded: true,
   applyInput(p, input, dt, out) {
     // Unlike the cube, a tap works in mid-air — but only on the press edge.
@@ -180,6 +198,7 @@ const wave: ModeDef = {
   label: "Wave",
   body: shape(1 / 2, 1 / 2),
   cameraK: 26,
+  camera: "free",
   grounded: false,
   applyInput(p, input) {
     // No gravity and no acceleration: a constant diagonal that reverses on tap.

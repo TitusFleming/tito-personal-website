@@ -13,6 +13,7 @@
 
 const PLAYER_KEY = "fdash.v1.player";
 const PROGRESS_KEY = "fdash.v1.progress";
+const COINS_KEY = "fdash.v1.coins";
 
 export type Player = {
   id: string;
@@ -127,6 +128,50 @@ export function mergeAttempt(
           : Math.min(base.bestTimeSec, timeSec)
         : base.bestTimeSec,
   };
+}
+
+/**
+ * Coins, keyed by the name typed on the start screen.
+ *
+ * Deliberately NOT keyed by the player UUID like the rest of progress. Coins
+ * are the one thing here worth showing off, and a shared machine should let two
+ * people each own their own set — typing a different name gives you a different
+ * record rather than inheriting somebody else's.
+ *
+ * Shape: { [name]: { [levelId]: number[] } }. A name is trimmed and lowercased
+ * for the key so "Tito" and "tito " are the same collector, while the display
+ * name keeps whatever casing was typed.
+ */
+export type CoinBook = Record<string, Record<string, number[]>>;
+
+/** The key a display name maps to. Exported so tests can state the rule. */
+export function coinKey(name: string | null): string {
+  return (name ?? "").trim().toLowerCase() || "anonymous";
+}
+
+export function loadCoins(): CoinBook {
+  return readJson<CoinBook>(COINS_KEY, {});
+}
+
+/** Coins this name has collected on this level, ascending. */
+export function coinsFor(name: string | null, levelId: string): number[] {
+  return [...(loadCoins()[coinKey(name)]?.[levelId] ?? [])].sort((a, b) => a - b);
+}
+
+/**
+ * Fold a finished run's coins into the record.
+ *
+ * A union, never a replacement: clearing the level again without detouring for
+ * a coin must not take one away.
+ */
+export function saveCoins(name: string | null, levelId: string, taken: Iterable<number>): number[] {
+  const book = loadCoins();
+  const key = coinKey(name);
+  const forName = book[key] ?? (book[key] = {});
+  const merged = new Set([...(forName[levelId] ?? []), ...taken]);
+  forName[levelId] = [...merged].sort((a, b) => a - b);
+  writeJson(COINS_KEY, book);
+  return forName[levelId];
 }
 
 export function saveProgress(levelId: string, entry: LevelProgress): void {

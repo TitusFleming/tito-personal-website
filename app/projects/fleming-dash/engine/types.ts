@@ -70,6 +70,12 @@ export type LevelObject =
   | { t: "ring"; x: number; y: number; c?: RingColor }
   /** Purely visual: the dark notches cut into the ground and ceiling lines. */
   | { t: "pit"; x: number; y: number }
+  /**
+   * A secret coin. Three per official level, each on a route you have to go
+   * out of your way for. Collectable, tracked per player, and completely
+   * inert as far as physics is concerned.
+   */
+  | { t: "coin"; x: number; y: number }
   /** Per-column ground/ceiling overrides. Compiles to scalars, not rects. */
   /**
    * A colour change at an x position, straight from the level's own colour
@@ -141,6 +147,7 @@ export type SimEvent =
   | { type: "size"; scale: number }
   | { type: "speed"; index: SpeedIndex }
   | { type: "color"; target: "bg" | "ground" }
+  | { type: "coin"; index: number }
   | { type: "death"; x: number; y: number; cause: "hazard" | "wall" | "void" }
   | { type: "complete"; timeSec: number };
 

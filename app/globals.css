@@ -2871,3 +2871,25 @@ footer {
   border-color: rgba(120, 190, 255, 0.55);
   box-shadow: 6px 6px 0 rgba(3, 14, 36, 0.45);
 }
+
+/* Secret coin tally on the Fleming Dash start screen. */
+.fdash-coin-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.9rem;
+}
+
+.fdash-coin {
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  display: inline-block;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
+.fdash-coin-on {
+  background: #ffd23f;
+  border-color: #fff;
+  box-shadow: 0 0 10px rgba(255, 210, 63, 0.65);
+}

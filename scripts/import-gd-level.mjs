@@ -131,6 +131,11 @@ function convert(objects, meta) {
   const unknown = new Map();
   let maxX = 0;
 
+  // The secret coins. The object table types them as `deco` because they carry
+  // no collision, but they are the whole reason the alternate routes exist, so
+  // they are matched by id before the type switch gets a say.
+  const COIN_IDS = new Set([142, 1329]);
+
   for (const o of objects) {
     const def = OBJECTS[String(o.id)];
     if (!def) {
@@ -160,6 +165,11 @@ function convert(objects, meta) {
     const y = Math.round((o.y / TILE - gh / 2) * 4) / 4;
     if (x < 0 || y < -2) continue;
     maxX = Math.max(maxX, x);
+
+    if (COIN_IDS.has(o.id)) {
+      rest.push({ t: "coin", x, y });
+      continue;
+    }
 
     switch (def.type) {
       case "solid":
@@ -251,11 +261,27 @@ function convert(objects, meta) {
     if (portals[i].t !== "ship") continue;
     const next = portals.slice(i + 1).find((p) => p.t === "cube");
     const end = next ? next.x : maxX + 2;
-    // The corridor roof. Derived from the level itself: the second ship
-    // section is lined with ceiling pits at y = 9.9, so ten tiles is the real
-    // corridor height. The previous value of 14 sat above all the geometry,
-    // which is why the ship could simply fly over every obstacle.
-    zones.push({ t: "zone", x: portals[i].x, w: Math.max(1, end - portals[i].x), ceilingY: 10 });
+    // The corridor roof, measured from what the level actually puts inside the
+    // corridor rather than assumed.
+    //
+    // This was hardcoded to 10 because Stereo Madness's second ship section is
+    // lined with ceiling pits at that height. That number is wrong for the
+    // third section, which has geometry up to 14.5 and a secret coin at 12.5 —
+    // a ceiling of 10 walled off the entire upper route and made the coin
+    // literally unreachable, since the simulation clamps the ship at the
+    // ceiling. Measuring per corridor fixes that here and in any level.
+    const start = portals[i].x;
+    let roof = 0;
+    for (const o of [...blocks, ...rest]) {
+      // Colour triggers carry an x but no y — they are events, not geometry.
+      // Including them turned the roof into NaN and the ceiling into null.
+      if (typeof o.y !== "number" || o.x < start || o.x >= end) continue;
+      roof = Math.max(roof, o.y + (typeof o.h === "number" ? o.h : 1));
+    }
+    // A tile of clearance above the tallest thing, and never lower than a
+    // standard corridor so an empty stretch still feels like one.
+    const ceilingY = Math.max(10, Math.ceil(roof) + 1);
+    zones.push({ t: "zone", x: start, w: Math.max(1, end - start), ceilingY });
   }
 
   const objectsOut = [
@@ -353,6 +379,7 @@ console.log(`  hazards        ${count("spike")}   (pits, non-lethal: ${count("pi
 console.log(`  pads / rings   ${count("pad")} / ${count("ring")}`);
 console.log(`  portals        ${count("ship") + count("cube") + count("grav")}`);
 console.log(`  colour changes ${count("color")}`);
+console.log(`  secret coins   ${count("coin")}`);
 console.log(`  length         ${stats.maxX} tiles`);
 console.log(`written          ${dest} (${doc.objects.length} objects)`);
 

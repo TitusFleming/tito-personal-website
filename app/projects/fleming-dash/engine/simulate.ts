@@ -77,6 +77,12 @@ export class Simulation {
   readonly player = new Player();
   /** Presentation state driven by the level's colour triggers. */
   readonly palette: Palette;
+  /**
+   * Coins taken on THIS attempt. Cleared on every restart, because a coin only
+   * counts if you carry it to the end of the run — collecting all three across
+   * three separate attempts is not the same achievement.
+   */
+  readonly coins = new Set<number>();
   status: SimStatus = "running";
   /** Seconds into this attempt. */
   t = 0;
@@ -103,6 +109,7 @@ export class Simulation {
     this.deathTimer = 0;
     this.triggerTouch.fill(0);
     this.palette.reset();
+    this.coins.clear();
     this.player.resetTo(
       this.world.spawn.x,
       this.world.spawn.y,
@@ -225,7 +232,13 @@ export class Simulation {
     // After movement, so a pad fires where the player actually ended up. Fired
     // on the rising edge only: a portal re-applied every step would fire dozens
     // of times crossing it.
-    const ctx: TouchContext = { player: p, input, events: out, palette: this.palette };
+    const ctx: TouchContext = {
+      player: p,
+      input,
+      events: out,
+      palette: this.palette,
+      coins: this.coins,
+    };
     const [lo, hi] = world.span(p.box());
     for (let gx = lo; gx <= hi; gx++) {
       const col = world.columns[gx];

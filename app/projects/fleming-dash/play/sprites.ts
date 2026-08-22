@@ -226,6 +226,47 @@ export function drawRing(
 }
 
 /**
+ * A secret coin: a ring with a bright core, dimmed once taken.
+ *
+ * A collected coin keeps its outline rather than vanishing, so a route you
+ * already cleared still reads on screen.
+ */
+export function drawCoin(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  taken: boolean,
+): void {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const r = Math.min(w, h) * 0.36;
+
+  ctx.save();
+  if (taken) ctx.globalAlpha = 0.32;
+
+  ctx.fillStyle = taken ? "rgba(255,255,255,0.08)" : "#FFD23F";
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = taken ? "rgba(255,255,255,0.5)" : "#FFFFFF";
+  ctx.lineWidth = EDGE;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  if (!taken) {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.34, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/**
  * The cube. Origin at its centre, rotation already applied.
  *
  * Proportions are fractions of the box, so the mini cube is the same icon at

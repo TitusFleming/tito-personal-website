@@ -24,6 +24,8 @@ import {
   loadPlayer,
   loadProgress,
   mergeAttempt,
+  coinsFor,
+  saveCoins,
   saveName,
   saveProgress,
   type LevelProgress,
@@ -56,6 +58,8 @@ export default function FlemingDash() {
   const [showHitboxes, setShowHitboxes] = useState(false);
   const [isFull, setIsFull] = useState(false);
   const [cpCount, setCpCount] = useState(0);
+  /** Coins this name already owns on this level, from storage. */
+  const [ownedCoins, setOwnedCoins] = useState<number[]>([]);
 
   // Everything the loop touches is a ref: a setState per frame at 240 Hz would
   // be catastrophic, so React only hears about phase and toggle changes.
@@ -85,6 +89,7 @@ export default function FlemingDash() {
     setPlayer(p);
     setNameDraft(p.name ?? "");
     setProgress(loadProgress()[level.id] ?? null);
+    setOwnedCoins(coinsFor(p.name, level.id));
   }, [level.id]);
 
   useEffect(() => {
@@ -138,8 +143,13 @@ export default function FlemingDash() {
       );
       saveProgress(level.id, next);
       setProgress(next);
+      // Coins bank only on a completed run. Collecting all three across three
+      // separate attempts is not the same achievement as carrying them home.
+      if (completed && sim.coins.size > 0) {
+        setOwnedCoins(saveCoins(nameDraft, level.id, sim.coins));
+      }
     },
-    [level],
+    [level, nameDraft],
   );
 
   const placeCheckpoint = useCallback(() => {
@@ -304,6 +314,7 @@ export default function FlemingDash() {
         checkpoints: checkpointsRef.current,
         showHitboxes: hitboxRef.current,
         effects: effectsRef.current,
+        coins: sim.coins,
         // The player is drawn only while alive: once it explodes, the debris is
         // the player.
         hidePlayer: sim.status === "dead",
@@ -397,6 +408,17 @@ export default function FlemingDash() {
                 Play
               </button>
             </div>
+            {level.coinCount > 0 ? (
+              <p className="fdash-coin-row" aria-label={`${ownedCoins.length} of ${level.coinCount} secret coins collected`}>
+                {Array.from({ length: level.coinCount }, (_, i) => (
+                  <span
+                    key={i}
+                    className={`fdash-coin${ownedCoins.includes(i) ? " fdash-coin-on" : ""}`}
+                    aria-hidden="true"
+                  />
+                ))}
+              </p>
+            ) : null}
             {best ? (
               <p className="fdash-over-note">
                 Best {best.bestPercent}% · {best.attempts} attempts

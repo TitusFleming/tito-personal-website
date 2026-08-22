@@ -9,6 +9,7 @@ import { CanvasRecorder } from "./canvas-recorder.ts";
 import { PALETTE } from "./sprites.ts";
 import { createCamera, draw, interpolate, snapCamera } from "./renderer.ts";
 import { Player } from "../engine/player.ts";
+import { MODES } from "../engine/modes/mode.ts";
 import { Palette } from "../engine/palette.ts";
 
 const VIEW = { w: 960, h: 540 };
@@ -343,5 +344,30 @@ test("no spike in the real level is drawn below its own ground line", () => {
         `at tile ${gx} a spike base sits ${(base - groundScreenY).toFixed(1)}px below the ground line`,
       );
     }
+  }
+});
+
+test("a flying mode's camera follows the player; a grounded one holds still", () => {
+  // Declared per mode in the MODES table rather than branched on in here. The
+  // ship needs a following camera: pinning it hides the upper route, which is
+  // how a coin above the usual line becomes unreachable in practice.
+  const w = makeWorld([{ t: "zone", x: 0, w: 60, ceilingY: 26 }], { ceilingY: 26 });
+  const low = TILE * 2;
+  const high = TILE * 18;
+
+  assert.equal(
+    settledCamY(w, 10 * TILE, low, "cube"),
+    settledCamY(w, 10 * TILE, low + TILE * 2, "cube"),
+    "a grounded mode ignores small climbs",
+  );
+  assert.ok(
+    settledCamY(w, 10 * TILE, high, "ship") > settledCamY(w, 10 * TILE, low, "ship") + TILE,
+    "a flying mode follows the climb",
+  );
+});
+
+test("every mode declares a camera behaviour", () => {
+  for (const [id, def] of Object.entries(MODES)) {
+    assert.ok(def.camera === "ground" || def.camera === "free", `${id} has no camera behaviour`);
   }
 });

@@ -69,9 +69,9 @@ export const CUBE_TERMINAL_VY = -1400;
  * Gravity is pulled slightly below the documented figure for the same reason.
  * Set it back to -750 for strict fidelity at the cost of feel.
  */
-export const SHIP_GRAVITY = -620;
+export const SHIP_GRAVITY = -760;
 /** Replaces gravity while held. Deliberately stronger than gravity. */
-export const SHIP_THRUST = 1120;
+export const SHIP_THRUST = 1180;
 /**
  * Clamp on vertical speed, symmetric. Not documented; derived from the
  * corridor, which is ten tiles: this crosses one in roughly 0.9 s, fast enough
@@ -80,7 +80,7 @@ export const SHIP_THRUST = 1120;
  * Lowering this makes the ship feel lighter and more twitchy; raising it lets
  * the ship build real momentum and feel heavier.
  */
-export const SHIP_MAX_VY = 430;
+export const SHIP_MAX_VY = 455;
 // The ship's 30x20 body is declared as a scale in the MODES table, not as a
 // pixel size here — see engine/core/hitbox.ts for why sizes are scales.
 

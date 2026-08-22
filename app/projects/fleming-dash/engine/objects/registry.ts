@@ -10,6 +10,7 @@
 // vanishes from the level.
 
 import { Block } from "./block.ts";
+import { Coin } from "./coin.ts";
 import { ColorTrigger } from "./color.ts";
 import { Pad, Ring } from "./boosts.ts";
 import { Pit } from "./decoration.ts";
@@ -33,6 +34,8 @@ export function buildObject(o: LevelObject): GameObject | null {
       return new Spike(o.x, o.y, o.r ?? 0, o.hw, o.hh, o.gw ?? 1, o.gh ?? 1);
     case "pit":
       return new Pit(o.x, o.y);
+    case "coin":
+      return new Coin(o.x, o.y);
     case "pad":
       return new Pad(o.x, o.y, o.c ?? "yellow");
     case "ring":

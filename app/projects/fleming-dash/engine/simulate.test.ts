@@ -448,3 +448,38 @@ test("restarting restores the level's opening colours", () => {
   sim.reset();
   assert.deepEqual(sim.palette.bg, [40, 62, 255], "a new attempt starts on the opening colours");
 });
+
+// ── coins ───────────────────────────────────────────────────────────────────
+
+test("a coin is collected by touching it, once", () => {
+  const sim = new Simulation(world([{ t: "coin", x: 6, y: 0 }]));
+  const events = runUntil(sim, (s) => s.coins.size > 0);
+  assert.deepEqual([...sim.coins], [0]);
+  assert.equal(events.filter((e) => e.type === "coin").length, 1);
+
+  // Still inside its volume on the following steps, and it must not re-fire.
+  run(sim, 20);
+  assert.equal(sim.coins.size, 1);
+});
+
+test("collecting a coin does not disturb the run", () => {
+  // A coin must never alter a trajectory, or a route would play differently
+  // depending on whether you had already taken one.
+  const withCoin = new Simulation(world([{ t: "coin", x: 6, y: 0 }]));
+  const without = new Simulation(world([]));
+  for (let i = 0; i < 600; i++) {
+    withCoin.step({ ...RELEASED }, FIXED_DT, []);
+    without.step({ ...RELEASED }, FIXED_DT, []);
+  }
+  assert.equal(withCoin.player.x, without.player.x);
+  assert.equal(withCoin.player.y, without.player.y);
+  assert.equal(withCoin.player.vy, without.player.vy);
+  assert.ok(withCoin.coins.size > 0, "and the coin was actually taken");
+});
+
+test("a restart drops the coins taken on the failed attempt", () => {
+  const sim = new Simulation(world([{ t: "coin", x: 6, y: 0 }]));
+  runUntil(sim, (s) => s.coins.size > 0);
+  sim.reset();
+  assert.equal(sim.coins.size, 0, "a coin only counts if you carry it home");
+});

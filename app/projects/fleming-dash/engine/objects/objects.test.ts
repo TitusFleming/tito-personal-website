@@ -22,6 +22,7 @@ function ctx(p = new Player()): TouchContext & { player: Player } {
     input: { held: false, ringArmed: true },
     events: [] as SimEvent[],
     palette: new Palette([40, 62, 255], [0, 19, 200]),
+    coins: new Set<number>(),
   };
 }
 

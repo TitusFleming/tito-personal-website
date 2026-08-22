@@ -26,27 +26,73 @@ test("the shipped level compiles", () => {
   assert.ok(w.columns.length > 100);
 });
 
-test("every authored object lands in a category", () => {
+test("every authored object lands in a category, counted by kind", () => {
+  // By kind rather than one total, so adding a mechanic to the importer shows
+  // up as the new kind appearing instead of an opaque number moving.
   const w = new World(doc);
-  const counts = { solids: 0, hazards: 0, triggers: 0, decor: 0 };
   const seen = new Set<unknown>();
+  const kinds: Record<string, number> = {};
+  const buckets = { solids: 0, hazards: 0, triggers: 0, decor: 0 };
+
   for (const col of w.columns) {
-    for (const [key, list] of Object.entries(col) as [keyof typeof counts, unknown[]][]) {
-      if (!Array.isArray(list)) continue;
-      for (const o of list) {
+    for (const key of ["solids", "hazards", "triggers", "decor"] as const) {
+      for (const o of col[key]) {
         if (seen.has(o)) continue;
         seen.add(o);
-        counts[key]++;
+        buckets[key]++;
+        const kind = (o as { kind: string }).kind;
+        kinds[kind] = (kinds[kind] ?? 0) + 1;
       }
     }
   }
-  // 312 block spans, 187 spikes, 423 pits, and 18 triggers: 4 mode portals
-  // plus the level's own 14 colour changes.
-  assert.equal(counts.solids, 312, "blocks");
-  assert.equal(counts.hazards, 187, "spikes");
-  assert.equal(counts.decor, 423, "pits");
-  assert.equal(counts.triggers, 18, "portals + colour triggers");
-  assert.equal(w.triggerCount, 18);
+
+  assert.equal(buckets.solids, 312, "block spans");
+  assert.equal(buckets.hazards, 187, "spikes");
+  assert.equal(buckets.decor, 423, "pits");
+  assert.equal(kinds.portal, 4, "mode portals");
+  assert.equal(kinds.color, 14, "colour changes");
+  assert.equal(kinds.coin, 3, "secret coins");
+  assert.equal(buckets.triggers, w.triggerCount, "every trigger is indexed");
+});
+
+test("the level has exactly three secret coins, numbered left to right", () => {
+  const w = new World(doc);
+  assert.equal(w.coinCount, 3);
+
+  const coins: { index: number; x: number }[] = [];
+  const seen = new Set<unknown>();
+  for (const col of w.columns) {
+    for (const t of col.triggers) {
+      if ((t as { kind: string }).kind !== "coin" || seen.has(t)) continue;
+      seen.add(t);
+      coins.push({ index: (t as unknown as { index: number }).index, x: t.cell.x });
+    }
+  }
+  coins.sort((a, b) => a.index - b.index);
+  assert.deepEqual(coins.map((c) => c.index), [0, 1, 2]);
+  for (let i = 1; i < coins.length; i++) {
+    assert.ok(coins[i].x > coins[i - 1].x, "indices must run left to right");
+  }
+});
+
+test("every coin is inside the reachable play area", () => {
+  // The bug this pins: ship corridors had a hardcoded ten-tile ceiling, and the
+  // third coin sits at y=12. The simulation clamps the ship at the ceiling, so
+  // that coin was not merely hard to see — it was impossible to touch.
+  const w = new World(doc);
+  const seen = new Set<unknown>();
+  for (const col of w.columns) {
+    for (const t of col.triggers) {
+      if ((t as { kind: string }).kind !== "coin" || seen.has(t)) continue;
+      seen.add(t);
+      const { floor, ceiling } = w.playBounds(t.cell.x);
+      assert.ok(t.cell.y >= floor - TILE, `coin at x=${t.cell.x} is below the floor`);
+      assert.ok(
+        t.cell.y + t.cell.h <= ceiling,
+        `coin at x=${t.cell.x} tops out at ${t.cell.y + t.cell.h} but the ceiling is ${ceiling}`,
+      );
+    }
+  }
 });
 
 test("the level's own geometry sets the camera ceiling", () => {

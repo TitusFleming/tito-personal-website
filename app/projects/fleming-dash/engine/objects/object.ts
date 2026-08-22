@@ -23,6 +23,8 @@ export type TouchContext = {
   readonly player: Player;
   /** Presentation state a trigger may change. Never read by physics. */
   readonly palette: Palette;
+  /** Coin indices taken so far this attempt. Never read by physics either. */
+  readonly coins: Set<number>;
   /** Mutable: rings and taps CONSUME the press edge so one click fires one thing. */
   readonly input: InputState;
   readonly events: SimEvent[];

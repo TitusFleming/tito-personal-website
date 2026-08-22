@@ -25,6 +25,7 @@
 import {
   CAM_ANCHOR_FRAC,
   CAM_K_CUBE,
+  CAM_LOOKAHEAD_S,
   CAM_RISE_TILES,
   GROUND_BAND_TILES,
   TILE,
@@ -36,9 +37,10 @@ import type { World } from "../engine/world.ts";
 import type { Palette } from "../engine/palette.ts";
 import type { Effects } from "./effects.ts";
 import { ModePortal, Portal } from "../engine/objects/portals.ts";
+import { Coin } from "../engine/objects/coin.ts";
 import { Pad } from "../engine/objects/boosts.ts";
 import { Ring } from "../engine/objects/boosts.ts";
-import { drawBlock, drawCube, drawPad, drawPortal, drawRing, drawShip, drawSpike } from "./sprites.ts";
+import { drawBlock, drawCoin, drawCube, drawPad, drawPortal, drawRing, drawShip, drawSpike } from "./sprites.ts";
 
 const COLORS = {
   skyTop: "#1E6BFF",
@@ -198,11 +200,19 @@ export function updateCamera(
 
   const rest = restingCamY(world, view.x, vh);
   const { floor } = world.playBounds(view.x);
-  const ceilingOfBand = floor + CAM_RISE_TILES * TILE;
 
-  let desired = rest;
-  if (view.y > ceilingOfBand) desired = rest + (view.y - ceilingOfBand);
-  else if (view.y < floor) desired = rest + (view.y - floor); // fell into a pit
+  let desired: number;
+  if (p.def.camera === "free") {
+    // Flying modes: follow continuously, led slightly by velocity. Holding the
+    // view still through a ship section hides the route you are climbing for —
+    // which is how a coin above the usual line becomes unreachable in practice.
+    desired = view.y + p.vy * CAM_LOOKAHEAD_S;
+  } else {
+    const bandTop = floor + CAM_RISE_TILES * TILE;
+    desired = rest;
+    if (view.y > bandTop) desired = rest + (view.y - bandTop);
+    else if (view.y < floor) desired = rest + (view.y - floor); // fell into a pit
+  }
 
   cam.y = clampCamY(expSmooth(cam.y, desired, p.def.cameraK || CAM_K_CUBE, dt), vh, world, view.x);
 }
@@ -224,6 +234,8 @@ export type DrawInfo = {
   effects?: Effects;
   /** True while the player is dead, so the debris stands in for the icon. */
   hidePlayer?: boolean;
+  /** Coin indices taken this attempt, so collected ones draw dimmed. */
+  coins?: ReadonlySet<number>;
 };
 
 export function draw(
@@ -368,6 +380,15 @@ export function draw(
         drawPad(ctx, x, y, t.box.w, t.box.h, t.color);
       } else if (t instanceof Ring) {
         drawRing(ctx, x, y, t.box.w, t.box.h, t.color);
+      } else if (t instanceof Coin) {
+        drawCoin(
+          ctx,
+          sx(t.cell.x),
+          sy(t.cell.y + t.cell.h),
+          t.cell.w,
+          t.cell.h,
+          info.coins?.has(t.index) ?? false,
+        );
       }
     }
   }

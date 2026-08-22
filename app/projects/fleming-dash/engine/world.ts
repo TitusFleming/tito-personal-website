@@ -11,6 +11,7 @@
 import { HAZARD_SEAT_SNAP, SPEEDS, TILE } from "./constants.ts";
 import { columnSpan, type Aabb } from "./core/aabb.ts";
 import { buildObject } from "./objects/registry.ts";
+import { Coin } from "./objects/coin.ts";
 import {
   DecorObject,
   GameObject,
@@ -47,6 +48,8 @@ export class World {
   readonly groundColor: Rgb;
   /** Number of TriggerObjects, sizing the per-trigger edge-tracking array. */
   readonly triggerCount: number;
+  /** How many secret coins this level has. Three in every official level. */
+  readonly coinCount: number;
   /** Highest solid surface in the level, in px. The camera clamps to it. */
   readonly maxHeight: number;
 
@@ -102,6 +105,7 @@ export class World {
     this.triggerCount = triggerCount;
     this.lengthPx = end.x * TILE;
     this.maxHeight = maxHeight;
+    this.coinCount = this.numberCoins();
     this.bgColor = doc.bgColor ?? [40, 62, 255];
     this.groundColor = doc.groundColor ?? [0, 19, 200];
     this.spawn = { x: 0, y: (this.columns[0]?.groundY ?? 0) + TILE / 2 };
@@ -148,6 +152,29 @@ export class World {
         if (best > 1e-6 && best <= HAZARD_SEAT_SNAP) hazard.seatAt(surface);
       }
     }
+  }
+
+  /**
+   * Give each coin its index, left to right.
+   *
+   * Done here rather than at build time because a coin is registered in several
+   * columns and must get ONE index; ordering by x means "the second coin" means
+   * the same thing to the level, the save file and the player.
+   */
+  private numberCoins(): number {
+    const seen = new Set<Coin>();
+    const coins: Coin[] = [];
+    for (const col of this.columns) {
+      for (const trigger of col.triggers) {
+        if (trigger instanceof Coin && !seen.has(trigger)) {
+          seen.add(trigger);
+          coins.push(trigger);
+        }
+      }
+    }
+    coins.sort((a, b) => a.cell.x - b.cell.x);
+    coins.forEach((coin, i) => (coin.index = i));
+    return coins.length;
   }
 
   /** File the object in every column its drawn footprint touches. */
