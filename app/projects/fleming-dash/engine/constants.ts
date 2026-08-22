@@ -170,7 +170,7 @@ export const SOLID_HITBOX_SCALE = 0.3;
  * A spike's lethal rect inside its 30x30 cell — deliberately much smaller than
  * the drawn triangle, which is how brushing a spike's edge survives.
  */
-export const SPIKE_BOX = { dx: 10, dy: 2, w: 10, h: 16 } as const;
+export const SPIKE_BOX = { dx: 12, dy: 2, w: 6, h: 12 } as const;
 
 /**
  * How far a hazard may be from a surface and still be treated as resting on it.

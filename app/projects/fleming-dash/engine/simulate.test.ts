@@ -397,14 +397,25 @@ test("clipping the corner of an overhang is still survivable", () => {
   assert.equal(sim.status, "running", "a corner brush must not kill");
 });
 
-test("a spike's kill box is a real fraction of the spike, not a sliver", () => {
-  // hx/hy in the object table are HALF extents. Reading them as full sizes
-  // gave a 6x12 lethal rect inside a 30x30 spike — so small that spikes read
-  // as decorative. Still well under the sprite, which is the forgiveness.
-  const lv = world([{ t: "spike", x: 10, y: 0, hw: 12, hh: 24 }]);
+test("a spike's kill box is far smaller than the spike it is drawn as", () => {
+  // The object table's own figures, used literally: id 8 is 0.2 x 0.4, so a
+  // 6x12 lethal rect inside a 30x30 triangle. The gap is deliberate and large —
+  // clipping most of a spike's visual and surviving is how the real game reads.
+  //
+  // An earlier version treated hx/hy as half extents and doubled them, which
+  // made spikes punishing. If these bounds ever widen, that has come back.
+  const lv = world([{ t: "spike", x: 10, y: 0, hw: 6, hh: 12 }]);
   const spike = lv.columns[10]!.hazards[0]!;
-  assert.ok(spike.box.w >= TILE * 0.3, `kill box ${spike.box.w}px is too narrow to matter`);
-  assert.ok(spike.box.w <= TILE * 0.6, `kill box ${spike.box.w}px leaves no forgiveness`);
+  assert.equal(spike.box.w, TILE * 0.2, "kill box is a fifth of the cell wide");
+  assert.equal(spike.box.h, TILE * 0.4, "and two fifths tall");
+  assert.ok(spike.box.w < spike.cell.w * 0.25, "much narrower than the drawn triangle");
+});
+
+test("the spike default matches the object table, so authored spikes agree with imported ones", () => {
+  const authored = world([{ t: "spike", x: 10, y: 0 }]).columns[10]!.hazards[0]!;
+  const imported = world([{ t: "spike", x: 10, y: 0, hw: 6, hh: 12 }]).columns[10]!.hazards[0]!;
+  assert.equal(authored.box.w, imported.box.w);
+  assert.equal(authored.box.h, imported.box.h);
 });
 
 // ── colour triggers ─────────────────────────────────────────────────────────

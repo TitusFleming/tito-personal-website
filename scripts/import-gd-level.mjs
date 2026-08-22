@@ -192,11 +192,15 @@ function convert(objects, meta) {
         // id 8 is 0.2 x 0.4, i.e. 6x12px inside a 30x30 cell. The gap between
         // the drawn triangle and the kill box is the game's forgiveness, and it
         // is a per-object property rather than one global guess.
-        // hx/hy are HALF extents, so the full kill box is twice each. Reading
-        // them as full sizes gave a 6x12 rect inside a 30x30 spike — a lethal
-        // region so much smaller than the drawing that spikes read as harmless.
-        if (def.hx) spike.hw = Math.max(2, Math.round(2 * def.hx * TILE * gw));
-        if (def.hy) spike.hh = Math.max(2, Math.round(2 * def.hy * TILE * gh));
+        // hx/hy are the kill box as a FRACTION OF THE CELL, used literally:
+        // id 8 is 0.2 x 0.4, so 6x12 inside a 30x30 spike.
+        //
+        // That gap between the small lethal rect and the big drawn triangle is
+        // the whole forgiveness model — real spikes let you clip a surprising
+        // amount of the visual and live. An earlier version read these as half
+        // extents and doubled them, which made spikes brutal.
+        if (def.hx) spike.hw = Math.max(2, Math.round(def.hx * TILE * gw));
+        if (def.hy) spike.hh = Math.max(2, Math.round(def.hy * TILE * gh));
         rest.push(spike);
         break;
       }
