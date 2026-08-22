@@ -83,40 +83,75 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
 ];
 
 export const RESUME = {
+  // Sourced from the 08.26 resume PDF. The home address and phone number on
+  // that document are deliberately NOT carried over — the Contact section
+  // already gives an email, and a street address on a public page is worth
+  // nothing to a reader and plenty to a scraper.
   education: [
     {
       place: "Brown University",
-      detail: "Computer Science",
+      detail:
+        "BS in Computer Science candidate, class of 2027. Coursework across AI, machine learning, deep learning, computer systems, data structures, algorithms, cybersecurity and linear algebra. 2023 HSF Scholar and MOSAIC+; SHPE and Alpha Delta Phi Society.",
       when: "Providence, RI",
+    },
+    {
+      place: "Science Academy of South Texas",
+      detail:
+        "Summa cum laude, class of 2023. National Merit Scholarship Finalist, National Hispanic Scholar, National Rural & Small Town Scholar, AP Scholar with Distinction. President of the Computer Science Club.",
+      when: "Mercedes, TX",
     },
   ],
   experience: [
     {
       place: "Cummins Inc.",
       detail:
-        "Digital Tools Intern on the Guidanz team at the Fuel Systems facility. Built an LLM-backed diagnostic feature in the Guidanz mobile app for reading ECM fault codes, in Java and C++.",
-      when: "Columbus, IN",
+        "Software engineering intern. Built an AI diagnostic feature in the Guidanz app letting service technicians query and interpret engine fault codes with LLMs — Android Studio in Java and C++, integrating OpenAI ChatKit. Shipped to production and live in diagnostic workflows at 13,000+ dealer and 640+ distributor locations.",
+      when: "May – Aug 2026 · Columbus, IN",
     },
     {
       place: "Fidelity Investments",
-      detail: "Snowflake models analyzing retirement customer behaviour.",
-      when: "Data systems",
+      detail:
+        "Data analytics & insights intern. Engineered SQL cohort models in Snowflake over 12.8M retirement customers and roughly $2T in transactions, and presented the findings to senior leadership.",
+      when: "Jun – Aug 2025 · Boston, MA",
     },
     {
-      place: "Battery storage research",
-      detail: "Feasibility and incentive research for a 400MWh energy storage project.",
-      when: "Energy",
+      place: "TocDoc",
+      detail:
+        "Built a HIPAA-compliant hospital discharge notification and transition-of-care portal for independent physician groups serving Medicare Advantage patients, raising transition-of-care compliance by 37%.",
+      when: "May 2025 – present · Boston, MA",
+    },
+    {
+      place: "El Centro Group Development",
+      detail:
+        "Analyst on a 400MWh battery energy storage project: feasibility and regulatory compliance, tax credit incentives and transferability under the 2022 IRA, DCF modelling, and land lease negotiation support.",
+      when: "Jun – Aug 2024 · McAllen, TX",
+    },
+    {
+      place: "MITES Semester, MIT",
+      detail:
+        "One of 270 students selected nationwide for a six-month academic and professional development programme. Now an alumni volunteer, mentoring through essay reviews and mock interviews.",
+      when: "2022 · Cambridge, MA",
     },
   ],
   skills: [
-    "TypeScript",
-    "React / Next.js",
     "Python",
-    "Java",
     "C++",
+    "Java",
+    "TypeScript",
+    "R",
+    "React / Next.js",
+    "Node.js",
     "SQL / Snowflake",
     "Postgres",
     "FastAPI",
     "Three.js",
+    "TensorFlow",
+    "Docker",
+    "AWS / Google Cloud",
+    "MongoDB",
+    "Tableau",
+    "Git",
+    "Linux",
+    "Spanish (ILR 3)",
   ],
 };

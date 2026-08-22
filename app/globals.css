@@ -2309,9 +2309,10 @@ footer {
 }
 .fdash-level-btn:hover { background: rgba(255, 255, 255, 0.14); }
 .fdash-level-btn-on {
-  background: #3be86b;
-  border-color: #3be86b;
-  color: #08122c;
+  /* Same green as the menu backdrop icons and the in-game cube. */
+  background: #7ee63f;
+  border-color: #7ee63f;
+  color: #0b1220;
   font-weight: 700;
 }
 /* ── Geometry-Dash-style menu backdrop ────────────────────────── */

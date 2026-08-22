@@ -42,7 +42,7 @@ function apexPointsUp(tri: { x: number; y: number }[]): boolean {
 test("a ground spike is drawn pointing UP", () => {
   const w = makeWorld([{ t: "spike", x: 6, y: 0 }]);
   const { rec } = render(w, (s) => { s.player.x = 5 * TILE; });
-  const tris = rec.triangles("#0A0A1E");
+  const tris = rec.triangles(PALETTE.spike);
   assert.equal(tris.length, 1, "expected exactly one spike triangle");
   assert.ok(apexPointsUp(tris[0]), `ground spike apex should be above its base: ${JSON.stringify(tris[0])}`);
 });
@@ -50,7 +50,7 @@ test("a ground spike is drawn pointing UP", () => {
 test("a ceiling spike is drawn pointing DOWN", () => {
   const w = makeWorld([{ t: "spike", x: 6, y: 9, r: 180 }, { t: "zone", x: 0, w: 60, ceilingY: 10 }]);
   const { rec } = render(w, (s) => { s.player.x = 5 * TILE; });
-  const tris = rec.triangles("#0A0A1E");
+  const tris = rec.triangles(PALETTE.spike);
   assert.equal(tris.length, 1);
   assert.ok(!apexPointsUp(tris[0]), `ceiling spike apex should be below its base: ${JSON.stringify(tris[0])}`);
 });
@@ -58,7 +58,7 @@ test("a ceiling spike is drawn pointing DOWN", () => {
 test("a ground spike sits ON the ground line, not below it", () => {
   const w = makeWorld([{ t: "spike", x: 6, y: 0 }]);
   const { rec, cam } = render(w, (s) => { s.player.x = 5 * TILE; });
-  const tri = rec.triangles("#0A0A1E")[0];
+  const tri = rec.triangles(PALETTE.spike)[0];
   const scale = VIEW.h / (VIEW_TILES * TILE);
   const vh = VIEW.h / scale;
   const groundScreenY = (vh / 2 - (0 - cam.y)) * scale;

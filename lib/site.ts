@@ -68,6 +68,16 @@ export const ROUTES: readonly SiteRoute[] = [
     agentUse: "Geometry Dash Demon List difficulty ratings, presented as a guessing game.",
   },
   {
+    path: "/projects/cummins",
+    title: "Big Cam",
+    summary:
+      "A Cummins NTC-400 Big Cam III you can take apart in the browser — the parts are built in code, not imported as a model.",
+    priority: 0.8,
+    changeFrequency: "monthly",
+    agentUse:
+      "A worked example of procedural 3D geometry in Three.js: an engine assembled from primitives rather than a downloaded mesh.",
+  },
+  {
     path: "/projects/yourElections",
     title: "yourElections",
     summary:

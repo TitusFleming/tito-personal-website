@@ -16,38 +16,53 @@
 
 const EDGE = 1.5;
 
+/**
+ * The three colours the site's menu backdrop is built from.
+ *
+ * Kept as named constants rather than inlined so the shared origin is obvious:
+ * if the menu is retinted, these move with it and the game follows.
+ */
+const MENU_BODY = "#7EE63F";
+const MENU_ACCENT = "#5FE0F5";
+const MENU_OUTLINE = "#0B1220";
+
 export const PALETTE = {
-  block: "#0A0A1E",
+  block: MENU_OUTLINE,
   blockEdge: "#FFFFFF",
-  blockInner: "#181838",
-  spike: "#0A0A1E",
+  blockInner: "#1B2438",
+  spike: MENU_OUTLINE,
   spikeEdge: "#FFFFFF",
-  spikeGloss: "#2A2A4E",
-  // Taken from the game's own default icon set: a lime body, a cyan inset, and
-  // a heavy near-black outline on everything. The ship is the SAME two colours
-  // as the cube — it is not a yellow aircraft, which is what it had become.
-  player: "#6FDD1F",
-  playerInner: "#25C7E8",
-  playerEdge: "#111111",
-  shipHull: "#6FDD1F",
-  shipTrim: "#25C7E8",
-  pad: "#FFD400",
-  padPink: "#FF4FD8",
-  padRed: "#FF4A3D",
-  padBlue: "#3BC8FF",
-  ring: "#FFD400",
+  spikeGloss: "#27324A",
+  // Shared with the site's menu backdrop (app/gd-background.tsx), which uses
+  // the same body green, cyan accent and near-black outline. The icon in the
+  // game and the icons bouncing around the homepage are now the same object,
+  // so the two do not read as two different products.
+  //
+  // Only the ICON palette is shared. Sky and ground come from each level's own
+  // colour triggers (engine/palette.ts) and must not be overridden here — those
+  // are level data, not theme.
+  player: MENU_BODY,
+  playerInner: MENU_ACCENT,
+  playerEdge: MENU_OUTLINE,
+  shipHull: MENU_BODY,
+  shipTrim: MENU_ACCENT,
+  pad: "#FFD23F",
+  padPink: "#C77DFF",
+  padRed: "#FF6B5B",
+  padBlue: MENU_ACCENT,
+  ring: "#FFD23F",
   pit: "#071A45",
 } as const;
 
 export const PORTAL_COLORS: Record<string, string> = {
-  cube: "#22DD55",
-  ship: "#FF4FD8",
-  ball: "#FF8A2B",
-  ufo: "#3BC8FF",
-  wave: "#00E5C8",
-  gravity: "#FF9500",
-  size: "#00E5FF",
-  speed: "#B36BFF",
+  cube: MENU_BODY,
+  ship: "#C77DFF",
+  ball: "#FF9F45",
+  ufo: MENU_ACCENT,
+  wave: "#3DDC97",
+  gravity: "#FF6B5B",
+  size: MENU_ACCENT,
+  speed: "#C77DFF",
 };
 
 /**
