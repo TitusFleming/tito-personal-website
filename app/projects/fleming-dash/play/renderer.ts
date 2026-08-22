@@ -219,9 +219,6 @@ export function updateCamera(
   // Interpolated, not p.x. See the note at the top of this file.
   cam.x = view.x - vw * CAM_ANCHOR_FRAC;
 
-  const rest = restingCamY(world, view.x, vh);
-  const { floor } = world.playBounds(view.x);
-
   const desired = desiredCamY(p, view.y, world, vh, view.x);
 
   cam.y = clampCamY(expSmooth(cam.y, desired, p.def.cameraK || CAM_K_CUBE, dt), vh, world, view.x);
