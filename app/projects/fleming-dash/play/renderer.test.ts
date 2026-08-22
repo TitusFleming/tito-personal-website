@@ -412,3 +412,47 @@ test("every mode declares a camera behaviour", () => {
     );
   }
 });
+
+test("every coin in the real level is ON SCREEN from its own section's camera", () => {
+  // Asserting a coin was DRAWN is not enough: draw() emits everything in the
+  // visible columns regardless of height, so an off-screen coin still lands in
+  // the shape list. That is exactly how a coin sitting above the camera window
+  // passed as rendered while being invisible in game. This checks the canvas.
+  const w = new World(stereoMadness as LevelDoc);
+  const coins: { x: number; y: number }[] = [];
+  const seen = new Set<unknown>();
+  for (const col of w.columns) {
+    for (const t of col.triggers) {
+      if ((t as { kind: string }).kind !== "coin" || seen.has(t)) continue;
+      seen.add(t);
+      coins.push({ x: t.cell.x, y: t.cell.y });
+    }
+  }
+  assert.equal(coins.length, 3);
+
+  for (const coin of coins) {
+    const { ceiling } = w.playBounds(coin.x);
+    const flying = Number.isFinite(ceiling);
+    const sim = new Simulation(w);
+    sim.player.x = coin.x - TILE * 3;
+    sim.player.y = coin.y + TILE / 2;
+    if (flying) {
+      sim.player.mode = "ship";
+      // A section is framed by its portal, so that is what the camera gets.
+      sim.player.sectionAnchorY = coin.y;
+    }
+    const cam = createCamera(w);
+    snapCamera(cam, sim.player, w, VIEW.w, VIEW.h);
+    const rec = new CanvasRecorder();
+    const view = interpolate({ x: sim.player.x, y: sim.player.y, rot: 0 }, sim.player, 1);
+    draw(rec.asContext(), sim.player, view, w, cam, VIEW.w, VIEW.h, INFO);
+
+    const goldOnScreen = rec
+      .visible(VIEW.w, VIEW.h)
+      .filter((s) => "style" in s && s.style === "#FFD23F");
+    assert.ok(
+      goldOnScreen.length > 0,
+      `coin at tile ${(coin.x / TILE).toFixed(1)},${(coin.y / TILE).toFixed(1)} is drawn but off-canvas`,
+    );
+  }
+});

@@ -152,6 +152,27 @@ export function interpolate(prev: Snapshot, p: Player, alpha: number): Snapshot 
   };
 }
 
+/**
+ * Where the camera wants to be, given the player and the level.
+ *
+ * Shared by snapCamera and updateCamera deliberately. They used to compute this
+ * separately, and snapCamera never consulted the section anchor — so respawning
+ * inside a ship section put the view back at the floor while the section is
+ * composed around the portal, hiding everything in the upper half.
+ */
+function desiredCamY(p: Player, viewY: number, world: World, vh: number, x: number): number {
+  if (p.def.camera === "anchored" && p.sectionAnchorY !== null) return p.sectionAnchorY;
+  if (p.def.camera === "free" || p.def.camera === "anchored") {
+    return viewY + p.vy * CAM_LOOKAHEAD_S;
+  }
+  const rest = restingCamY(world, x, vh);
+  const { floor } = world.playBounds(x);
+  const bandTop = floor + CAM_RISE_TILES * TILE;
+  if (viewY > bandTop) return rest + (viewY - bandTop);
+  if (viewY < floor) return rest + (viewY - floor);
+  return rest;
+}
+
 /** Snap straight to the player, with no easing — used on spawn and respawn. */
 export function snapCamera(
   cam: Camera,
@@ -162,7 +183,7 @@ export function snapCamera(
 ): void {
   const { vw, vh } = viewport(viewW, viewH);
   cam.x = p.x - vw * CAM_ANCHOR_FRAC;
-  cam.y = clampCamY(restingCamY(world, p.x, vh), vh, world, p.x);
+  cam.y = clampCamY(desiredCamY(p, p.y, world, vh, p.x), vh, world, p.x);
 }
 
 /**
@@ -201,22 +222,7 @@ export function updateCamera(
   const rest = restingCamY(world, view.x, vh);
   const { floor } = world.playBounds(view.x);
 
-  let desired: number;
-  if (p.def.camera === "anchored" && p.sectionAnchorY !== null) {
-    // Locked to the portal that started this section. Nothing the player does
-    // moves it; the level was built around this window.
-    desired = p.sectionAnchorY;
-  } else if (p.def.camera === "free" || p.def.camera === "anchored") {
-    // Flying modes: follow continuously, led slightly by velocity. Holding the
-    // view still through a ship section hides the route you are climbing for —
-    // which is how a coin above the usual line becomes unreachable in practice.
-    desired = view.y + p.vy * CAM_LOOKAHEAD_S;
-  } else {
-    const bandTop = floor + CAM_RISE_TILES * TILE;
-    desired = rest;
-    if (view.y > bandTop) desired = rest + (view.y - bandTop);
-    else if (view.y < floor) desired = rest + (view.y - floor); // fell into a pit
-  }
+  const desired = desiredCamY(p, view.y, world, vh, view.x);
 
   cam.y = clampCamY(expSmooth(cam.y, desired, p.def.cameraK || CAM_K_CUBE, dt), vh, world, view.x);
 }

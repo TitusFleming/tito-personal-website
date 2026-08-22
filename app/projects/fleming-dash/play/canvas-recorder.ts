@@ -161,6 +161,22 @@ export class CanvasRecorder {
       .filter((p) => p.length === 3);
   }
 
+  /**
+   * Shapes with at least one point inside the canvas.
+   *
+   * The distinction that matters: draw() emits everything in the visible
+   * COLUMNS regardless of height, so a shape far above or below the viewport is
+   * still recorded. Asserting on `shapes` therefore proves an object exists,
+   * not that a player can see it — which is exactly how an off-screen coin
+   * passed as rendered.
+   */
+  visible(w: number, h: number): Shape[] {
+    return this.shapes.filter((s) => {
+      const pts = s.kind === "path" || s.kind === "rect" ? s.points : [s.at];
+      return pts.some((p) => p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h);
+    });
+  }
+
   /** The device-space bounding box of everything recorded. */
   bounds() {
     const xs: number[] = [];
