@@ -47,6 +47,23 @@ function decode(path) {
   return gunzipSync(Buffer.from(b64, "base64")).toString("utf8");
 }
 
+/** kS29 is the background colour, kS30 the ground colour, as "1_r_2_g_3_b_...". */
+function parseHeaderColors(text) {
+  const head = text.split(";")[0];
+  const kv = {};
+  const parts = head.split(",");
+  for (let i = 0; i + 1 < parts.length; i += 2) kv[parts[i]] = parts[i + 1];
+  const rgb = (raw, fallback) => {
+    if (!raw) return fallback;
+    const q = {};
+    const bits = raw.split("_");
+    for (let i = 0; i + 1 < bits.length; i += 2) q[bits[i]] = bits[i + 1];
+    const [r, g, b] = [q["1"], q["2"], q["3"]].map(Number);
+    return [r, g, b].every((n) => Number.isFinite(n)) ? [r, g, b] : fallback;
+  };
+  return { bg: rgb(kv.kS29, [40, 62, 255]), ground: rgb(kv.kS30, [0, 19, 200]) };
+}
+
 function parseObjects(text) {
   const [, ...chunks] = text.split(";");
   const out = [];
@@ -62,6 +79,11 @@ function parseObjects(text) {
       y: Number(o["3"] ?? 0),
       flipY: o["5"] === "1",
       rot: Number(o["6"] ?? 0),
+      // Colour triggers carry their target colour in 7/8/9 and a fade in 10.
+      rgb: [o["7"], o["8"], o["9"]].every((v) => v !== undefined)
+        ? [Number(o["7"]), Number(o["8"]), Number(o["9"])]
+        : null,
+      fade: o["10"] !== undefined ? Number(o["10"]) : 0,
     });
   }
   return out;
@@ -162,21 +184,44 @@ function convert(objects, meta) {
         if (o.flipY) r = (r + 180) % 360;
         const spike = { t: "spike", x, y };
         if (r) spike.r = r;
+        // Half-size spikes exist (ids 103, 392). Carry the real cell size or
+        // they render at double scale, sunk a quarter tile into the surface.
+        if (gw !== 1) spike.gw = gw;
+        if (gh !== 1) spike.gh = gh;
         // The lethal rect is the cell scaled by the table's own hitbox factors —
         // id 8 is 0.2 x 0.4, i.e. 6x12px inside a 30x30 cell. The gap between
         // the drawn triangle and the kill box is the game's forgiveness, and it
         // is a per-object property rather than one global guess.
-        if (def.hx) spike.hw = Math.max(2, Math.round(def.hx * TILE * gw));
-        if (def.hy) spike.hh = Math.max(2, Math.round(def.hy * TILE * gh));
+        // hx/hy are HALF extents, so the full kill box is twice each. Reading
+        // them as full sizes gave a 6x12 rect inside a 30x30 spike — a lethal
+        // region so much smaller than the drawing that spikes read as harmless.
+        if (def.hx) spike.hw = Math.max(2, Math.round(2 * def.hx * TILE * gw));
+        if (def.hy) spike.hh = Math.max(2, Math.round(2 * def.hy * TILE * gh));
         rest.push(spike);
         break;
       }
 
-      case "portal":
-        if (def.sub === "fly") rest.push({ t: "ship", x, y });
-        else if (def.sub === "cube") rest.push({ t: "cube", x, y });
-        else skipped.set(`portal:${def.sub}`, (skipped.get(`portal:${def.sub}`) ?? 0) + 1);
+      case "portal": {
+        // gh is 3 for every portal, so `y` above is already the cell BOTTOM.
+        // The object must not shift it again — doing so put every portal a
+        // whole tile below where the level places it.
+        const t = def.sub === "fly" ? "ship" : def.sub === "cube" ? "cube" : null;
+        if (t) rest.push({ t, x, y, gw, gh });
+        else if (def.sub === "normal" || def.sub === "flip") {
+          rest.push({ t: "grav", x, y, dir: def.sub === "flip" ? "up" : "down", gw, gh });
+        } else skipped.set(`portal:${def.sub}`, (skipped.get(`portal:${def.sub}`) ?? 0) + 1);
         break;
+      }
+
+      case "trigger": {
+        // ids 29 and 30 are the background and ground colour triggers. Their
+        // y is a trigger position, not geometry, so only x matters.
+        const target = o.id === 29 ? "bg" : o.id === 30 ? "ground" : null;
+        if (target && o.rgb) {
+          rest.push({ t: "color", x, target, rgb: o.rgb, fade: o.fade || 0 });
+        } else skipped.set(`trigger:${o.id}`, (skipped.get(`trigger:${o.id}`) ?? 0) + 1);
+        break;
+      }
 
       case "pad":
         rest.push({ t: "pad", x, y });
@@ -222,7 +267,7 @@ function convert(objects, meta) {
       id: meta.id,
       // Bumped because the object mapping changed: old best percentages were
       // set against different geometry and are not comparable.
-      rev: 2,
+      rev: 3,
       name: meta.name,
       author: "RobTop Games",
       credit: "Level design by RobTop Games. Recreated for a portfolio project.",
@@ -230,6 +275,8 @@ function convert(objects, meta) {
       speed: 1,
       groundY: 0,
       ceilingY: null,
+      bgColor: meta.colors.bg,
+      groundColor: meta.colors.ground,
       objects: objectsOut,
     },
     stats: { blocks: blocks.length, rest: rest.length, maxX, skipped, unknown },
@@ -276,15 +323,22 @@ function preview(doc, cols = 76, rows = 10) {
 
 // ── main ────────────────────────────────────────────────────────────────────
 
-const [src, dest] = process.argv.slice(2);
-if (!src || !dest) {
-  console.error("usage: node scripts/import-gd-level.mjs <N.txt> <out.json> [--preview]");
+const [src, dest, ...flags] = process.argv.slice(2);
+const idOf = (f) => (flags.find((a) => a.startsWith(`--${f}=`)) ?? "").split("=")[1];
+if (!src || !dest || !idOf("id") || !idOf("name")) {
+  console.error(
+    "usage: node scripts/import-gd-level.mjs <N.txt> <out.json> --id=<slug> --name=<Title> [--preview]",
+  );
   process.exit(1);
 }
 
 const text = decode(src);
 const objects = parseObjects(text);
-const { doc, stats } = convert(objects, { id: "stereo-madness", name: "Stereo Madness" });
+const { doc, stats } = convert(objects, {
+  id: idOf("id"),
+  name: idOf("name"),
+  colors: parseHeaderColors(text),
+});
 
 writeFileSync(dest, serialize(doc));
 
@@ -293,7 +347,8 @@ console.log(`source objects   ${objects.length}`);
 console.log(`  solids         ${stats.blocks} -> ${count("block")} spans`);
 console.log(`  hazards        ${count("spike")}   (pits, non-lethal: ${count("pit")})`);
 console.log(`  pads / rings   ${count("pad")} / ${count("ring")}`);
-console.log(`  portals        ${count("ship") + count("cube")}`);
+console.log(`  portals        ${count("ship") + count("cube") + count("grav")}`);
+console.log(`  colour changes ${count("color")}`);
 console.log(`  length         ${stats.maxX} tiles`);
 console.log(`written          ${dest} (${doc.objects.length} objects)`);
 

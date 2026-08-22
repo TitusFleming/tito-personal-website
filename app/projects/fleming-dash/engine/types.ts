@@ -1,42 +1,87 @@
-// Shared types for the Fleming Dash engine.
+// Authoring format, input, and the event vocabulary.
 //
-// Two vocabularies live here and they are deliberately separate:
+// Two vocabularies live in this engine and they are deliberately separate:
 //
-//   LevelDoc / LevelObject  — what a level file contains. Grid units, compact,
-//                             hand-editable, diff-friendly.
-//   CompiledLevel / Column  — what the engine actually runs. Pixels, indexed by
-//                             column for O(1) lookup. Built once at load.
+//   LevelDoc / LevelObject  — what a level FILE contains. Grid units, compact,
+//                             hand-editable, diff-friendly. Defined here.
+//   World / GameObject      — what the engine RUNS. Class instances bucketed by
+//                             column. Built once by world.ts from the above.
 //
 // Keeping them apart means the on-disk format can stay readable without the hot
-// loop paying for it.
+// loop paying for it, and it means a new mechanic is added in two obvious
+// places (a variant here, a class in objects/) rather than everywhere.
 
-export type GameMode = "cube" | "ship";
+import type { GameMode } from "./modes/mode.ts";
+
+export type { GameMode };
 export type SimStatus = "running" | "dead" | "complete";
+
+export type PadColor = "yellow" | "pink" | "red" | "blue";
+export type RingColor = "yellow" | "pink" | "red" | "blue" | "green" | "black";
+/** Index into SPEEDS. 0 is 0.5x, 1 is 1x, up to 4. */
+export type SpeedIndex = 0 | 1 | 2 | 3 | 4;
 
 // ── On-disk level format ────────────────────────────────────────────────────
 
 /**
  * One authored object, in grid units.
  *
- * `block` takes an optional w/h span so a 40-tile floor is one object rather
- * than 40 — expanded at compile time. `zone` is how ground and ceiling height
- * vary across the level; it compiles to per-column scalars, not to rects, so a
- * ship corridor costs nothing at runtime.
+ * Mode portals keep their bare `t` names ("ship", "cube") so every level file
+ * already written still parses unchanged — the imported Stereo Madness is 930
+ * objects and reformatting it for a refactor would make its diff useless.
  */
 export type LevelObject =
+  /** w/h span so a 40-tile floor is one object, expanded at compile time. */
   | { t: "block"; x: number; y: number; w?: number; h?: number }
-  // hw/hh are the lethal rect's size in pixels, straight from the game's own
-  // object table (id 8 is 6x12 inside a 30x30 cell). Per-object rather than one
-  // global constant, because a full spike, a half spike and a small thorn are
-  // all differently forgiving.
-  | { t: "spike"; x: number; y: number; r?: 0 | 90 | 180 | 270; hw?: number; hh?: number }
-  | { t: "ship"; x: number; y: number }
-  | { t: "cube"; x: number; y: number }
-  | { t: "pad"; x: number; y: number; c?: "yellow" }
-  | { t: "ring"; x: number; y: number; c?: "yellow" }
-  // Purely visual: the dark notches cut into the ground and ceiling lines.
-  // Rendered, never collided against.
+  /**
+   * hw/hh are the lethal rect's size in PIXELS, straight from the game's own
+   * object table (id 8 is 6x12 inside a 30x30 cell). Per-object rather than one
+   * global constant, because a full spike, a half spike and a small thorn are
+   * all differently forgiving.
+   */
+  /**
+   * gw/gh are the object's size in GRID CELLS, defaulting to 1.
+   *
+   * Not cosmetic: the game's object table has half-size spikes (ids 103 and
+   * 392 are 0.5 x 0.5). Assuming every hazard fills a whole cell drew those at
+   * double size on a cell whose origin sits a quarter tile below the surface —
+   * a spike both too big and sunk into the floor.
+   */
+  | {
+      t: "spike";
+      x: number;
+      y: number;
+      r?: 0 | 90 | 180 | 270;
+      gw?: number;
+      gh?: number;
+      hw?: number;
+      hh?: number;
+    }
+  // ── portals ──
+  // gw/gh are the portal's real cell size. Every GD portal is 3 tiles tall, so
+  // the authored y is already the cell BOTTOM — an object that shifts it again
+  // lands a whole tile below where the level puts it.
+  | { t: GameMode; x: number; y: number; gw?: number; gh?: number }
+  | { t: "grav"; x: number; y: number; dir: "down" | "up"; gw?: number; gh?: number }
+  | { t: "size"; x: number; y: number; s: "mini" | "normal" }
+  | { t: "speed"; x: number; y: number; v: SpeedIndex }
+  // ── boosts ──
+  | { t: "pad"; x: number; y: number; c?: PadColor }
+  | { t: "ring"; x: number; y: number; c?: RingColor }
+  /** Purely visual: the dark notches cut into the ground and ceiling lines. */
   | { t: "pit"; x: number; y: number }
+  /** Per-column ground/ceiling overrides. Compiles to scalars, not rects. */
+  /**
+   * A colour change at an x position, straight from the level's own colour
+   * triggers. Presentation only — it never touches physics.
+   */
+  | {
+      t: "color";
+      x: number;
+      target: "bg" | "ground";
+      rgb: [number, number, number];
+      fade?: number;
+    }
   | { t: "zone"; x: number; w: number; groundY?: number; ceilingY?: number }
   | { t: "end"; x: number };
 
@@ -53,105 +98,30 @@ export type LevelDoc = {
   author: string;
   credit?: string;
   startMode: GameMode;
-  speed: 1 | 2;
+  /** Starting speed index. Legacy files use 1|2 meaning 1x|2x. */
+  speed: SpeedIndex | 1 | 2;
   groundY: number;
   ceilingY: number | null;
+  /** Starting colours, from the level header's kS29 / kS30. */
+  bgColor?: [number, number, number];
+  groundColor?: [number, number, number];
   objects: LevelObject[];
 };
 
-// ── Compiled level ──────────────────────────────────────────────────────────
-
-export type Aabb = { x: number; y: number; w: number; h: number };
-
-export type TriggerKind = "ship" | "cube" | "pad" | "ring";
-
-export type Trigger = {
-  /** Dense index into SimState.triggerTouch. */
-  id: number;
-  kind: TriggerKind;
-  box: Aabb;
-  /** Launch velocity, for pads and rings. */
-  vy: number;
-};
-
-/**
- * A hazard carries its lethal rect and its appearance separately.
- *
- * They are genuinely different things: the kill box for a spike is 6x12 while
- * the drawn triangle fills a 30x30 cell, and the gap between them is the game's
- * forgiveness. Deriving the drawing from the hitbox — which an earlier version
- * did — makes every spike render in the wrong place and always point upwards.
- */
-export type Hazard = {
-  /** What kills you. */
-  box: Aabb;
-  /** The cell it is drawn in, which may sit at a half-tile height on a slab. */
-  cell: Aabb;
-  /** Degrees clockwise. 180 is a ceiling spike. */
-  rot: number;
-};
-
-export type Column = {
-  /** World y of this column's walkable surface. A scalar, not a rect — one comparison, exact at any length. */
-  groundY: number;
-  /** World y of the ceiling underside, or Infinity for open sky. */
-  ceilingY: number;
-  solids: Aabb[];
-  hazards: Hazard[];
-  triggers: Trigger[];
-  /** Visual only — the renderer draws these, the simulation never sees them. */
-  decor: Aabb[];
-};
-
-export type CompiledLevel = {
-  id: string;
-  rev: number;
-  name: string;
-  startMode: GameMode;
-  /** px/s. */
-  speed: number;
-  /** Indexed by grid x. */
-  columns: Column[];
-  triggerCount: number;
-  lengthPx: number;
-  spawn: { x: number; y: number };
-};
+export type Rgb = [number, number, number];
 
 // ── Runtime ─────────────────────────────────────────────────────────────────
 
 export type InputState = {
-  /** True while any input source is held. Cube auto-rejumps on hold, ship thrusts on hold. */
+  /** True while any input source is held. Cube auto-rejumps on hold, ship thrusts. */
   held: boolean;
   /**
-   * One click activates one ring. Holding through two rings fires only the
-   * first, so this is consumed on use and re-armed on the next press.
+   * The press EDGE, consumed on use and re-armed on the next fresh press.
+   *
+   * One click activates one ring: holding through two rings must fire only the
+   * first. Also what makes ball and UFO taps discrete rather than continuous.
    */
   ringArmed: boolean;
-};
-
-export type SimState = {
-  status: SimStatus;
-  /** Seconds into this attempt. */
-  t: number;
-  mode: GameMode;
-  /** World px, player CENTER. Boxes are derived from mode, never stored. */
-  x: number;
-  y: number;
-  vy: number;
-  onGround: boolean;
-  rot: number;
-  /**
-   * 1 = normal, -1 = inverted. Nothing sets this yet, but every branch that
-   * touches gravity already multiplies by it — retrofitting gravity portals
-   * later would otherwise mean revisiting all of them.
-   */
-  gravitySign: 1 | -1;
-  attempt: number;
-  /** Furthest x reached this attempt, for the progress percentage. */
-  maxX: number;
-  /** Per-trigger "was overlapping last step" bit. A Uint8Array rather than a Set: no allocation at 240 Hz. */
-  triggerTouch: Uint8Array;
-  deathTimer: number;
 };
 
 /**
@@ -159,13 +129,19 @@ export type SimState = {
  *
  * stepSim never calls audio, particles, or React directly — it pushes here and
  * the caller drains it. That is what makes the whole engine runnable headlessly
- * under `node --test`.
+ * under `node --test`, which is what makes replay tapes possible.
  */
 export type SimEvent =
   | { type: "jump" }
   | { type: "land" }
-  | { type: "pad"; vy: number }
-  | { type: "ring"; vy: number }
+  | { type: "pad"; vy: number; color: PadColor }
+  | { type: "ring"; vy: number; color: RingColor }
   | { type: "portal"; mode: GameMode }
+  | { type: "gravity"; sign: 1 | -1 }
+  | { type: "size"; scale: number }
+  | { type: "speed"; index: SpeedIndex }
+  | { type: "color"; target: "bg" | "ground" }
   | { type: "death"; x: number; y: number; cause: "hazard" | "wall" | "void" }
   | { type: "complete"; timeSec: number };
+
+export type { Player } from "./player.ts";

@@ -1,184 +1,16 @@
-// Turning an authored level file into something the hot loop can query cheaply.
+// Level validation.
 //
-// The on-disk format optimises for being readable and diffable: grid units,
-// spans, a handful of object types. The compiled form optimises for lookup:
-// pixels, indexed by column. compileLevel is the one place that knows both.
+// Compilation moved to world.ts, which builds object instances. What is left
+// here is the cheap structural check, kept pure and separate so the importer
+// can report on a level without building one.
 
-import {
-  PAD_YELLOW_VY,
-  RING_YELLOW_VY,
-  SPIKE_BOX,
-  TILE,
-} from "./constants.ts";
-import type {
-  Aabb,
-  Column,
-  Hazard,
-  CompiledLevel,
-  LevelDoc,
-  LevelObject,
-  Trigger,
-} from "./types.ts";
+import { PLAYABLE_MODES, type GameMode } from "./modes/mode.ts";
+import type { LevelDoc } from "./types.ts";
 
-/**
- * A spike's lethal rect within its cell, for each of the four orientations.
- *
- * Size comes from the object itself when the importer supplied one (it reads
- * the game's real hitbox scales), and falls back to SPIKE_BOX only for
- * hand-authored levels that don't specify.
- */
-function spikeRect(
-  gx: number,
-  gy: number,
-  r: 0 | 90 | 180 | 270,
-  hw?: number,
-  hh?: number,
-): Aabb {
-  const x0 = gx * TILE;
-  const y0 = gy * TILE;
-  const w = hw ?? SPIKE_BOX.w;
-  const h = hh ?? SPIKE_BOX.h;
-  // Centred horizontally, sitting just off the cell floor — the same placement
-  // the fixed SPIKE_BOX encoded, but derived so it works at any size.
-  const dx = (TILE - w) / 2;
-  const dy = hh !== undefined ? 2 : SPIKE_BOX.dy;
-
-  switch (r) {
-    case 180: // pointing down, e.g. hanging from a ceiling
-      return { x: x0 + dx, y: y0 + TILE - dy - h, w, h };
-    case 90: // pointing right
-      return { x: x0 + dy, y: y0 + dx, w: h, h: w };
-    case 270: // pointing left
-      return { x: x0 + TILE - dy - h, y: y0 + dx, w: h, h: w };
-    default:
-      return { x: x0 + dx, y: y0 + dy, w, h };
-  }
-}
-
-function emptyColumn(groundY: number, ceilingY: number): Column {
-  return { groundY, ceilingY, solids: [], hazards: [], triggers: [], decor: [] };
-}
-
-/** Register a rect in every column it touches, so lookup never has to scan. */
-function spread(columns: Column[], box: Aabb, add: (col: Column) => void): void {
-  const lo = Math.max(0, Math.floor(box.x / TILE));
-  const hi = Math.min(columns.length - 1, Math.floor((box.x + box.w - 0.001) / TILE));
-  for (let gx = lo; gx <= hi; gx++) {
-    const col = columns[gx];
-    if (col) add(col);
-  }
-}
-
-export function compileLevel(doc: LevelDoc): CompiledLevel {
-  const end = doc.objects.find((o): o is Extract<LevelObject, { t: "end" }> => o.t === "end");
-  if (!end) throw new Error(`Level "${doc.id}" has no end marker.`);
-
-  const width = end.x + 2; // one spare column past the finish line
-  const baseGround = doc.groundY * TILE;
-  const baseCeiling = doc.ceilingY === null ? Infinity : doc.ceilingY * TILE;
-
-  const columns: Column[] = Array.from({ length: width }, () =>
-    emptyColumn(baseGround, baseCeiling),
-  );
-
-  // Zones first: they set the ground and ceiling the rest of the objects sit on.
-  for (const o of doc.objects) {
-    if (o.t !== "zone") continue;
-    const hi = Math.min(width - 1, o.x + o.w - 1);
-    for (let gx = Math.max(0, o.x); gx <= hi; gx++) {
-      const col = columns[gx];
-      if (!col) continue;
-      if (o.groundY !== undefined) col.groundY = o.groundY * TILE;
-      if (o.ceilingY !== undefined) col.ceilingY = o.ceilingY * TILE;
-    }
-  }
-
-  let triggerCount = 0;
-  const makeTrigger = (kind: Trigger["kind"], box: Aabb, vy: number): Trigger => ({
-    id: triggerCount++,
-    kind,
-    box,
-    vy,
-  });
-
-  for (const o of doc.objects) {
-    switch (o.t) {
-      case "block": {
-        // Spans expand here, so a 40-tile floor is one authored object.
-        const box: Aabb = {
-          x: o.x * TILE,
-          y: o.y * TILE,
-          w: (o.w ?? 1) * TILE,
-          h: (o.h ?? 1) * TILE,
-        };
-        spread(columns, box, (col) => col.solids.push(box));
-        break;
-      }
-      case "pit": {
-        const box: Aabb = { x: o.x * TILE, y: o.y * TILE, w: TILE, h: TILE * 0.45 };
-        spread(columns, box, (col) => col.decor.push(box));
-        break;
-      }
-      case "spike": {
-        const rot = o.r ?? 0;
-        const hazard: Hazard = {
-          box: spikeRect(o.x, o.y, rot, o.hw, o.hh),
-          // The full cell, at the object's real (possibly half-tile) position,
-          // so a spike sitting on a slab is drawn attached to that slab.
-          cell: { x: o.x * TILE, y: o.y * TILE, w: TILE, h: TILE },
-          rot,
-        };
-        // Spread by the CELL, not the kill box: the visual is wider, and a
-        // column that only sees the 6px box would clip the triangle away.
-        spread(columns, hazard.cell, (col) => col.hazards.push(hazard));
-        break;
-      }
-      case "ship":
-      case "cube": {
-        // Portals are one tile wide and three tall, so you cannot miss one.
-        const box: Aabb = { x: o.x * TILE, y: (o.y - 1) * TILE, w: TILE, h: TILE * 3 };
-        const trig = makeTrigger(o.t, box, 0);
-        spread(columns, box, (col) => col.triggers.push(trig));
-        break;
-      }
-      case "pad": {
-        // Sits flat on the cell floor — you hit it by walking or falling over it.
-        const box: Aabb = { x: o.x * TILE, y: o.y * TILE, w: TILE, h: TILE * 0.35 };
-        const trig = makeTrigger("pad", box, PAD_YELLOW_VY);
-        spread(columns, box, (col) => col.triggers.push(trig));
-        break;
-      }
-      case "ring": {
-        const box: Aabb = { x: o.x * TILE, y: o.y * TILE, w: TILE, h: TILE };
-        const trig = makeTrigger("ring", box, RING_YELLOW_VY);
-        spread(columns, box, (col) => col.triggers.push(trig));
-        break;
-      }
-      default:
-        break; // zone and end are handled outside the loop
-    }
-  }
-
-  const spawnCol = columns[0];
-  return {
-    id: doc.id,
-    rev: doc.rev,
-    name: doc.name,
-    startMode: doc.startMode,
-    speed: doc.speed === 2 ? 387.42 : 311.58,
-    columns,
-    triggerCount,
-    lengthPx: end.x * TILE,
-    spawn: { x: 0, y: (spawnCol ? spawnCol.groundY : 0) + TILE / 2 },
-  };
-}
+export { compileLevel, World, type Column } from "./world.ts";
 
 export type LevelWarning = { severity: "error" | "warn"; message: string };
 
-/**
- * Cheap structural checks. Kept pure and separate from compileLevel so the
- * importer can report on a level without building one.
- */
 export function validateLevel(doc: LevelDoc): LevelWarning[] {
   const out: LevelWarning[] = [];
   const end = doc.objects.find((o) => o.t === "end");
@@ -188,20 +20,36 @@ export function validateLevel(doc: LevelDoc): LevelWarning[] {
     out.push({ severity: "error", message: "Objects at negative x." });
   }
 
-  // A ship section with no ceiling is unbounded, which plays as an empty void.
+  // Mode portals, in play order. A ship section with no ceiling is unbounded,
+  // which plays as an empty void.
+  const isMode = (t: string): t is GameMode =>
+    (["cube", "ship", "ball", "ufo", "wave"] as string[]).includes(t);
+
   const portals = doc.objects
-    .filter((o) => o.t === "ship" || o.t === "cube")
-    .sort((a, b) => ("x" in a ? a.x : 0) - ("x" in b ? b.x : 0));
+    .filter((o): o is Extract<LevelObjectAny, { x: number }> => isMode(o.t) && "x" in o)
+    .sort((a, b) => a.x - b.x);
+
   let mode = doc.startMode;
   for (const p of portals) {
-    if (p.t === mode) {
-      out.push({ severity: "warn", message: `Redundant ${p.t} portal at x=${"x" in p ? p.x : "?"}.` });
+    const next = p.t as GameMode;
+    if (next === mode) {
+      out.push({ severity: "warn", message: `Redundant ${next} portal at x=${p.x}.` });
     }
-    if (p.t === "ship" || p.t === "cube") mode = p.t;
+    if (!PLAYABLE_MODES.includes(next)) {
+      out.push({
+        severity: "warn",
+        message: `Level uses "${next}" mode, which is implemented but not yet tuned against a real level.`,
+      });
+    }
+    mode = next;
   }
-  if (mode === "ship" && doc.ceilingY === null) {
-    out.push({ severity: "warn", message: "Level ends in ship mode with no ceiling." });
+
+  const flying = mode === "ship" || mode === "wave";
+  if (flying && doc.ceilingY === null) {
+    out.push({ severity: "warn", message: `Level ends in ${mode} mode with no ceiling.` });
   }
 
   return out;
 }
+
+type LevelObjectAny = LevelDoc["objects"][number];

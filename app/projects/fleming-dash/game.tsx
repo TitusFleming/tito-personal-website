@@ -3,22 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { FIXED_DT, MAX_FRAME_DT, MAX_STEPS_PER_FRAME } from "./engine/constants.ts";
-import { compileLevel } from "./engine/level.ts";
-import {
-  createSim,
-  makeCheckpoint,
-  progressPercent,
-  resetSim,
-  restoreCheckpoint,
-  stepSim,
-  type Checkpoint,
-} from "./engine/simulate.ts";
-import type { LevelDoc, SimEvent, SimState } from "./engine/types.ts";
+import { compileLevel } from "./engine/world.ts";
+import { Checkpoint, Simulation } from "./engine/simulate.ts";
+import type { SimEvent } from "./engine/types.ts";
 import { createInput, type Input } from "./play/input.ts";
 import { createMusic, type Music } from "./play/audio.ts";
 import {
   createCamera,
   draw,
+  interpolate,
   snapCamera,
   updateCamera,
   type Camera,
@@ -33,12 +26,13 @@ import {
   type LevelProgress,
   type Player,
 } from "./storage/local.ts";
-import stereoMadness from "./levels/stereo-madness.json";
+import { LEVELS, type LevelEntry } from "./levels/index.ts";
 
 type Phase = "start" | "playing" | "complete";
 
 export default function FlemingDash() {
-  const level = useMemo(() => compileLevel(stereoMadness as LevelDoc), []);
+  const [entry, setEntry] = useState<LevelEntry>(LEVELS[0]);
+  const level = useMemo(() => compileLevel(entry.doc), [entry]);
 
   const [phase, setPhase] = useState<Phase>("start");
   const [player, setPlayer] = useState<Player | null>(null);
@@ -57,7 +51,7 @@ export default function FlemingDash() {
   const shellRef = useRef<HTMLDivElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const simRef = useRef<SimState | null>(null);
+  const simRef = useRef<Simulation | null>(null);
   const camRef = useRef<Camera | null>(null);
   const inputRef = useRef<Input | null>(null);
   const musicRef = useRef<Music | null>(null);
@@ -115,18 +109,18 @@ export default function FlemingDash() {
   }, [muted]);
 
   const record = useCallback(
-    (s: SimState, completed: boolean) => {
+    (sim: Simulation, completed: boolean) => {
       // Practice runs must never touch the record. Beating the level with
       // checkpoints is not beating the level, and letting it write a best would
       // quietly make the real percentage meaningless.
       if (practiceRef.current) return;
-      const pct = completed ? 100 : progressPercent(s, level);
+      const pct = completed ? 100 : sim.progressPercent();
       const next = mergeAttempt(
         loadProgress()[level.id],
         level.rev,
         pct,
         completed,
-        completed ? s.t : null,
+        completed ? sim.t : null,
       );
       saveProgress(level.id, next);
       setProgress(next);
@@ -137,7 +131,7 @@ export default function FlemingDash() {
   const placeCheckpoint = useCallback(() => {
     const s = simRef.current;
     if (!s || !practiceRef.current || s.status !== "running") return;
-    checkpointsRef.current.push(makeCheckpoint(s));
+    checkpointsRef.current.push(Checkpoint.capture(s.player));
     setCpCount(checkpointsRef.current.length);
   }, []);
 
@@ -180,7 +174,7 @@ export default function FlemingDash() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const sim = createSim(level);
+    const sim = new Simulation(level);
     const cam = createCamera(level);
     const input = createInput(canvas);
     simRef.current = sim;
@@ -188,7 +182,7 @@ export default function FlemingDash() {
     inputRef.current = input;
     accRef.current = 0;
     lastRef.current = performance.now();
-    prevRef.current = { x: sim.x, y: sim.y, rot: sim.rot };
+    prevRef.current = { x: sim.player.x, y: sim.player.y, rot: sim.player.rot };
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -226,13 +220,16 @@ export default function FlemingDash() {
 
       let steps = 0;
       while (accRef.current >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
-        prevRef.current.x = sim.x;
-        prevRef.current.y = sim.y;
-        prevRef.current.rot = sim.rot;
-        stepSim(sim, level, input.state, FIXED_DT, events);
+        prevRef.current.x = sim.player.x;
+        prevRef.current.y = sim.player.y;
+        prevRef.current.rot = sim.player.rot;
+        // Not broken out of on death: step() becomes a cheap death-clock drain,
+        // and letting it run keeps that clock ticking at the fixed rate. The
+        // freeze used to be drained here at the fixed rate AND again below at
+        // the real frame rate, so half a second of freeze lasted a quarter.
+        sim.step(input.state, FIXED_DT, events);
         accRef.current -= FIXED_DT;
         steps++;
-        if (sim.status !== "running") break;
       }
       if (steps === MAX_STEPS_PER_FRAME) accRef.current = 0;
 
@@ -249,18 +246,17 @@ export default function FlemingDash() {
       // Death and respawn happen inside the loop, so a retry costs zero React
       // renders and feels instant — which is the whole experience of this genre.
       if (sim.status === "dead") {
-        sim.deathTimer -= dt;
         if (sim.deathTimer <= 0) {
           const cps = checkpointsRef.current;
           if (practiceRef.current && cps.length > 0) {
-            restoreCheckpoint(sim, level, cps[cps.length - 1]);
+            sim.restore(cps[cps.length - 1]);
           } else {
-            resetSim(sim, level);
+            sim.reset();
           }
-          prevRef.current = { x: sim.x, y: sim.y, rot: sim.rot };
+          prevRef.current = { x: sim.player.x, y: sim.player.y, rot: sim.player.rot };
           // Snap rather than ease, or the camera slides across the level after
           // every death and the first half-second of every attempt is unreadable.
-          snapCamera(cam, sim, viewRef.current.w, viewRef.current.h);
+          snapCamera(cam, sim.player, level, viewRef.current.w, viewRef.current.h);
           // The level is choreographed to the track, so a run starting mid-song
           // has every jump cue in the wrong place. A practice respawn is not a
           // fresh run, so it keeps playing.
@@ -271,9 +267,14 @@ export default function FlemingDash() {
       }
 
       const { w, h } = viewRef.current;
-      updateCamera(cam, sim, w, h, Math.min(dt, MAX_FRAME_DT));
-      draw(ctx, sim, prevRef.current, level, cam, Math.min(accRef.current / FIXED_DT, 1), w, h, {
-        percent: progressPercent(sim, level),
+      // Interpolate ONCE, then hand the same snapshot to the camera and the
+      // draw. The camera has no access to the raw simulation position, which is
+      // what stops the world scrolling in whole-step lumps.
+      const view = interpolate(prevRef.current, sim.player, accRef.current / FIXED_DT);
+      updateCamera(cam, sim.player, view, level, w, h, Math.min(dt, MAX_FRAME_DT));
+      draw(ctx, sim.player, view, level, cam, w, h, {
+        palette: sim.palette,
+        percent: sim.progressPercent(),
         attempt: sim.attempt,
         practice: practiceRef.current,
         checkpoints: checkpointsRef.current,
@@ -312,7 +313,7 @@ export default function FlemingDash() {
 
   const start = () => {
     if (player) setPlayer(saveName(player, nameDraft));
-    if (!musicRef.current) musicRef.current = createMusic();
+    if (!musicRef.current) musicRef.current = createMusic(entry.audio);
     // Must be inside the click handler: browsers keep an AudioContext suspended
     // until a real user gesture.
     void musicRef.current.start();
@@ -332,8 +333,21 @@ export default function FlemingDash() {
 
         {phase === "start" ? (
           <div className="fdash-overlay">
-            <p className="fdash-over-eyebrow">Level 1</p>
-            <h2 className="fdash-over-title">Stereo Madness</h2>
+            <p className="fdash-over-eyebrow">Level {entry.number}</p>
+            <h2 className="fdash-over-title">{entry.name}</h2>
+            <div className="fdash-level-row">
+              {LEVELS.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  className={`fdash-level-btn${l.id === entry.id ? " fdash-level-btn-on" : ""}`}
+                  aria-pressed={l.id === entry.id}
+                  onClick={() => setEntry(l)}
+                >
+                  {l.number}. {l.name}
+                </button>
+              ))}
+            </div>
             <div className="fdash-name-row">
               <input
                 className="fdash-name-input"
@@ -377,7 +391,7 @@ export default function FlemingDash() {
         {phase === "playing" && paused ? (
           <div className="fdash-overlay">
             <p className="fdash-over-eyebrow">Paused</p>
-            <h2 className="fdash-over-title">{stereoMadness.name}</h2>
+            <h2 className="fdash-over-title">{entry.name}</h2>
             <div className="fdash-circle-row">
               <button
                 className="fdash-circle"

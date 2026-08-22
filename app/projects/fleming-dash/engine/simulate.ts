@@ -1,247 +1,271 @@
-// The state machine: one fixed step of the whole game.
+// The simulation: one fixed step of the whole game.
 //
-// stepSim is pure in the sense that matters for testing — it mutates only the
-// state handed to it, reads only the level and input, and *reports* side
-// effects by pushing into `out` rather than calling audio, particles or React
-// itself. That is what lets the entire game run headlessly under `node --test`,
-// which in turn is what makes replay tapes possible.
+// This class mutates only itself, reads only the world and the input, and
+// REPORTS side effects by pushing into `out` rather than calling audio,
+// particles or React. That is what lets the entire game run headlessly under
+// `node --test`, which is what makes replay tapes possible.
+//
+// The step is deliberately a fixed sequence of phases over typed object
+// buckets, not a polymorphic walk over one list:
+//
+//   input -> integrate -> solids -> surfaces -> triggers -> hazards -> finish
+//
+// Each phase touches one category from world.ts. Adding a mechanic means adding
+// a class to that category; the order of play stays stated in one readable
+// place instead of being an emergent property of what objects happen to exist.
 
-import {
-  CUBE_SIZE,
-  DEATH_FREEZE,
-  SHIP_H,
-  TILE,
-} from "./constants.ts";
-import { ceilingAt, groundAt, hitsHazard, playerBox, overlaps, resolveSolids } from "./collision.ts";
-import { applyRotation, applyVertical, integrate, playerHalfH } from "./physics.ts";
-import type { CompiledLevel, InputState, SimEvent, SimState } from "./types.ts";
-
-export function createSim(level: CompiledLevel, attempt = 1): SimState {
-  return {
-    status: "running",
-    t: 0,
-    mode: level.startMode,
-    x: level.spawn.x,
-    y: level.spawn.y,
-    vy: 0,
-    onGround: true,
-    rot: 0,
-    gravitySign: 1,
-    attempt,
-    maxX: 0,
-    triggerTouch: new Uint8Array(level.triggerCount),
-    deathTimer: 0,
-  };
-}
+import { DEATH_FREEZE, TILE } from "./constants.ts";
+import { overlaps } from "./core/aabb.ts";
+import { VOID_DEPTH, hitsHazard, resolveSolids } from "./collision.ts";
+import { integrate } from "./physics.ts";
+import { Player } from "./player.ts";
+import { Palette } from "./palette.ts";
+import type { TouchContext } from "./objects/object.ts";
+import type { World } from "./world.ts";
+import type { InputState, SimEvent, SimStatus } from "./types.ts";
 
 /**
  * A practice-mode respawn point.
  *
  * Everything the simulation needs to resume mid-level, which is more than a
  * position: dropping the player back at an x with zero velocity in the wrong
- * gamemode would be unrecoverable, so velocity, mode and gravity direction all
- * have to travel with it.
+ * gamemode would be unrecoverable. Size and speed travel with it too — resuming
+ * a mini high-speed section at normal size and 1x is just as unrecoverable, and
+ * that is a bug this class shape makes impossible to forget.
  */
-export type Checkpoint = {
-  x: number;
-  y: number;
-  vy: number;
-  mode: SimState["mode"];
-  gravitySign: 1 | -1;
-  onGround: boolean;
-  rot: number;
-};
+export class Checkpoint {
+  readonly x: number;
+  readonly y: number;
+  readonly vy: number;
+  readonly mode: Player["mode"];
+  readonly gravitySign: 1 | -1;
+  readonly sizeScale: number;
+  readonly speedIndex: Player["speedIndex"];
+  readonly onGround: boolean;
+  readonly rot: number;
 
-export function makeCheckpoint(s: SimState): Checkpoint {
-  return {
-    x: s.x,
-    y: s.y,
-    vy: s.vy,
-    mode: s.mode,
-    gravitySign: s.gravitySign,
-    onGround: s.onGround,
-    rot: s.rot,
-  };
-}
-
-/**
- * Resume from a checkpoint instead of the start.
- *
- * maxX is deliberately NOT reset: progress is "furthest reached", and a
- * practice run that resumes at 40% has genuinely reached 40%. Attempts still
- * increment, so the counter reflects tries rather than distance.
- */
-export function restoreCheckpoint(s: SimState, level: CompiledLevel, cp: Checkpoint): void {
-  s.status = "running";
-  s.t = 0;
-  s.x = cp.x;
-  s.y = cp.y;
-  s.vy = cp.vy;
-  s.mode = cp.mode;
-  s.gravitySign = cp.gravitySign;
-  s.onGround = cp.onGround;
-  s.rot = cp.rot;
-  s.attempt += 1;
-  s.deathTimer = 0;
-  // Portals behind the checkpoint must be able to fire again on the way back.
-  s.triggerTouch.fill(0);
-  if (s.x > s.maxX) s.maxX = s.x;
-}
-
-/** Reuse the state object so a restart allocates nothing. */
-export function resetSim(s: SimState, level: CompiledLevel): void {
-  s.status = "running";
-  s.t = 0;
-  s.mode = level.startMode;
-  s.x = level.spawn.x;
-  s.y = level.spawn.y;
-  s.vy = 0;
-  s.onGround = true;
-  s.rot = 0;
-  s.gravitySign = 1;
-  s.attempt += 1;
-  s.maxX = 0;
-  s.triggerTouch.fill(0);
-  s.deathTimer = 0;
-}
-
-function die(
-  s: SimState,
-  out: SimEvent[],
-  cause: "hazard" | "wall" | "void",
-): void {
-  s.status = "dead";
-  s.deathTimer = DEATH_FREEZE;
-  out.push({ type: "death", x: s.x, y: s.y, cause });
-}
-
-/** Progress through the level, 0–100. Based on furthest reached, not current x. */
-export function progressPercent(s: SimState, level: CompiledLevel): number {
-  if (level.lengthPx <= 0) return 0;
-  return Math.max(0, Math.min(100, Math.round((s.maxX / level.lengthPx) * 100)));
-}
-
-export function stepSim(
-  s: SimState,
-  level: CompiledLevel,
-  input: InputState,
-  dt: number,
-  out: SimEvent[],
-): void {
-  if (s.status !== "running") {
-    if (s.deathTimer > 0) s.deathTimer = Math.max(0, s.deathTimer - dt);
-    return;
+  private constructor(p: Player) {
+    this.x = p.x;
+    this.y = p.y;
+    this.vy = p.vy;
+    this.mode = p.mode;
+    this.gravitySign = p.gravitySign;
+    this.sizeScale = p.sizeScale;
+    this.speedIndex = p.speedIndex;
+    this.onGround = p.onGround;
+    this.rot = p.rot;
   }
 
-  const hhBefore = playerHalfH(s);
-  const prevBottom = s.y - hhBefore;
-  const prevTop = s.y + hhBefore;
-
-  applyVertical(s, input, dt, out);
-  integrate(s, level.speed, dt);
-
-  // Solids before hazards, deliberately. Landing on a block next to a spike
-  // lifts the player out of the block, which may lift them clear of the spike
-  // too — and erring toward survival is the whole design goal here.
-  const wasOnGround = s.onGround;
-  const solid = resolveSolids(s, level, prevBottom, prevTop);
-  if (solid === "death") {
-    die(s, out, "wall");
-    return;
-  }
-  if (solid === "land" && !wasOnGround) out.push({ type: "land" });
-
-  // Ground and ceiling are scalars, so these are single comparisons.
-  const hh = playerHalfH(s);
-  const ground = groundAt(level, s.x);
-  if (s.y - hh <= ground) {
-    s.y = ground + hh;
-    if (s.vy < 0) s.vy = 0;
-    s.onGround = true;
+  static capture(p: Player): Checkpoint {
+    return new Checkpoint(p);
   }
 
-  const ceiling = ceilingAt(level, s.x);
-  if (Number.isFinite(ceiling) && s.y + hh >= ceiling) {
-    if (s.mode === "ship") {
-      s.y = ceiling - hh;
-      if (s.vy > 0) s.vy = 0;
-    } else {
-      die(s, out, "void");
+  applyTo(p: Player): void {
+    p.x = this.x;
+    p.y = this.y;
+    p.vy = this.vy;
+    p.mode = this.mode;
+    p.gravitySign = this.gravitySign;
+    p.sizeScale = this.sizeScale;
+    p.speedIndex = this.speedIndex;
+    p.onGround = this.onGround;
+    p.rot = this.rot;
+  }
+}
+
+export class Simulation {
+  readonly player = new Player();
+  /** Presentation state driven by the level's colour triggers. */
+  readonly palette: Palette;
+  status: SimStatus = "running";
+  /** Seconds into this attempt. */
+  t = 0;
+  attempt = 1;
+  /** Furthest x reached this attempt, for the progress percentage. */
+  maxX = 0;
+  deathTimer = 0;
+
+  /** Per-trigger "was overlapping last step" bit. Flat array: no allocation at 240 Hz. */
+  private readonly triggerTouch: Uint8Array;
+
+  readonly world: World;
+
+  constructor(world: World) {
+    this.world = world;
+    this.palette = new Palette(world.bgColor, world.groundColor);
+    this.triggerTouch = new Uint8Array(world.triggerCount);
+    this.seed();
+  }
+
+  private seed(): void {
+    this.status = "running";
+    this.t = 0;
+    this.deathTimer = 0;
+    this.triggerTouch.fill(0);
+    this.palette.reset();
+    this.player.resetTo(
+      this.world.spawn.x,
+      this.world.spawn.y,
+      this.world.startMode,
+      this.world.startSpeed,
+    );
+  }
+
+  /** Restart from the beginning. Reuses every object, so a retry allocates nothing. */
+  reset(): void {
+    this.seed();
+    this.maxX = 0;
+    this.attempt += 1;
+  }
+
+  /**
+   * Resume from a checkpoint instead of the start.
+   *
+   * maxX is deliberately NOT reset: progress is "furthest reached", and a
+   * practice run that resumes at 40% has genuinely reached 40%.
+   */
+  restore(cp: Checkpoint): void {
+    this.status = "running";
+    this.t = 0;
+    this.deathTimer = 0;
+    // Portals behind the checkpoint must be able to fire again on the way back.
+    this.triggerTouch.fill(0);
+    cp.applyTo(this.player);
+    this.attempt += 1;
+    if (this.player.x > this.maxX) this.maxX = this.player.x;
+  }
+
+  /** Progress through the level, 0-100. Based on furthest reached, not current x. */
+  progressPercent(): number {
+    if (this.world.lengthPx <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round((this.maxX / this.world.lengthPx) * 100)));
+  }
+
+  private die(out: SimEvent[], cause: "hazard" | "wall" | "void"): void {
+    this.status = "dead";
+    this.deathTimer = DEATH_FREEZE;
+    out.push({ type: "death", x: this.player.x, y: this.player.y, cause });
+  }
+
+  step(input: InputState, dt: number, out: SimEvent[]): void {
+    if (this.status !== "running") {
+      // The simulation owns its own death clock, at the fixed rate. It used to
+      // be drained here AND again by the frame loop with the real frame dt,
+      // which ran the half-second freeze at roughly double speed.
+      if (this.deathTimer > 0) this.deathTimer = Math.max(0, this.deathTimer - dt);
       return;
     }
-  }
 
-  // Triggers after movement, so a pad fires where the player actually ended up.
-  const box = playerBox(s);
-  const lo = Math.max(0, Math.floor(box.x / TILE) - 1);
-  const hi = Math.min(level.columns.length - 1, Math.floor((box.x + box.w) / TILE) + 1);
+    const p = this.player;
+    const world = this.world;
+    const hhBefore = p.halfH();
+    const prevBottom = p.y - hhBefore;
+    const prevTop = p.y + hhBefore;
 
-  for (let gx = lo; gx <= hi; gx++) {
-    const col = level.columns[gx];
-    if (!col) continue;
+    // Captured before applyInput, which clears the flag itself when the cube
+    // jumps — so this is genuinely "was resting at the start of the step".
+    const wasOnGround = p.onGround;
 
-    for (const trig of col.triggers) {
-      const touching = overlaps(box, trig.box);
-      if (!touching) {
-        s.triggerTouch[trig.id] = 0;
-        continue;
+    // ── input and motion ────────────────────────────────────────────────────
+    p.def.applyInput(p, input, dt, out);
+    integrate(p, dt);
+    this.t += dt;
+
+    // Grounded is re-established from scratch every step by the surface checks
+    // below. Leaving the previous value standing meant that walking off a ledge
+    // kept the flag true for the entire fall — a free mid-air jump seconds
+    // later, and a camera that dived with the player instead of holding its
+    // anchor. Nothing ever cleared it except jumping.
+    p.onGround = false;
+
+    // ── solids ──────────────────────────────────────────────────────────────
+    // Before hazards, deliberately. Landing on a block next to a spike lifts the
+    // player out of the block, which may lift them clear of the spike too — and
+    // erring toward survival is the whole design goal here.
+    if (resolveSolids(p, world, prevBottom, prevTop) === "death") {
+      return this.die(out, "wall");
+    }
+
+    // ── ground and ceiling ──────────────────────────────────────────────────
+    // Scalars per column, so these are single comparisons. Which one is "the
+    // floor" depends on gravity, which is what makes gravity portals work
+    // without a second copy of this logic.
+    const ground = world.groundAt(p.x);
+    const ceiling = world.ceilingAt(p.x);
+    const hh = p.halfH();
+    const hasCeiling = Number.isFinite(ceiling);
+
+    if (p.gravitySign === 1) {
+      if (p.y - hh <= ground) {
+        p.y = ground + hh;
+        if (p.vy < 0) p.vy = 0;
+        p.onGround = true;
       }
-      if (s.triggerTouch[trig.id]) continue; // already fired while inside it
-      s.triggerTouch[trig.id] = 1;
-
-      switch (trig.kind) {
-        case "ship":
-        case "cube": {
-          if (s.mode === trig.kind) break;
-          s.mode = trig.kind;
-          // Velocity carries through a portal; only the box height changes.
-          s.rot = 0;
-          s.onGround = false;
-          out.push({ type: "portal", mode: trig.kind });
-          break;
-        }
-        case "pad": {
-          s.vy = trig.vy * s.gravitySign;
-          s.onGround = false;
-          out.push({ type: "pad", vy: trig.vy });
-          break;
-        }
-        case "ring": {
-          // The one place an edge matters: one click, one ring. Holding through
-          // two rings must only fire the first.
-          if (!input.ringArmed) break;
-          input.ringArmed = false;
-          s.vy = trig.vy * s.gravitySign;
-          s.onGround = false;
-          out.push({ type: "ring", vy: trig.vy });
-          break;
-        }
+      if (hasCeiling && p.y + hh >= ceiling) {
+        if (p.def.grounded) return this.die(out, "void");
+        p.y = ceiling - hh;
+        if (p.vy > 0) p.vy = 0;
+      }
+    } else {
+      if (hasCeiling && p.y + hh >= ceiling) {
+        p.y = ceiling - hh;
+        if (p.vy > 0) p.vy = 0;
+        p.onGround = true;
+      }
+      if (p.y - hh <= ground) {
+        if (p.def.grounded) return this.die(out, "void");
+        p.y = ground + hh;
+        if (p.vy < 0) p.vy = 0;
       }
     }
+
+    if (p.onGround && !wasOnGround) out.push({ type: "land" });
+
+    // ── triggers ────────────────────────────────────────────────────────────
+    // After movement, so a pad fires where the player actually ended up. Fired
+    // on the rising edge only: a portal re-applied every step would fire dozens
+    // of times crossing it.
+    const ctx: TouchContext = { player: p, input, events: out, palette: this.palette };
+    const [lo, hi] = world.span(p.box());
+    for (let gx = lo; gx <= hi; gx++) {
+      const col = world.columns[gx];
+      if (!col) continue;
+      for (const trigger of col.triggers) {
+        // Recomputed per trigger: a size portal changes the box mid-loop, and
+        // the next trigger must be tested against the new one.
+        if (!overlaps(p.box(), trigger.box)) {
+          this.triggerTouch[trigger.id] = 0;
+          continue;
+        }
+        if (this.triggerTouch[trigger.id]) continue;
+        this.triggerTouch[trigger.id] = 1;
+        trigger.onEnter(ctx);
+      }
+    }
+
+    // ── hazards ─────────────────────────────────────────────────────────────
+    if (hitsHazard(p, world)) return this.die(out, "hazard");
+
+    // Fell out of the world, in whichever direction that currently means.
+    const depth = p.gravitySign === 1 ? ground - (p.y + hh) : (p.y - hh) - ceiling;
+    if (Number.isFinite(depth) && depth > VOID_DEPTH) return this.die(out, "void");
+
+    // ── finish ──────────────────────────────────────────────────────────────
+    if (p.x > this.maxX) this.maxX = p.x;
+    if (p.x >= world.lengthPx) {
+      this.status = "complete";
+      out.push({ type: "complete", timeSec: this.t });
+      return;
+    }
+
+    p.def.applyRotation(p, input, p.speed(), dt);
+    this.palette.step(dt);
   }
-
-  if (hitsHazard(s, level)) {
-    die(s, out, "hazard");
-    return;
-  }
-
-  if (s.y + hh < ground - TILE * 4) {
-    die(s, out, "void");
-    return;
-  }
-
-  if (s.x > s.maxX) s.maxX = s.x;
-
-  if (s.x >= level.lengthPx) {
-    s.status = "complete";
-    out.push({ type: "complete", timeSec: s.t });
-    return;
-  }
-
-  applyRotation(s, level.speed, dt);
 }
 
-/** Visual height of the player in the current mode, for the renderer. */
-export function playerSize(s: SimState): { w: number; h: number } {
-  return s.mode === "ship" ? { w: CUBE_SIZE, h: SHIP_H } : { w: CUBE_SIZE, h: CUBE_SIZE };
+/** Visual height of the player, for the renderer. */
+export function playerSize(p: Player): { w: number; h: number } {
+  return p.size();
 }
+
+export { TILE };

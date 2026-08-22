@@ -12,7 +12,7 @@
 // to the music — a run that begins mid-track has the beat in the wrong place and
 // every jump cue lands wrong.
 
-const SRC = "/audio/stereo-madness.mp3";
+
 
 export type Music = {
   start: () => Promise<void>;
@@ -24,13 +24,14 @@ export type Music = {
   setMuted: (m: boolean) => void;
 };
 
-export function createMusic(): Music {
+export function createMusic(src: string | null): Music {
   let el: HTMLAudioElement | null = null;
   let muted = false;
 
-  function ensure(): HTMLAudioElement {
+  function ensure(): HTMLAudioElement | null {
+    if (!src) return null;
     if (!el) {
-      el = new Audio(SRC);
+      el = new Audio(src);
       el.preload = "auto";
       el.loop = true;
       el.volume = muted ? 0 : 0.5;
@@ -41,6 +42,7 @@ export function createMusic(): Music {
   return {
     async start() {
       const a = ensure();
+      if (!a) return;
       a.currentTime = 0;
       try {
         // Browsers reject play() until a real user gesture; this is called from

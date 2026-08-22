@@ -1958,3 +1958,30 @@ footer {
     flex-wrap: wrap;
   }
 }
+
+/* Level picker on the Fleming Dash start screen. */
+.fdash-level-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.fdash-level-btn {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cfe3ff;
+  cursor: pointer;
+}
+.fdash-level-btn:hover { background: rgba(255, 255, 255, 0.14); }
+.fdash-level-btn-on {
+  background: #3be86b;
+  border-color: #3be86b;
+  color: #08122c;
+  font-weight: 700;
+}

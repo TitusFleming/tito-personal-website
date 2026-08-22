@@ -1,226 +1,439 @@
-// Level compilation, collision, and whole-sim behaviour.
+// Whole-simulation behaviour, and the regressions that keep it honest.
 //
-// The tests that matter most here are the forgiveness ones. Anyone can make a
-// platformer where touching a spike kills you; the thing that makes this genre
-// feel fair is that the lethal region is visibly smaller than the drawn spike.
-// If those assertions ever flip, the game stops feeling like Geometry Dash and
-// starts feeling broken, so they are worth stating explicitly.
+// Every test here steps through the invariant harness in test-support.ts, so
+// each one also polices the entire state machine — grounded-ness, tunnelling,
+// monotonic x, one-way status — not only the thing it was written to check.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { FIXED_DT, TILE } from "./constants.ts";
-import { hitsHazard, playerBox, playerHazardBox, playerSolidBox } from "./collision.ts";
-import { compileLevel, validateLevel } from "./level.ts";
-import { createSim, progressPercent, stepSim } from "./simulate.ts";
-import type { InputState, LevelDoc, SimEvent, SimState } from "./types.ts";
+import { DEATH_FREEZE, FIXED_DT, LAND_TOLERANCE, SIZE_MINI, SPEEDS, TILE } from "./constants.ts";
+import { hitsHazard } from "./collision.ts";
+import { validateLevel } from "./level.ts";
+import { Checkpoint, Simulation } from "./simulate.ts";
+import { World } from "./world.ts";
+import { HELD, RELEASED, doc, run, runUntil, stepChecked, world } from "./test-support.ts";
+import type { SimEvent } from "./types.ts";
 
-function doc(over: Partial<LevelDoc> = {}): LevelDoc {
-  return {
-    format: 1,
-    id: "test",
-    rev: 1,
-    name: "Test",
-    author: "test",
-    startMode: "cube",
-    speed: 1,
-    groundY: 0,
-    ceilingY: null,
-    objects: [{ t: "end", x: 100 }],
-    ...over,
-  };
-}
+// ── compilation ─────────────────────────────────────────────────────────────
 
-const RELEASED: InputState = { held: false, ringArmed: false };
-
-function run(s: SimState, level: ReturnType<typeof compileLevel>, steps: number, input = RELEASED) {
-  const out: SimEvent[] = [];
-  for (let i = 0; i < steps && s.status === "running"; i++) {
-    stepSim(s, level, { ...input }, FIXED_DT, out);
-  }
-  return out;
-}
-
-// ── Compilation ─────────────────────────────────────────────────────────────
-
-test("a block span expands across every column it covers", () => {
-  const lv = compileLevel(doc({ objects: [{ t: "block", x: 10, y: 0, w: 5 }, { t: "end", x: 100 }] }));
+test("a block span is registered in every column it covers", () => {
+  const w = world([{ t: "block", x: 10, y: 0, w: 5 }]);
   for (let gx = 10; gx < 15; gx++) {
-    assert.equal(lv.columns[gx]?.solids.length, 1, `column ${gx} should hold the block`);
+    assert.equal(w.columns[gx]?.solids.length, 1, `column ${gx} should hold the block`);
   }
-  assert.equal(lv.columns[9]?.solids.length, 0);
-  assert.equal(lv.columns[15]?.solids.length, 0);
+  assert.equal(w.columns[9]?.solids.length, 0);
+  assert.equal(w.columns[15]?.solids.length, 0);
 });
 
 test("a zone overrides ground and ceiling per column", () => {
-  const lv = compileLevel(
-    doc({ objects: [{ t: "zone", x: 20, w: 10, groundY: -4, ceilingY: 12 }, { t: "end", x: 100 }] }),
-  );
-  assert.equal(lv.columns[25]?.groundY, -4 * TILE);
-  assert.equal(lv.columns[25]?.ceilingY, 12 * TILE);
-  assert.equal(lv.columns[19]?.groundY, 0, "outside the zone is untouched");
-  assert.equal(lv.columns[19]?.ceilingY, Infinity);
+  const w = world([{ t: "zone", x: 20, w: 10, groundY: -4, ceilingY: 12 }]);
+  assert.equal(w.columns[25]?.groundY, -4 * TILE);
+  assert.equal(w.columns[25]?.ceilingY, 12 * TILE);
+  assert.equal(w.columns[19]?.groundY, 0, "outside the zone is untouched");
+  assert.equal(w.columns[19]?.ceilingY, Infinity);
 });
 
 test("a level with no end marker is rejected rather than silently endless", () => {
-  assert.throws(() => compileLevel(doc({ objects: [] })), /no end marker/i);
+  assert.throws(() => new World(doc({ objects: [] })), /no end marker/i);
+});
+
+test("the camera ceiling comes from the level's own geometry", () => {
+  // It used to be a global constant tuned to one level's ship corridors.
+  const flat = world([{ t: "block", x: 5, y: 0 }]);
+  const tall = world([{ t: "block", x: 5, y: 0, h: 9 }]);
+  assert.ok(tall.maxHeight > flat.maxHeight);
+  assert.equal(tall.maxHeight, 9 * TILE);
 });
 
 test("validateLevel flags a ship ending with no ceiling", () => {
-  const warnings = validateLevel(
-    doc({ objects: [{ t: "ship", x: 10, y: 3 }, { t: "end", x: 100 }] }),
-  );
+  const warnings = validateLevel(doc({ objects: [{ t: "ship", x: 10, y: 0 }, { t: "end", x: 100 }] }));
   assert.ok(warnings.some((w) => /ship mode with no ceiling/i.test(w.message)));
 });
 
-// ── Forgiveness ─────────────────────────────────────────────────────────────
-
-test("the player has two hitboxes, and the solid one is much smaller", () => {
-  // This is the real game's model: spikes are tested against the full 30x30
-  // box, while only a small centre box decides whether a wall kills you.
-  const s = createSim(compileLevel(doc()));
-  const main = playerBox(s);
-  const hazard = playerHazardBox(s);
-  const solid = playerSolidBox(s);
-
-  assert.equal(hazard.w, main.w, "hazards use the full main box");
-  assert.equal(hazard.h, main.h);
-  assert.ok(solid.w < main.w * 0.5, `solid box ${solid.w} should be far under half of ${main.w}`);
-  // and concentric with it
-  assert.ok(Math.abs((solid.x + solid.w / 2) - (main.x + main.w / 2)) < 0.001);
-  assert.ok(Math.abs((solid.y + solid.h / 2) - (main.y + main.h / 2)) < 0.001);
+test("validateLevel flags modes that exist but are not tuned", () => {
+  const warnings = validateLevel(doc({ objects: [{ t: "ball", x: 10, y: 0 }, { t: "end", x: 100 }] }));
+  assert.ok(warnings.some((w) => /not yet tuned/i.test(w.message)));
 });
 
+// ── forgiveness ─────────────────────────────────────────────────────────────
+
 test("brushing the outer edge of a spike survives", () => {
-  const lv = compileLevel(doc({ objects: [{ t: "spike", x: 10, y: 0, hw: 6, hh: 12 }, { t: "end", x: 100 }] }));
-  const s = createSim(lv);
-  // Forgiveness now lives in the spike, not the player: a real spike's lethal
-  // rect is 6x12 inside its 30x30 cell, so the cube's full box can overlap the
-  // cell while missing the kill rect entirely.
-  s.x = 10 * TILE - 10;
-  s.y = TILE / 2;
-  assert.equal(hitsHazard(s, lv), false);
+  const w = world([{ t: "spike", x: 10, y: 0, hw: 6, hh: 12 }]);
+  const sim = new Simulation(w);
+  sim.player.x = 10 * TILE - 10;
+  sim.player.y = TILE / 2;
+  assert.equal(hitsHazard(sim.player, w), false);
 });
 
 test("landing squarely on a spike kills", () => {
-  const lv = compileLevel(doc({ objects: [{ t: "spike", x: 10, y: 0 }, { t: "end", x: 100 }] }));
-  const s = createSim(lv);
-  s.x = 10 * TILE + TILE / 2;
-  s.y = TILE / 2;
-  assert.equal(hitsHazard(s, lv), true);
+  const w = world([{ t: "spike", x: 10, y: 0 }]);
+  const sim = new Simulation(w);
+  sim.player.x = 10 * TILE + TILE / 2;
+  sim.player.y = TILE / 2;
+  assert.equal(hitsHazard(sim.player, w), true);
 });
 
-// ── Whole-sim behaviour ─────────────────────────────────────────────────────
+test("spike lethality has a stated threshold, not a remembered sample", () => {
+  // A sweep rather than a point: when SPIKE_BOX or the player body changes,
+  // this reports the NEW threshold instead of silently passing on one sample.
+  const w = world([{ t: "spike", x: 10, y: 0, hw: 6, hh: 12 }]);
+  const sim = new Simulation(w);
+  sim.player.y = TILE / 2;
+  const spikeCentre = 10 * TILE + TILE / 2;
+
+  let firstLethal = Number.NaN;
+  for (let d = 30; d >= 0; d--) {
+    sim.player.x = spikeCentre - d;
+    if (hitsHazard(sim.player, w)) {
+      firstLethal = d;
+      break;
+    }
+  }
+  assert.ok(
+    firstLethal >= 16 && firstLethal <= 20,
+    `spike becomes lethal at ${firstLethal}px of approach; expected 16-20. ` +
+      `If this moved deliberately, update the range — but know that it changes how fair the game feels.`,
+  );
+});
+
+// ── whole-sim behaviour ─────────────────────────────────────────────────────
 
 test("the cube rests on the ground and does not sink", () => {
-  const lv = compileLevel(doc());
-  const s = createSim(lv);
-  run(s, lv, 240);
-  assert.equal(s.status, "running");
-  assert.equal(s.y, TILE / 2, "should sit exactly one half-height above ground");
-  assert.equal(s.onGround, true);
+  const sim = new Simulation(world([]));
+  run(sim, 240);
+  assert.equal(sim.status, "running");
+  assert.equal(sim.player.y, TILE / 2, "should sit exactly one half-height above ground");
+  assert.equal(sim.player.onGround, true);
 });
 
 test("the cube lands on top of a block instead of falling through it", () => {
-  // Dropped from directly above rather than jumped into, so the test pins the
-  // landing behaviour and not the jump timing.
-  const lv = compileLevel(doc({ objects: [{ t: "block", x: 10, y: 0, w: 20 }, { t: "end", x: 100 }] }));
-  const s = createSim(lv);
-  s.x = 12 * TILE;
-  s.y = 8 * TILE;
-  s.onGround = false;
+  const sim = new Simulation(world([{ t: "block", x: 10, y: 0, w: 20 }]));
+  sim.player.x = 12 * TILE;
+  sim.player.y = 8 * TILE;
+  sim.player.onGround = false;
 
-  // 150 steps is long enough to fall the 6.5 tiles and land, but short enough
-  // that the cube is still over the block rather than off its far end.
-  const events = run(s, lv, 150);
-  assert.equal(s.status, "running", "landing on a block must not be fatal");
+  const events = run(sim, 150);
+  assert.equal(sim.status, "running", "landing on a block must not be fatal");
   assert.ok(events.some((e) => e.type === "land"), "should report a landing");
-  assert.equal(s.y, TILE + TILE / 2, "should rest on the block's top, one tile up");
-  assert.equal(s.onGround, true);
+  assert.equal(sim.player.y, TILE + TILE / 2, "should rest on the block's top");
+  assert.equal(sim.player.onGround, true);
 });
 
 test("a block at ground level is a wall that must be jumped", () => {
-  // This is correct Geometry Dash behaviour and worth stating: a one-tile block
-  // sitting on the floor is an obstacle, not a step you walk up.
-  const lv = compileLevel(doc({ objects: [{ t: "block", x: 6, y: 0 }, { t: "end", x: 100 }] }));
-  const s = createSim(lv);
-  run(s, lv, 480);
-  assert.equal(s.status, "dead");
+  const sim = new Simulation(world([{ t: "block", x: 6, y: 0 }]));
+  run(sim, 480);
+  assert.equal(sim.status, "dead");
 });
 
 test("running into a tall wall is fatal", () => {
-  const lv = compileLevel(doc({ objects: [{ t: "block", x: 6, y: 0, h: 6 }, { t: "end", x: 100 }] }));
-  const s = createSim(lv);
-  const events = run(s, lv, 480);
-  assert.equal(s.status, "dead");
+  const sim = new Simulation(world([{ t: "block", x: 6, y: 0, h: 6 }]));
+  const events = run(sim, 480);
+  assert.equal(sim.status, "dead");
   const death = events.find((e) => e.type === "death");
   assert.equal(death && death.type === "death" ? death.cause : null, "wall");
 });
 
 test("a ship portal switches mode and carries velocity through", () => {
-  const lv = compileLevel(
-    doc({
-      ceilingY: 14,
-      objects: [{ t: "ship", x: 5, y: 1 }, { t: "end", x: 100 }],
-    }),
-  );
-  const s = createSim(lv);
-  const events = run(s, lv, 240);
-  assert.equal(s.mode, "ship");
+  // y is the portal's cell BOTTOM: every GD portal is three tiles tall and the
+  // level file anchors it there, so y=0 is a floor-level portal.
+  const sim = new Simulation(world([{ t: "ship", x: 5, y: 0 }], { ceilingY: 14 }));
+  const events = run(sim, 240);
+  assert.equal(sim.player.mode, "ship");
   assert.ok(events.some((e) => e.type === "portal"));
 });
 
 test("a pad launches the cube without any input", () => {
-  const lv = compileLevel(doc({ objects: [{ t: "pad", x: 5, y: 0 }, { t: "end", x: 100 }] }));
-  const s = createSim(lv);
-
-  // Track the peak, not the height at an arbitrary step — the cube is airborne
-  // for well under a second, so sampling at the end just catches it back down.
+  const sim = new Simulation(world([{ t: "pad", x: 5, y: 0 }]));
   const events: SimEvent[] = [];
   let peak = 0;
-  for (let i = 0; i < 240 && s.status === "running"; i++) {
-    stepSim(s, lv, { ...RELEASED }, FIXED_DT, events);
-    peak = Math.max(peak, s.y);
+  for (let i = 0; i < 240 && sim.status === "running"; i++) {
+    stepChecked(sim, RELEASED, events);
+    peak = Math.max(peak, sim.player.y);
   }
-
   assert.ok(events.some((e) => e.type === "pad"), "the pad should have fired");
-  assert.ok(peak > TILE * 2, `pad launched the cube to ${(peak / TILE).toFixed(1)} tiles, expected > 2`);
+  assert.ok(peak > TILE * 2, `pad launched to ${(peak / TILE).toFixed(1)} tiles, expected > 2`);
 });
 
 test("a ring does nothing unless the player clicks", () => {
-  const lv = compileLevel(doc({ objects: [{ t: "ring", x: 5, y: 0 }, { t: "end", x: 100 }] }));
+  const passive = new Simulation(world([{ t: "ring", x: 5, y: 0 }]));
+  assert.equal(run(passive, 240, RELEASED).some((e) => e.type === "ring"), false);
 
-  const passive = createSim(lv);
-  const noClick = run(passive, lv, 240, { held: false, ringArmed: false });
-  assert.equal(noClick.some((e) => e.type === "ring"), false);
-
-  const active = createSim(lv);
-  const clicked = run(active, lv, 240, { held: true, ringArmed: true });
-  assert.ok(clicked.some((e) => e.type === "ring"));
+  const active = new Simulation(world([{ t: "ring", x: 5, y: 0 }]));
+  assert.ok(run(active, 240, HELD).some((e) => e.type === "ring"));
 });
 
 test("progress rises monotonically and reaching the end completes the level", () => {
-  const lv = compileLevel(doc({ objects: [{ t: "end", x: 40 }] }));
-  const s = createSim(lv);
+  const sim = new Simulation(new World(doc({ objects: [{ t: "end", x: 40 }] })));
   let last = 0;
   const events: SimEvent[] = [];
-  for (let i = 0; i < 5000 && s.status === "running"; i++) {
-    stepSim(s, lv, { ...RELEASED }, FIXED_DT, events);
-    const pct = progressPercent(s, lv);
+  for (let i = 0; i < 5000 && sim.status === "running"; i++) {
+    stepChecked(sim, RELEASED, events);
+    const pct = sim.progressPercent();
     assert.ok(pct >= last, "progress must never go backwards");
     last = pct;
   }
-  assert.equal(s.status, "complete");
-  assert.equal(progressPercent(s, lv), 100);
+  assert.equal(sim.status, "complete");
+  assert.equal(sim.progressPercent(), 100);
   assert.ok(events.some((e) => e.type === "complete"));
 });
 
 test("a dead sim stops moving", () => {
-  const lv = compileLevel(doc({ objects: [{ t: "block", x: 6, y: 0, h: 6 }, { t: "end", x: 100 }] }));
-  const s = createSim(lv);
-  run(s, lv, 480);
-  assert.equal(s.status, "dead");
-  const frozenX = s.x;
-  run(s, lv, 120);
-  assert.equal(s.x, frozenX, "nothing should advance after death");
+  const sim = new Simulation(world([{ t: "block", x: 6, y: 0, h: 6 }]));
+  run(sim, 480);
+  assert.equal(sim.status, "dead");
+  const frozenX = sim.player.x;
+  run(sim, 120);
+  assert.equal(sim.player.x, frozenX, "nothing should advance after death");
+});
+
+// ── portals through the whole simulation ────────────────────────────────────
+
+test("a size portal makes the player mini mid-run without disturbing the ground", () => {
+  const sim = new Simulation(world([{ t: "size", x: 5, y: 0, s: "mini" }]));
+  const events = runUntil(sim, (s) => s.player.sizeScale === SIZE_MINI);
+  assert.ok(events.some((e) => e.type === "size"));
+  run(sim, 120);
+  assert.equal(sim.player.onGround, true, "a mini cube still rests on the floor");
+  assert.equal(sim.player.y, (TILE * SIZE_MINI) / 2, "seated at its own half-height");
+});
+
+test("a speed portal changes horizontal speed mid-level", () => {
+  const sim = new Simulation(world([{ t: "speed", x: 5, y: 0, v: 3 }]));
+  const before = sim.player.speed();
+  runUntil(sim, (s) => s.player.speedIndex === 3);
+  assert.equal(sim.player.speed(), SPEEDS[3]);
+  assert.ok(sim.player.speed() > before);
+});
+
+test("a gravity portal inverts the fall and the player lands on the ceiling", () => {
+  const sim = new Simulation(
+    world([{ t: "grav", x: 5, y: 0, dir: "up" }, { t: "zone", x: 0, w: 60, ceilingY: 8 }]),
+  );
+  runUntil(sim, (s) => s.player.gravitySign === -1);
+  run(sim, 400);
+  assert.equal(sim.status, "running", "inverted gravity must not kill the player");
+  assert.ok(sim.player.y > 4 * TILE, "should have fallen UP toward the ceiling");
+});
+
+// ── regressions ─────────────────────────────────────────────────────────────
+// Each of these corresponds to a bug that 27 passing tests did not catch.
+
+test("REGRESSION: walking off a ledge clears onGround", () => {
+  // onGround was set true by landing and cleared only by jumping, so running
+  // off a platform left it true for the whole fall.
+  const sim = new Simulation(
+    world([
+      { t: "block", x: 2, y: 0, w: 5, h: 3 },
+      { t: "zone", x: 0, w: 60, groundY: -20 },
+    ]),
+  );
+  sim.player.x = 3 * TILE;
+  sim.player.y = 3 * TILE + TILE / 2;
+  sim.player.onGround = true;
+
+  runUntil(sim, (s) => s.player.x > 7.5 * TILE);
+  assert.equal(sim.player.onGround, false, "must be airborne after leaving the ledge");
+  assert.ok(sim.player.vy < 0, "and falling");
+});
+
+test("REGRESSION: no free mid-air jump after walking off a ledge", () => {
+  const sim = new Simulation(
+    world([
+      { t: "block", x: 2, y: 0, w: 5, h: 3 },
+      { t: "zone", x: 0, w: 60, groundY: -20 },
+    ]),
+  );
+  sim.player.x = 3 * TILE;
+  sim.player.y = 3 * TILE + TILE / 2;
+  sim.player.onGround = true;
+
+  runUntil(sim, (s) => s.player.x > 7.5 * TILE);
+  run(sim, 60); // fall a while longer
+  const events = run(sim, 1, HELD);
+  assert.equal(
+    events.filter((e) => e.type === "jump").length,
+    0,
+    "pressing jump in mid-air must do nothing",
+  );
+});
+
+test("REGRESSION: the cube spins while falling off a ledge", () => {
+  // A consequence of the same flag: rotation snapped to a quarter turn every
+  // step of the fall because the cube believed it was resting.
+  const sim = new Simulation(
+    world([
+      { t: "block", x: 2, y: 0, w: 5, h: 3 },
+      { t: "zone", x: 0, w: 60, groundY: -20 },
+    ]),
+  );
+  sim.player.x = 3 * TILE;
+  sim.player.y = 3 * TILE + TILE / 2;
+  sim.player.onGround = true;
+  sim.player.rot = 0;
+
+  runUntil(sim, (s) => s.player.x > 7.5 * TILE);
+  const before = sim.player.rot;
+  run(sim, 60);
+  assert.notEqual(sim.player.rot, before, "a falling cube must keep rotating");
+});
+
+test("REGRESSION: hitting a block's face never lifts the player onto its roof", () => {
+  // The landing test used to borrow the solid box's 10.5px inset, so being up
+  // to 16px inside a wall was silently promoted to a landing on the roof — a
+  // free half-tile teleport upward out of a fatal position.
+  //
+  // A sweep, not a sample: it states where the threshold IS, so a change to
+  // SOLID_HITBOX_SCALE reports the new number instead of quietly passing.
+  const w = world([{ t: "block", x: 10, y: 0, w: 4, h: 4 }]);
+  const blockTop = 4 * TILE;
+  const outcomes: Record<number, string> = {};
+
+  for (const depth of [1, 2, 3, 4, 6, 8, 12, 16, 20, 24]) {
+    const sim = new Simulation(w);
+    sim.player.x = 10 * TILE + 2;
+    sim.player.y = blockTop - depth + TILE / 2;
+    sim.player.vy = -300;
+    sim.player.onGround = false;
+    sim.step({ ...RELEASED }, FIXED_DT, []);
+
+    const lifted = sim.status === "running" && sim.player.y - sim.player.halfH() >= blockTop - 1;
+    outcomes[depth] = sim.status === "dead" ? "dead" : lifted ? "lifted" : "brushed past";
+  }
+
+  // The ONLY depth that may be lifted is within LAND_TOLERANCE, which is the
+  // documented 2px of "your feet were basically on top of it" forgiveness.
+  // Anything deeper used to be lifted too, up to 16px, because the landing test
+  // borrowed the solid box's inset.
+  for (const [depth, outcome] of Object.entries(outcomes)) {
+    if (Number(depth) > LAND_TOLERANCE) {
+      assert.notEqual(outcome, "lifted", `${depth}px into the face was lifted onto the roof`);
+    }
+  }
+
+  // Shallow contact past the tolerance is a survivable corner brush, because
+  // the small solid box has not reached the block yet. Deeper contact is a
+  // wall, because it has. That is the whole rule — no special cases.
+  assert.equal(outcomes[2], "lifted", `within tolerance: ${JSON.stringify(outcomes)}`);
+  assert.equal(outcomes[4], "brushed past", `corner brush: ${JSON.stringify(outcomes)}`);
+  assert.equal(outcomes[16], "dead", `wall: ${JSON.stringify(outcomes)}`);
+  assert.equal(outcomes[24], "dead", `wall: ${JSON.stringify(outcomes)}`);
+});
+
+test("a genuine descent onto a block's top still lands", () => {
+  // The other half of the previous test: tightening the wall rule must not
+  // break ordinary landings, which is the trade the inset was paying for.
+  const w = world([{ t: "block", x: 10, y: 0, w: 4, h: 4 }]);
+  const sim = new Simulation(w);
+  sim.player.x = 11 * TILE;
+  sim.player.y = 4 * TILE + TILE / 2 + 12; // above the top, descending onto it
+  sim.player.vy = -300;
+  sim.player.onGround = false;
+  run(sim, 30);
+  assert.equal(sim.status, "running");
+  assert.equal(sim.player.onGround, true);
+  assert.equal(sim.player.y, 4 * TILE + TILE / 2, "seated exactly on the block top");
+});
+
+test("REGRESSION: the death freeze lasts exactly DEATH_FREEZE", () => {
+  // The timer was drained inside the step AND again by the frame loop, so half
+  // a second of freeze lasted about a quarter.
+  const sim = new Simulation(world([{ t: "block", x: 6, y: 0, h: 6 }]));
+  run(sim, 480);
+  assert.equal(sim.status, "dead");
+  assert.equal(sim.deathTimer, DEATH_FREEZE);
+
+  const steps = Math.round(DEATH_FREEZE / FIXED_DT);
+  for (let i = 0; i < steps - 1; i++) sim.step({ ...RELEASED }, FIXED_DT, []);
+  assert.ok(sim.deathTimer > 0, "must still be frozen one step before the end");
+
+  sim.step({ ...RELEASED }, FIXED_DT, []);
+  assert.ok(sim.deathTimer < 1e-9, `expired at the end, was ${sim.deathTimer}`);
+});
+
+// ── checkpoints ─────────────────────────────────────────────────────────────
+
+test("a checkpoint restores size and speed, not just position", () => {
+  const sim = new Simulation(
+    world([
+      { t: "size", x: 5, y: 0, s: "mini" },
+      { t: "speed", x: 6, y: 0, v: 3 },
+    ]),
+  );
+  runUntil(sim, (s) => s.player.speedIndex === 3);
+  assert.equal(sim.player.sizeScale, SIZE_MINI);
+
+  const cp = Checkpoint.capture(sim.player);
+  sim.reset();
+  assert.equal(sim.player.sizeScale, 1, "reset returns to normal size");
+
+  sim.restore(cp);
+  assert.equal(sim.player.sizeScale, SIZE_MINI, "a mini checkpoint must resume mini");
+  assert.equal(sim.player.speedIndex, 3, "and at the speed it was set at");
+});
+
+// ── lethality ───────────────────────────────────────────────────────────────
+
+test("bumping your head on a block is fatal", () => {
+  // In the real game a block's underside kills, exactly like its side. This
+  // used to be a survivable bonk that zeroed the climb and dropped you.
+  const sim = new Simulation(world([{ t: "block", x: 8, y: 2, w: 6 }]));
+  const events = run(sim, 480, HELD);
+  assert.equal(sim.status, "dead", "jumping into an overhang must kill");
+  const death = events.find((e) => e.type === "death");
+  assert.equal(death && death.type === "death" ? death.cause : null, "wall");
+});
+
+test("clipping the corner of an overhang is still survivable", () => {
+  // The other half: head-bump death is judged on the SOLID box, so the
+  // forgiveness model is unchanged and a corner brush lives.
+  const w = world([{ t: "block", x: 8, y: 2, w: 6 }]);
+  const sim = new Simulation(w);
+  sim.player.x = 8 * TILE - 12;      // barely under the block's left edge
+  sim.player.y = 2 * TILE - TILE / 2 - 2;
+  sim.player.vy = 100;
+  sim.player.onGround = false;
+  sim.step({ ...RELEASED }, FIXED_DT, []);
+  assert.equal(sim.status, "running", "a corner brush must not kill");
+});
+
+test("a spike's kill box is a real fraction of the spike, not a sliver", () => {
+  // hx/hy in the object table are HALF extents. Reading them as full sizes
+  // gave a 6x12 lethal rect inside a 30x30 spike — so small that spikes read
+  // as decorative. Still well under the sprite, which is the forgiveness.
+  const lv = world([{ t: "spike", x: 10, y: 0, hw: 12, hh: 24 }]);
+  const spike = lv.columns[10]!.hazards[0]!;
+  assert.ok(spike.box.w >= TILE * 0.3, `kill box ${spike.box.w}px is too narrow to matter`);
+  assert.ok(spike.box.w <= TILE * 0.6, `kill box ${spike.box.w}px leaves no forgiveness`);
+});
+
+// ── colour triggers ─────────────────────────────────────────────────────────
+
+test("a colour trigger changes the palette when crossed, at any height", () => {
+  const sim = new Simulation(
+    world([{ t: "color", x: 5, target: "bg", rgb: [255, 0, 40] }]),
+  );
+  assert.deepEqual(sim.palette.bg, [40, 62, 255], "starts on the level's header colour");
+  runUntil(sim, (s) => s.player.x > 6 * TILE);
+  assert.deepEqual(sim.palette.bg, [255, 0, 40], "crossing the trigger recolours the background");
+});
+
+test("a colour fade interpolates rather than snapping", () => {
+  const sim = new Simulation(
+    world([{ t: "color", x: 5, target: "ground", rgb: [255, 255, 255], fade: 1 }]),
+  );
+  runUntil(sim, (s) => s.player.x > 5.5 * TILE);
+  const mid = [...sim.palette.ground];
+  assert.notDeepEqual(mid, [255, 255, 255], "must not have snapped");
+  run(sim, 240);
+  assert.deepEqual(sim.palette.ground, [255, 255, 255], "and must arrive");
+});
+
+test("restarting restores the level's opening colours", () => {
+  const sim = new Simulation(
+    world([{ t: "color", x: 5, target: "bg", rgb: [255, 0, 40] }]),
+  );
+  runUntil(sim, (s) => s.player.x > 6 * TILE);
+  sim.reset();
+  assert.deepEqual(sim.palette.bg, [40, 62, 255], "a new attempt starts on the opening colours");
 });

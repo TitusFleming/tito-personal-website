@@ -14,14 +14,8 @@
 /** Grid cell size. Everything is authored in grid units; pixels appear here and in the renderer. */
 export const TILE = 30;
 
-// ── Speed ───────────────────────────────────────────────────────────────────
-// Constant horizontal velocity — the player never accelerates sideways and
-// never stops. Running into a wall kills you, it does not slow you down.
-
-/** 1x speed: 10.386 tiles/s. */
-export const SPEED_1X = 311.58;
-/** 2x speed. Stereo Madness is entirely 1x (kA4 = 0), so this is unused for now. */
-export const SPEED_2X = 387.42;
+// Horizontal speed lives in the SPEEDS table further down: it is player state
+// set by speed portals, not a level-wide constant.
 
 // ── Cube ────────────────────────────────────────────────────────────────────
 // Apex height and horizontal reach are set independently, and only one of them
@@ -29,7 +23,7 @@ export const SPEED_2X = 387.42;
 //
 //   apex     = CUBE_JUMP_VY^2 / (2 * |CUBE_GRAVITY|) = 559^2 / 5200 = 60.09 px = 2.00 tiles
 //   airtime  = 2 * CUBE_JUMP_VY / |CUBE_GRAVITY|     = 1118 / 2600  = 0.4300 s
-//   distance = airtime * SPEED_1X                    = 0.4300 * 311.58 = 134.0 px = 4.47 tiles
+//   distance = airtime * SPEEDS[1]                   = 0.4300 * 311.58 = 134.0 px = 4.47 tiles
 //
 // The apex MUST stay at two tiles: Stereo Madness contains two-tile steps, and
 // dropping below that makes parts of the real level impossible. So the fix for
@@ -42,7 +36,6 @@ export const SPEED_2X = 387.42;
 
 export const CUBE_GRAVITY = -2600;
 export const CUBE_JUMP_VY = 559;
-export const CUBE_SIZE = 30;
 
 /**
  * Downward speed cap.
@@ -58,19 +51,54 @@ export const CUBE_TERMINAL_VY = -1400;
 // feel here, and only the gravity figure is well-sourced, so expect to tune
 // SHIP_THRUST first when the ship handles wrong.
 
-export const SHIP_GRAVITY = -750; // -25 tiles/s^2, much gentler than the cube
-/** Replaces gravity while held. Must exceed |SHIP_GRAVITY| or the ship cannot climb. */
-export const SHIP_THRUST = 1050;
-/** Symmetric clamp — the ship is as slow to climb as it is to fall. */
-export const SHIP_MAX_VY = 345;
-/** The ship is 30x20, not 30x30. Derived from mode every step, never stored. */
-export const SHIP_H = 20;
-export const SHIP_W = 30;
+/**
+ * SHIP FEEL. Three numbers, and only the first is documented.
+ *
+ * -25 b/s^2 (= -750 px/s^2 at 30 px per block) is the community-documented
+ * ship gravity. Thrust is NOT documented anywhere I could find, and making it
+ * equal and opposite — which an earlier version did, reasoning about "centred
+ * controls" — is what made the ship feel heavy: with equal accelerations,
+ * reversing from full dive to full climb takes 2 * MAX_VY / ACCEL, over a
+ * second, which reads as flying a brick.
+ *
+ * Thrust therefore exceeds gravity, which is also how the real thing behaves:
+ * holding climbs decisively rather than merely arresting a fall. Raise
+ * SHIP_THRUST to make the ship lighter and more eager, lower it toward
+ * |SHIP_GRAVITY| to make it heavier.
+ *
+ * Gravity is pulled slightly below the documented figure for the same reason.
+ * Set it back to -750 for strict fidelity at the cost of feel.
+ */
+export const SHIP_GRAVITY = -620;
+/** Replaces gravity while held. Deliberately stronger than gravity. */
+export const SHIP_THRUST = 1120;
+/**
+ * Clamp on vertical speed, symmetric. Not documented; derived from the
+ * corridor, which is ten tiles: this crosses one in roughly 0.9 s, fast enough
+ * to feel responsive and slow enough to still be steerable.
+ *
+ * Lowering this makes the ship feel lighter and more twitchy; raising it lets
+ * the ship build real momentum and feel heavier.
+ */
+export const SHIP_MAX_VY = 430;
+// The ship's 30x20 body is declared as a scale in the MODES table, not as a
+// pixel size here — see engine/core/hitbox.ts for why sizes are scales.
 
-/** Nose follows the velocity vector, capped so it never points straight up. */
-export const SHIP_ROT_MAX = (40 * Math.PI) / 180;
+/**
+ * Nose angle comes from the VELOCITY VECTOR and nothing else.
+ *
+ * That is how the real game does it — the ship's rotation correlates with its
+ * vertical velocity, nose up while climbing, nose down while falling. A
+ * previous version added a bias from the held button so the tip would flick up
+ * the instant you pressed; that is not in the game and made the nose lie about
+ * where the ship was actually going.
+ *
+ * The tip now reads correctly because the ship ACCELERATES properly, not
+ * because the sprite is faked ahead of the physics.
+ */
+export const SHIP_ROT_MAX = (35 * Math.PI) / 180;
 /** Exponential smoothing rate for ship rotation, per second. See expSmooth(). */
-export const SHIP_ROT_K = 18;
+export const SHIP_ROT_K = 22;
 
 /**
  * Exactly one half-turn per jump.
@@ -84,50 +112,109 @@ export const SHIP_ROT_K = 18;
  */
 export const CUBE_SPIN_RATE = Math.PI / 0.43;
 
-// ── Boosts ──────────────────────────────────────────────────────────────────
-// Derived from tile-height targets rather than measured, so these are estimates.
 
-/** Yellow pad, targeting a 3.7-tile bounce: sqrt(2 * 2600 * 111) = 760. */
-export const PAD_YELLOW_VY = 760;
-/** A ring gives exactly a normal jump, but in mid-air — so it tracks CUBE_JUMP_VY. */
-export const RING_YELLOW_VY = 559;
+// ── Boosts ──────────────────────────────────────────────────────────────────
+/**
+ * Pad and orb strengths, as documented multiples of the cube's jump.
+ *
+ * The game's own figures, in its Y-speed units, with a normal cube jump at
+ * 1.94: yellow pad 2.77, pink 1.79, red 3.65, blue -1.37; yellow orb 1.91,
+ * pink 1.37, red 2.68, blue -1.37, green -1.91, black -2.6. A negative value
+ * means the boost also reverses gravity — black is the exception, slamming you
+ * along the CURRENT down without flipping.
+ *
+ * Ratios rather than pixel velocities, so they stay correct if the jump is
+ * ever retuned and a new colour is one row. An earlier version guessed these.
+ */
+const JUMP_UNITS = 1.94;
+const ratio = (units: number) => (Math.abs(units) / JUMP_UNITS) * CUBE_JUMP_VY;
+
+export const PAD_TABLE = {
+  yellow: { vy: ratio(2.77), flipsGravity: false },
+  pink: { vy: ratio(1.79), flipsGravity: false },
+  red: { vy: ratio(3.65), flipsGravity: false },
+  blue: { vy: ratio(1.37), flipsGravity: true },
+} as const;
+
+export const RING_TABLE = {
+  yellow: { vy: ratio(1.91), flipsGravity: false },
+  pink: { vy: ratio(1.37), flipsGravity: false },
+  red: { vy: ratio(2.68), flipsGravity: false },
+  blue: { vy: ratio(1.37), flipsGravity: true },
+  green: { vy: ratio(1.91), flipsGravity: true },
+  black: { vy: -ratio(2.6), flipsGravity: false },
+} as const;
 
 // ── Collision forgiveness ───────────────────────────────────────────────────
-// This block is what separates "hard" from "unfair". All four need tuning by
-// feel, and they are the first thing to touch when a jump "should have worked".
+// This block is what separates "hard" from "unfair", and it is the first thing
+// to touch when a jump "should have worked".
 
-/** How far below a tile's top the previous bottom may sit and still count as landing on it. */
+/** How far below a surface's top the previous bottom may sit and still land on it. */
 export const LAND_TOLERANCE = 2;
 
 /**
+ * The small centre box, as a fraction of the body.
+ *
  * The player has two hitboxes, which is how the real game works and why it
- * feels fair despite being brutal:
+ * feels fair despite being brutal: hazards test the FULL body, while only this
+ * much smaller centre box decides whether running into a block's face kills
+ * you. Clipping a corner is therefore survivable without any special-case rule.
  *
- *   Main hitbox  — the full 30x30 AABB. Used against HAZARDS. A spike's own
- *                  lethal rect is tiny (6x12 for id 8), so the forgiveness
- *                  lives in the spike, not in shrinking the player.
- *   Solid hitbox — a much smaller box at the player's centre, sometimes called
- *                  the "blue" hitbox. Used only to decide whether running into
- *                  a block's FACE kills you. Landing on top still uses the full
- *                  box, so platforms behave normally.
- *
- * The consequence is that clipping a block's corner is survivable — the corner
- * has to reach the middle of the cube to count — without any special-case
- * grace rule. This replaced an earlier single SIDE_KILL_DEPTH fudge.
- *
- * The community documents the main box as exactly 30 units and the solid box as
- * "much smaller" but publishes no exact figure I could find, so this ratio is a
- * tunable: raise it to make wall deaths harsher, lower it to be kinder.
+ * The community documents the main box as exactly 30 units and this one as
+ * "much smaller" but publishes no figure, so it is a tunable: raise it to make
+ * wall deaths harsher, lower it to be kinder.
  */
 export const SOLID_HITBOX_SCALE = 0.3;
 
-/** Main hitbox is the full player box, so hazards get no extra inset. */
-export const HAZARD_INSET = 0;
 /**
  * A spike's lethal rect inside its 30x30 cell — deliberately much smaller than
- * the drawn triangle, which is how real GD lets you brush a spike's edge and live.
+ * the drawn triangle, which is how brushing a spike's edge survives.
  */
 export const SPIKE_BOX = { dx: 10, dy: 2, w: 10, h: 16 } as const;
+
+/**
+ * How far a hazard may be from a surface and still be treated as resting on it.
+ *
+ * A quarter tile, matching the importer's quantisation: closer than this and
+ * the gap is rounding, further and it is level design. See World.seatHazards.
+ */
+export const HAZARD_SEAT_SNAP = TILE * 0.26;
+
+// ── Speeds ──────────────────────────────────────────────────────────────────
+/**
+ * The five speed-portal settings, px/s. Indexed by SpeedIndex.
+ *
+ * Speed is player state set by a portal, not a level-wide scalar: official
+ * levels change speed mid-run from level 2 onward.
+ */
+export const SPEEDS = [251.16, 311.58, 387.42, 468.0, 576.0] as const;
+/** Index into SPEEDS. 1 is the 1x default. */
+export const SPEED_NORMAL = 1;
+
+// ── Size ────────────────────────────────────────────────────────────────────
+/**
+ * Mini portal scale.
+ *
+ * The entire implementation of "mini" is this number reaching Player.sizeScale:
+ * every box the player owns comes from one rule, so they all shrink together.
+ */
+export const SIZE_MINI = 0.5;
+export const SIZE_NORMAL = 1;
+
+// ── Modes beyond cube and ship ──────────────────────────────────────────────
+// UNTUNED. These exist to prove the MODES table is a real seam — each is a
+// table entry and nothing else. No level here reaches them yet, so the numbers
+// are plausible starting points, NOT measured against the real game.
+
+export const BALL_GRAVITY = -2600;
+export const BALL_TERMINAL_VY = -1000;
+export const BALL_ROLL_RATE = Math.PI / 45;
+
+export const UFO_GRAVITY = -1600;
+export const UFO_TAP_VY = 400;
+export const UFO_TERMINAL_VY = -1000;
+
+export const WAVE_SLOPE = 1;
 
 // ── Loop ────────────────────────────────────────────────────────────────────
 
@@ -136,18 +223,15 @@ export const SPIKE_BOX = { dx: 10, dy: 2, w: 10, h: 16 } as const;
  *
  * 1. A variable-dt jump reaches a different apex on a 60 Hz laptop than on a
  *    144 Hz monitor. In a game built on memorising exact arcs, that means a
- *    level that is possible on one machine and impossible on another.
+ *    level possible on one machine and impossible on another.
  * 2. Step size bounds tunnelling. At terminal velocity, 1/240 s moves 5.83 px
- *    against a 30 px tile — about 5x margin, so simple overlap tests are safe
- *    and no swept AABB is needed. At 1/60 s it would be 23.3 px, which a
- *    thin platform would already slip through.
+ *    against a 30 px tile — about 5x margin, so simple overlap tests are safe.
  */
 export const FIXED_DT = 1 / 240;
 
 /**
  * Above this, the frame is discarded and the run pauses instead of simulating.
- * A tab switch or a closed laptop lid otherwise replays seconds of physics with
- * no input, which is a guaranteed death the player never saw happen.
+ * A tab switch otherwise replays seconds of physics with no input.
  */
 export const MAX_FRAME_DT = 0.25;
 
@@ -160,54 +244,71 @@ export const DEATH_FREEZE = 0.5;
 // ── Camera ──────────────────────────────────────────────────────────────────
 // Purely presentational — lives in the renderer, not the sim, so it can never
 // affect determinism or replay tapes.
+//
+// The camera's target comes from the PLAYER and nothing else. The only thing it
+// clamps against is a border the level itself declares (see World.playBounds).
 
 /**
  * How many tiles of world height fill the viewport.
  *
- * The game zooms to show this many rows whatever the window size, the way the
- * real one does. Without it the world draws 1:1 and a tall browser window is
- * mostly empty sky with a tiny player, while a short one crops the ship
- * sections — the visible playfield would depend on the reader's window, which
- * changes the difficulty.
+ * The game zooms to show this many rows whatever the window size. Without it a
+ * tall browser window is mostly empty sky and a short one crops the ship
+ * sections, so the visible playfield — and the difficulty — would depend on the
+ * reader's window.
+ *
+ * Twelve is load bearing, and it is GROUND_BAND_TILES that makes it so: a GD
+ * ship corridor is ten tiles, so corridor plus the two-tile ground band is
+ * exactly the viewport and a corridor view sits still.
+ *
+ * This was briefly eleven with a one-tile band, which squeezed the ground band
+ * to half its height and shoved the player and everything standing on the floor
+ * down against the bottom edge of the canvas — spikes read as half-buried.
  */
-export const VIEW_TILES = 11;
+export const VIEW_TILES = 12;
 
 /**
- * Hard ceiling on how high the camera may look, in tiles above the ground.
+ * How much ground is visible below the floor line.
  *
- * Ship corridors are capped at 10 tiles, so without this the camera happily
- * followed the ship into empty sky above the level and showed a blank blue
- * field with nothing in it. The player can't get up there; the camera shouldn't
- * either.
+ * Not decoration: it is the difference between the floor reading as ground and
+ * reading as the bottom of the screen. Anything standing on the floor needs
+ * room beneath it or it looks sunk.
  */
-export const WORLD_TOP_TILES = 13;
+export const GROUND_BAND_TILES = 2;
 
 /** The player sits this far from the left edge, so you can see what is coming. */
 export const CAM_ANCHOR_FRAC = 0.32;
 
 /**
  * How far above the player the camera sits, as a fraction of view height.
- *
- * Pushes the player down into the lower third so most of the screen shows what
- * is ahead and above rather than the solid ground band below.
+ * Pushes the player into the lower third so most of the screen shows what is
+ * ahead and above rather than the solid ground band below.
  */
 export const CAM_Y_OFFSET_FRAC = 0.16;
 
-/** Half-height of the vertical dead band. In cube mode the player rarely leaves it, so the camera sits still. */
-export const CAM_Y_DEADZONE_FRAC = 0.08;
+/**
+ * How far above the floor the player must climb before the camera moves AT ALL.
+ *
+ * Five tiles is roughly two and a half cube jumps stacked, so ordinary
+ * play — jumping, landing, hopping a one or two tile step — moves the view by
+ * exactly nothing. The camera only starts to travel once the player is
+ * genuinely ascending through the level.
+ *
+ * This replaced a scheme that anchored the view to the last surface landed on
+ * and eased toward it. That anchor jumped on every single landing, so the
+ * camera was permanently chasing a target that kept teleporting — which is
+ * what made the movement jerky. The rule here has no discontinuities: the
+ * camera's target is a continuous function of the player's height, flat inside
+ * the band and 1:1 outside it.
+ */
+export const CAM_RISE_TILES = 5;
 
 /**
  * Seconds of vertical velocity the camera looks ahead by.
  *
  * Without it the camera only reacts once the player has already moved, which is
- * worst on the way down: you fall into screen space you cannot see yet. Leading
- * by a fraction of a second means a descent reveals what is underneath before
- * you arrive, and it costs nothing on the way up because the same lead pushes
- * the view upward there.
+ * worst on the way down: you fall into screen space you cannot see yet.
  */
 export const CAM_LOOKAHEAD_S = 0.16;
-// Raised sharply: at 6/9 with a wide dead band the camera lagged behind the
-// player badly enough to lose them off the top of the frame in ship sections.
 export const CAM_K_CUBE = 11;
 export const CAM_K_SHIP = 20;
 
@@ -215,8 +316,7 @@ export const CAM_K_SHIP = 20;
  * Frame-rate-independent exponential smoothing.
  *
  * The naive `v += (target - v) * 0.1` is a different filter at 60 Hz than at
- * 240 Hz, which would make the camera and the ship's nose behave differently on
- * different machines. This form does not.
+ * 240 Hz, which would make the camera behave differently on different machines.
  */
 export function expSmooth(current: number, target: number, k: number, dt: number): number {
   return current + (target - current) * (1 - Math.exp(-k * dt));

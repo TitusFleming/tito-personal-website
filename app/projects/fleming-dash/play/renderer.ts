@@ -11,21 +11,33 @@
 // The palette is the game's, not the website's. An earlier version used the
 // site's warm browns so the page would feel coherent; that was the wrong call.
 // A Geometry Dash clone that isn't Geometry Dash blue reads as a different game.
+//
+// THE CAMERA TAKES AN INTERPOLATED POSITION, NOT THE SIMULATION.
+// The sim runs at a fixed 240 Hz and the display refreshes at its own rate, so
+// every frame sits some fraction of a step behind the latest state. That
+// fraction is what `interpolate` applies. Feeding the camera raw simulation
+// position instead quantises it to whole steps: at 60 Hz the world scrolled
+// 3.89 or 5.19 or 6.49 px on consecutive near-identical frames, a 67% swing,
+// while the player alone moved smoothly. The camera positions the ENTIRE world,
+// so it is the one thing that most needs the smoothing. Hence the signature
+// below takes a Snapshot and has no access to the Player's raw x/y.
 
 import {
   CAM_ANCHOR_FRAC,
   CAM_K_CUBE,
-  CAM_K_SHIP,
-  CAM_Y_DEADZONE_FRAC,
-  CAM_Y_OFFSET_FRAC,
-  CAM_LOOKAHEAD_S,
+  CAM_RISE_TILES,
+  GROUND_BAND_TILES,
   TILE,
   VIEW_TILES,
-  WORLD_TOP_TILES,
   expSmooth,
 } from "../engine/constants.ts";
-import { playerBox, playerHazardBox, playerSolidBox } from "../engine/collision.ts";
-import type { CompiledLevel, SimState } from "../engine/types.ts";
+import type { Player } from "../engine/player.ts";
+import type { World } from "../engine/world.ts";
+import type { Palette } from "../engine/palette.ts";
+import { ModePortal, Portal } from "../engine/objects/portals.ts";
+import { Pad } from "../engine/objects/boosts.ts";
+import { Ring } from "../engine/objects/boosts.ts";
+import { drawBlock, drawCube, drawPad, drawPortal, drawRing, drawShip, drawSpike } from "./sprites.ts";
 
 const COLORS = {
   skyTop: "#1E6BFF",
@@ -44,6 +56,9 @@ const COLORS = {
   shipTrim: "#C98A00",
   portalShip: "#FF4FD8",
   portalCube: "#22DD55",
+  portalGravity: "#FF9500",
+  portalSize: "#00E5FF",
+  portalSpeed: "#B36BFF",
   pad: "#FFD400",
   ring: "#FFD400",
   pit: "#06122C",
@@ -56,20 +71,7 @@ const COLORS = {
   hitHazard: "#FFEE00",
 } as const;
 
-export type Camera = {
-  x: number;
-  y: number;
-  /**
-   * The surface height the camera is tracking in cube mode.
-   *
-   * This is the whole trick: in cube mode the camera follows the GROUND the
-   * player last stood on, not the player. A jump is a 2-tile arc several times a
-   * second, and following that makes the whole screen bob constantly. Anchoring
-   * to the last landing means an ordinary jump moves nothing, and the view only
-   * shifts when you actually reach a different level of the world.
-   */
-  anchorY: number;
-};
+export type Camera = { x: number; y: number };
 
 /**
  * How much world fits on screen, and the zoom that achieves it.
@@ -84,65 +86,134 @@ export function viewport(viewW: number, viewH: number) {
   return { scale, vw: viewW / scale, vh: viewH / scale };
 }
 
-export function createCamera(level: CompiledLevel): Camera {
-  return { x: -TILE * 4, y: level.spawn.y, anchorY: level.spawn.y };
+export function createCamera(world: World): Camera {
+  return { x: -TILE * 4, y: world.spawn.y };
 }
 
-/** Snap the camera straight to the player, with no easing — used on spawn and respawn. */
-/** Never look above the level's ceiling, and never below the ground. */
-function clampCamY(y: number, vh: number): number {
-  const top = WORLD_TOP_TILES * TILE - vh / 2;
-  const bottom = vh / 2 - TILE * 2;
-  return Math.max(bottom, Math.min(top, y));
+/**
+ * Keep the view inside the level's declared borders.
+ *
+ * The camera's TARGET always comes from the player and nothing else; this only
+ * stops the view running past a border the level actually declares. Two cases,
+ * from one rule:
+ *
+ *   bounded, and the band fits the viewport
+ *       -> nothing to scroll to, so the view sits still at the band's centre.
+ *          This is what makes a ship corridor static: GD's ship gamemode has
+ *          top and bottom borders by default, and a 10-tile corridor inside an
+ *          11-tile viewport has nowhere to go.
+ *   otherwise
+ *       -> clamp, so the player is followed but a border is never crossed.
+ *
+ * In an OPEN section the ceiling is Infinity and only the ground floor applies,
+ * so the camera simply follows the player upward. It cannot wander into blank
+ * sky because the player cannot get there.
+ */
+function clampCamY(y: number, vh: number, world: World, x: number): number {
+  const { floor, ceiling } = world.playBounds(x);
+  const low = floor - GROUND_BAND_TILES * TILE;
+
+  if (Number.isFinite(ceiling)) {
+    const band = ceiling - low;
+    if (band <= vh) return (ceiling + low) / 2;
+    return Math.max(low + vh / 2, Math.min(ceiling - vh / 2, y));
+  }
+  return Math.max(low + vh / 2, y);
 }
 
-export function snapCamera(cam: Camera, s: SimState, viewW: number, viewH: number): void {
+/**
+ * Where the camera sits while the player is anywhere inside the resting band —
+ * that is, during ordinary play. Framed off the floor, not off the player.
+ */
+function restingCamY(world: World, x: number, vh: number): number {
+  const { floor, ceiling } = world.playBounds(x);
+  const low = floor - GROUND_BAND_TILES * TILE;
+  if (Number.isFinite(ceiling) && ceiling - low <= vh) return (ceiling + low) / 2;
+  return low + vh / 2;
+}
+
+export type Snapshot = { x: number; y: number; rot: number };
+
+/**
+ * Blend the previous fixed step toward the current one.
+ *
+ * Everything visual downstream — camera included — consumes this rather than
+ * the Player, which is what keeps the world scrolling smoothly between steps.
+ */
+export function interpolate(prev: Snapshot, p: Player, alpha: number): Snapshot {
+  const a = alpha < 0 ? 0 : alpha > 1 ? 1 : alpha;
+  return {
+    x: prev.x + (p.x - prev.x) * a,
+    y: prev.y + (p.y - prev.y) * a,
+    rot: prev.rot + (p.rot - prev.rot) * a,
+  };
+}
+
+/** Snap straight to the player, with no easing — used on spawn and respawn. */
+export function snapCamera(
+  cam: Camera,
+  p: Player,
+  world: World,
+  viewW: number,
+  viewH: number,
+): void {
   const { vw, vh } = viewport(viewW, viewH);
-  cam.x = s.x - vw * CAM_ANCHOR_FRAC;
-  cam.anchorY = s.y;
-  cam.y = clampCamY(s.y + vh * CAM_Y_OFFSET_FRAC, vh);
+  cam.x = p.x - vw * CAM_ANCHOR_FRAC;
+  cam.y = clampCamY(restingCamY(world, p.x, vh), vh, world, p.x);
 }
 
+/**
+ * Move the camera for one frame.
+ *
+ * ONE rule, for every gamemode:
+ *
+ *   the player is within CAM_RISE_TILES of the floor  ->  the camera does not
+ *                                                          move at all
+ *   the player is above that                          ->  the camera follows
+ *                                                          the excess, 1:1
+ *
+ * So jumping, landing, and hopping small steps move the view by nothing, and
+ * the camera only travels once the player is genuinely climbing — about two and
+ * a half stacked jumps up.
+ *
+ * The target is a CONTINUOUS function of the player's height: flat inside the
+ * band, linear outside it, with no jump at the boundary. That is what removes
+ * the jerkiness. The previous version tracked the last surface landed on, and
+ * that target teleported on every landing, so the easing was permanently
+ * chasing a step change.
+ */
 export function updateCamera(
   cam: Camera,
-  s: SimState,
+  p: Player,
+  view: Snapshot,
+  world: World,
   viewW: number,
   viewH: number,
   dt: number,
 ): void {
   const { vw, vh } = viewport(viewW, viewH);
-  cam.x = s.x - vw * CAM_ANCHOR_FRAC;
+  // Interpolated, not p.x. See the note at the top of this file.
+  cam.x = view.x - vw * CAM_ANCHOR_FRAC;
 
-  // What the camera is actually tracking.
-  //
-  // Cube: the last surface stood on. Jumping does not move the camera at all,
-  // which is what the real game does — the view only shifts once you land
-  // somewhere genuinely higher or lower. Falling is the one exception: if you
-  // are dropping a long way there is no "last ground" worth holding onto, so
-  // the camera starts following you down.
-  //
-  // Ship: the player directly, led by velocity, because there is no ground to
-  // anchor to and the whole mode is vertical movement.
-  let desired: number;
-  if (s.mode === "cube") {
-    if (s.onGround) cam.anchorY = s.y;
-    else if (s.y < cam.anchorY - TILE * 3) cam.anchorY = s.y + TILE * 3;
-    desired = cam.anchorY + vh * CAM_Y_OFFSET_FRAC;
-  } else {
-    desired = s.y + vh * CAM_Y_OFFSET_FRAC + s.vy * CAM_LOOKAHEAD_S;
-  }
+  const rest = restingCamY(world, view.x, vh);
+  const { floor } = world.playBounds(view.x);
+  const ceilingOfBand = floor + CAM_RISE_TILES * TILE;
 
-  const band = vh * CAM_Y_DEADZONE_FRAC;
-  const k = s.mode === "ship" ? CAM_K_SHIP : CAM_K_CUBE;
-  let target = cam.y;
-  if (desired > cam.y + band) target = desired - band;
-  else if (desired < cam.y - band) target = desired + band;
-  cam.y = clampCamY(expSmooth(cam.y, target, k, dt), vh);
+  let desired = rest;
+  if (view.y > ceilingOfBand) desired = rest + (view.y - ceilingOfBand);
+  else if (view.y < floor) desired = rest + (view.y - floor); // fell into a pit
+
+  cam.y = clampCamY(expSmooth(cam.y, desired, p.def.cameraK || CAM_K_CUBE, dt), vh, world, view.x);
 }
 
-export type Snapshot = { x: number; y: number; rot: number };
-
 export type DrawInfo = {
+  /**
+   * The level's current colours, from its own colour triggers.
+   *
+   * Passed in rather than read from the simulation, so the renderer still has
+   * no handle on simulation state and cannot affect it.
+   */
+  palette: Palette;
   percent: number;
   attempt: number;
   practice: boolean;
@@ -152,18 +223,15 @@ export type DrawInfo = {
 
 export function draw(
   ctx: CanvasRenderingContext2D,
-  s: SimState,
-  prev: Snapshot,
-  level: CompiledLevel,
+  p: Player,
+  view: Snapshot,
+  world: World,
   cam: Camera,
-  alpha: number,
   viewW: number,
   viewH: number,
   info: DrawInfo,
 ): void {
-  const px = prev.x + (s.x - prev.x) * alpha;
-  const py = prev.y + (s.y - prev.y) * alpha;
-  const prot = prev.rot + (s.rot - prev.rot) * alpha;
+  const { x: px, y: py, rot: prot } = view;
 
   // Draw the world zoomed, then restore before the HUD so text stays crisp and
   // sized in real pixels rather than scaling with the window.
@@ -176,8 +244,8 @@ export function draw(
 
   // ── sky ──────────────────────────────────────────────────────────────────
   const grad = ctx.createLinearGradient(0, 0, 0, vh);
-  grad.addColorStop(0, COLORS.skyTop);
-  grad.addColorStop(1, COLORS.skyBottom);
+  grad.addColorStop(0, info.palette.css("bg", 0.82));
+  grad.addColorStop(1, info.palette.css("bg", 1.18));
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, vw, vh);
 
@@ -194,7 +262,7 @@ export function draw(
   ctx.stroke();
 
   const lo = Math.max(0, Math.floor(cam.x / TILE) - 1);
-  const hi = Math.min(level.columns.length - 1, Math.floor((cam.x + vw) / TILE) + 1);
+  const hi = Math.min(world.columns.length - 1, Math.floor((cam.x + vw) / TILE) + 1);
 
   // ── ground ───────────────────────────────────────────────────────────────
   // Iterate the full visible span rather than only the columns that exist, and
@@ -202,7 +270,7 @@ export function draw(
   // in a cliff at x=0 and again past the finish line, which reads as a bug.
   const gLo = Math.floor(cam.x / TILE) - 1;
   const gHi = Math.floor((cam.x + vw) / TILE) + 1;
-  const colAt = (gx: number) => level.columns[gx] ?? level.columns[Math.max(0, Math.min(level.columns.length - 1, gx))];
+  const colAt = (gx: number) => world.columns[gx] ?? world.columns[Math.max(0, Math.min(world.columns.length - 1, gx))];
 
   for (let gx = gLo; gx <= gHi; gx++) {
     const col = colAt(gx);
@@ -210,8 +278,8 @@ export function draw(
     const top = sy(col.groundY);
     if (top >= vh) continue;
     const gGrad = ctx.createLinearGradient(0, top, 0, vh);
-    gGrad.addColorStop(0, COLORS.ground);
-    gGrad.addColorStop(1, COLORS.groundDeep);
+    gGrad.addColorStop(0, info.palette.css("ground", 1.15));
+    gGrad.addColorStop(1, info.palette.css("ground", 0.62));
     ctx.fillStyle = gGrad;
     ctx.fillRect(sx(gx * TILE), top, TILE + 1, vh - top);
   }
@@ -229,7 +297,7 @@ export function draw(
   // Ceiling, where a zone defines one (ship corridors).
   ctx.beginPath();
   for (let gx = lo; gx <= hi; gx++) {
-    const col = level.columns[gx];
+    const col = world.columns[gx];
     if (!col || !Number.isFinite(col.ceilingY)) continue;
     ctx.moveTo(sx(gx * TILE), sy(col.ceilingY));
     ctx.lineTo(sx((gx + 1) * TILE), sy(col.ceilingY));
@@ -239,9 +307,10 @@ export function draw(
   // Pits: flat dark notches set into the ground and ceiling lines. These used to
   // be drawn as spike triangles, which put hundreds of fake spikes across the
   // level and buried the real ones.
-  ctx.fillStyle = COLORS.pit;
+  ctx.fillStyle = info.palette.css("ground", 0.45);
   for (let gx = lo; gx <= hi; gx++) {
-    for (const d of level.columns[gx]?.decor ?? []) {
+    for (const decor of world.columns[gx]?.decor ?? []) {
+      const d = decor.cell;
       ctx.fillRect(sx(d.x), sy(d.y + d.h), d.w, d.h);
     }
   }
@@ -249,20 +318,15 @@ export function draw(
   // ── geometry ─────────────────────────────────────────────────────────────
   const drawn = new Set<string>();
   for (let gx = lo; gx <= hi; gx++) {
-    const col = level.columns[gx];
+    const col = world.columns[gx];
     if (!col) continue;
 
-    for (const r of col.solids) {
+    for (const block of col.solids) {
+      const r = block.box;
       const key = `s${r.x},${r.y}`;
       if (drawn.has(key)) continue;
       drawn.add(key);
-      const x = sx(r.x);
-      const y = sy(r.y + r.h);
-      ctx.fillStyle = COLORS.block;
-      ctx.fillRect(x, y, r.w, r.h);
-      ctx.strokeStyle = COLORS.blockEdge;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x + 1, y + 1, r.w - 2, r.h - 2);
+      drawBlock(ctx, sx(r.x), sy(r.y + r.h), r.w, r.h);
     }
 
     for (const hz of col.hazards) {
@@ -270,24 +334,17 @@ export function draw(
       if (drawn.has(key)) continue;
       drawn.add(key);
 
-      // Drawn from the cell and rotated, NOT derived from the lethal rect. The
-      // kill box is 6x12 and sits low in the cell, so building the triangle
-      // from it put every spike in the wrong place, at the wrong size, always
-      // pointing up — which is why ceiling spikes appeared under the floor.
+      // Positioned here, shaped in sprites.ts. Drawn from the CELL and rotated,
+      // never derived from the lethal rect: the kill box is 6x12 and sits low
+      // in the cell, so building the triangle from it put every spike in the
+      // wrong place, at the wrong size, always pointing up.
       ctx.save();
       ctx.translate(sx(hz.cell.x + hz.cell.w / 2), sy(hz.cell.y + hz.cell.h / 2));
+      // Hazard rotation is authored clockwise in the level file, matching the
+      // source game's own convention, so it is applied to the y-down canvas
+      // directly rather than through the world-space flip above.
       ctx.rotate((hz.rot * Math.PI) / 180);
-      const half = TILE / 2;
-      ctx.fillStyle = COLORS.spike;
-      ctx.beginPath();
-      ctx.moveTo(-half + 1, half);
-      ctx.lineTo(0, -half + 2);
-      ctx.lineTo(half - 1, half);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = COLORS.spikeEdge;
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      drawSpike(ctx, hz.cell.w, hz.cell.h);
       ctx.restore();
     }
 
@@ -297,24 +354,15 @@ export function draw(
       drawn.add(key);
       const x = sx(t.box.x);
       const y = sy(t.box.y + t.box.h);
-      if (t.kind === "ship" || t.kind === "cube") {
-        const c = t.kind === "ship" ? COLORS.portalShip : COLORS.portalCube;
-        ctx.fillStyle = c;
-        ctx.globalAlpha = 0.3;
-        ctx.fillRect(x, y, t.box.w, t.box.h);
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = c;
-        ctx.lineWidth = 4;
-        ctx.strokeRect(x + 2, y + 2, t.box.w - 4, t.box.h - 4);
-      } else if (t.kind === "pad") {
-        ctx.fillStyle = COLORS.pad;
-        ctx.fillRect(x + 2, y, t.box.w - 4, t.box.h);
-      } else {
-        ctx.strokeStyle = COLORS.ring;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(x + t.box.w / 2, y + t.box.h / 2, TILE * 0.32, 0, Math.PI * 2);
-        ctx.stroke();
+      // One branch per family, each delegating to a sprite. A new trigger type
+      // renders correctly as soon as it has a sprite — no edit here.
+      if (t instanceof Portal) {
+        const kind = t instanceof ModePortal ? t.mode : t.portalKind;
+        drawPortal(ctx, x, y, t.box.w, t.box.h, kind);
+      } else if (t instanceof Pad) {
+        drawPad(ctx, x, y, t.box.w, t.box.h, t.color);
+      } else if (t instanceof Ring) {
+        drawRing(ctx, x, y, t.box.w, t.box.h, t.color);
       }
     }
   }
@@ -340,7 +388,7 @@ export function draw(
   // Attempt counter, pinned in the world at the level's start rather than
   // stapled to the screen — so it scrolls out of view once you are moving.
   {
-    const ax = sx(level.spawn.x + TILE * 5);
+    const ax = sx(world.spawn.x + TILE * 5);
     if (ax > -300 && ax < vw + 300) {
       ctx.fillStyle = COLORS.hudText;
       // Divided by the zoom: this is drawn inside the scaled world transform,
@@ -354,66 +402,18 @@ export function draw(
   }
 
   // ── player ───────────────────────────────────────────────────────────────
-  const box = playerBox(s);
+  const box = p.box();
   ctx.save();
   ctx.translate(sx(px), sy(py));
   // Canvas y grows downward, so a positive angle here is clockwise on screen —
   // which is the direction the cube actually spins when moving right.
-  ctx.rotate(prot);
+  // The ONE place world rotation becomes screen rotation. World space is y-up
+  // and counter-clockwise positive; the canvas is y-down, so the sign flips
+  // here for every mode at once.
+  ctx.rotate(-prot);
 
-  if (s.mode === "ship") {
-    // A small rounded craft with the cube riding on top, which is the shape the
-    // real game uses — a bare triangle read as a paper dart.
-    const hw = box.w / 2;
-    const hh2 = box.h / 2;
-
-    // tail fin
-    ctx.fillStyle = COLORS.shipTrim;
-    ctx.beginPath();
-    ctx.moveTo(-hw * 0.95, -hh2 * 0.2);
-    ctx.lineTo(-hw * 1.25, -hh2 * 1.5);
-    ctx.lineTo(-hw * 0.35, -hh2 * 0.5);
-    ctx.closePath();
-    ctx.fill();
-
-    // hull: blunt tail, tapered nose, flat-ish underside
-    ctx.fillStyle = COLORS.shipHull;
-    ctx.strokeStyle = COLORS.playerEdge;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(hw * 1.15, 0);
-    ctx.quadraticCurveTo(hw * 0.55, -hh2 * 1.15, -hw * 0.7, -hh2 * 0.95);
-    ctx.quadraticCurveTo(-hw * 1.15, -hh2 * 0.75, -hw * 1.1, 0);
-    ctx.quadraticCurveTo(-hw * 1.1, hh2 * 0.8, -hw * 0.55, hh2 * 0.95);
-    ctx.quadraticCurveTo(hw * 0.5, hh2 * 1.0, hw * 1.15, 0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // cockpit glass
-    ctx.fillStyle = COLORS.shipTrim;
-    ctx.beginPath();
-    ctx.ellipse(hw * 0.25, 0, hw * 0.42, hh2 * 0.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // the rider, sitting on the hull
-    const c = box.h * 1.05;
-    ctx.fillStyle = COLORS.player;
-    ctx.fillRect(-c / 2, -hh2 - c + 2, c, c);
-    ctx.fillStyle = COLORS.playerEdge;
-    ctx.fillRect(-c / 2 + 4, -hh2 - c + 6, c - 8, c - 8);
-    ctx.strokeStyle = COLORS.playerEdge;
-    ctx.lineWidth = 2.5;
-    ctx.strokeRect(-c / 2 + 1.25, -hh2 - c + 3.25, c - 2.5, c - 2.5);
-  } else {
-    ctx.fillStyle = COLORS.player;
-    ctx.fillRect(-box.w / 2, -box.h / 2, box.w, box.h);
-    ctx.fillStyle = COLORS.playerEdge;
-    ctx.fillRect(-box.w / 2 + 8, -box.h / 2 + 8, box.w - 16, box.h - 16);
-    ctx.strokeStyle = COLORS.playerEdge;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(-box.w / 2 + 1.5, -box.h / 2 + 1.5, box.w - 3, box.h - 3);
-  }
+  if (p.mode === "ship") drawShip(ctx, box.w, box.h);
+  else drawCube(ctx, box.w, box.h);
   ctx.restore();
 
   // ── hitbox overlay ───────────────────────────────────────────────────────
@@ -424,19 +424,19 @@ export function draw(
     ctx.lineWidth = 2;
     ctx.strokeStyle = COLORS.hitHazard;
     for (let gx = lo; gx <= hi; gx++) {
-      const col = level.columns[gx];
+      const col = world.columns[gx];
       if (!col) continue;
       for (const hz of col.hazards) ctx.strokeRect(sx(hz.box.x), sy(hz.box.y + hz.box.h), hz.box.w, hz.box.h);
-      for (const r of col.solids) ctx.strokeRect(sx(r.x), sy(r.y + r.h), r.w, r.h);
+      for (const b of col.solids) ctx.strokeRect(sx(b.box.x), sy(b.box.y + b.box.h), b.box.w, b.box.h);
     }
     // Both player hitboxes, so the two-box model is visible while tuning:
     // green = the main 30x30 box that spikes are tested against,
     // red    = the small centre box that decides whether a wall kills you.
-    const kill = playerHazardBox(s);
+    const kill = p.box("lethal");
     ctx.strokeStyle = COLORS.hitPlayer;
     ctx.lineWidth = 2;
     ctx.strokeRect(sx(kill.x), sy(kill.y + kill.h), kill.w, kill.h);
-    const solid = playerSolidBox(s);
+    const solid = p.box("solid");
     ctx.strokeStyle = COLORS.hitKill;
     ctx.strokeRect(sx(solid.x), sy(solid.y + solid.h), solid.w, solid.h);
   }
