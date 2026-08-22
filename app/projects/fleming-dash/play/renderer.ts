@@ -34,6 +34,7 @@ import {
 import type { Player } from "../engine/player.ts";
 import type { World } from "../engine/world.ts";
 import type { Palette } from "../engine/palette.ts";
+import type { Effects } from "./effects.ts";
 import { ModePortal, Portal } from "../engine/objects/portals.ts";
 import { Pad } from "../engine/objects/boosts.ts";
 import { Ring } from "../engine/objects/boosts.ts";
@@ -219,6 +220,10 @@ export type DrawInfo = {
   practice: boolean;
   checkpoints: { x: number; y: number }[];
   showHitboxes: boolean;
+  /** Death debris. Presentation only — the simulation never sees it. */
+  effects?: Effects;
+  /** True while the player is dead, so the debris stands in for the icon. */
+  hidePlayer?: boolean;
 };
 
 export function draw(
@@ -412,9 +417,14 @@ export function draw(
   // here for every mode at once.
   ctx.rotate(-prot);
 
-  if (p.mode === "ship") drawShip(ctx, box.w, box.h);
-  else drawCube(ctx, box.w, box.h);
+  if (!info.hidePlayer) {
+    if (p.mode === "ship") drawShip(ctx, box.w, box.h);
+    else drawCube(ctx, box.w, box.h);
+  }
   ctx.restore();
+
+  // Debris last in world space, so it sits over the geometry it was blown off.
+  info.effects?.draw(ctx, sx, sy);
 
   // ── hitbox overlay ───────────────────────────────────────────────────────
   // Bright, saturated, and drawn last so nothing paints over it. The earlier

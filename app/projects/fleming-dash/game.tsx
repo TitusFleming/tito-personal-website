@@ -8,6 +8,9 @@ import { Checkpoint, Simulation } from "./engine/simulate.ts";
 import type { SimEvent } from "./engine/types.ts";
 import { createInput, type Input } from "./play/input.ts";
 import { createMusic, type Music } from "./play/audio.ts";
+import { createSfx, type Sfx } from "./play/sfx.ts";
+import { Effects } from "./play/effects.ts";
+import { PALETTE } from "./play/sprites.ts";
 import {
   createCamera,
   draw,
@@ -29,6 +32,14 @@ import {
 import { LEVELS, type LevelEntry } from "./levels/index.ts";
 
 type Phase = "start" | "playing" | "complete";
+
+/** Debris takes the icon's own colours, so the burst reads as the icon breaking. */
+const EXPLOSION_COLORS = [
+  PALETTE.player,
+  PALETTE.playerInner,
+  PALETTE.player,
+  "#FFFFFF",
+] as const;
 
 export default function FlemingDash() {
   const [entry, setEntry] = useState<LevelEntry>(LEVELS[0]);
@@ -55,6 +66,8 @@ export default function FlemingDash() {
   const camRef = useRef<Camera | null>(null);
   const inputRef = useRef<Input | null>(null);
   const musicRef = useRef<Music | null>(null);
+  const sfxRef = useRef<Sfx | null>(null);
+  const effectsRef = useRef<Effects>(new Effects());
   const rafRef = useRef<number | null>(null);
   const accRef = useRef(0);
   const lastRef = useRef(0);
@@ -106,6 +119,7 @@ export default function FlemingDash() {
   }, []);
   useEffect(() => {
     musicRef.current?.setMuted(muted);
+    sfxRef.current?.setMuted(muted);
   }, [muted]);
 
   const record = useCallback(
@@ -234,7 +248,15 @@ export default function FlemingDash() {
       if (steps === MAX_STEPS_PER_FRAME) accRef.current = 0;
 
       for (const e of events) {
-        if (e.type === "death") record(sim, false);
+        if (e.type === "death") {
+          record(sim, false);
+          // The track stops on the frame of contact rather than fading out with
+          // the freeze — the run ended, and hearing it continue over a dead
+          // player reads as a bug.
+          musicRef.current?.cut();
+          sfxRef.current?.play("explode");
+          effectsRef.current.burst(e.x, e.y, EXPLOSION_COLORS);
+        }
         else if (e.type === "complete" && !finished) {
           finished = true;
           record(sim, true);
@@ -254,6 +276,7 @@ export default function FlemingDash() {
             sim.reset();
           }
           prevRef.current = { x: sim.player.x, y: sim.player.y, rot: sim.player.rot };
+          effectsRef.current.clear();
           // Snap rather than ease, or the camera slides across the level after
           // every death and the first half-second of every attempt is unreadable.
           snapCamera(cam, sim.player, level, viewRef.current.w, viewRef.current.h);
@@ -270,6 +293,7 @@ export default function FlemingDash() {
       // Interpolate ONCE, then hand the same snapshot to the camera and the
       // draw. The camera has no access to the raw simulation position, which is
       // what stops the world scrolling in whole-step lumps.
+      effectsRef.current.update(Math.min(dt, MAX_FRAME_DT));
       const view = interpolate(prevRef.current, sim.player, accRef.current / FIXED_DT);
       updateCamera(cam, sim.player, view, level, w, h, Math.min(dt, MAX_FRAME_DT));
       draw(ctx, sim.player, view, level, cam, w, h, {
@@ -279,6 +303,10 @@ export default function FlemingDash() {
         practice: practiceRef.current,
         checkpoints: checkpointsRef.current,
         showHitboxes: hitboxRef.current,
+        effects: effectsRef.current,
+        // The player is drawn only while alive: once it explodes, the debris is
+        // the player.
+        hidePlayer: sim.status === "dead",
       });
     };
     rafRef.current = requestAnimationFrame(frame);
@@ -314,6 +342,10 @@ export default function FlemingDash() {
   const start = () => {
     if (player) setPlayer(saveName(player, nameDraft));
     if (!musicRef.current) musicRef.current = createMusic(entry.audio);
+    if (!sfxRef.current) sfxRef.current = createSfx();
+    // Primed inside the click, while a user gesture is still active.
+    sfxRef.current.unlock();
+    sfxRef.current.setMuted(muted);
     // Must be inside the click handler: browsers keep an AudioContext suspended
     // until a real user gesture.
     void musicRef.current.start();

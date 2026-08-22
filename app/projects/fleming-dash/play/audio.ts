@@ -19,6 +19,8 @@ export type Music = {
   restart: () => void;
   /** Hold the track where it is — the game is paused, not over. */
   pause: () => void;
+  /** Stop dead and rewind. The run is over; the track should not outlive it. */
+  cut: () => void;
   resume: () => void;
   stop: () => void;
   setMuted: (m: boolean) => void;
@@ -56,9 +58,16 @@ export function createMusic(src: string | null): Music {
     restart() {
       if (!el) return;
       el.currentTime = 0;
-      // A paused element (tab was hidden, or autoplay was refused) should not
-      // start blaring on a respawn, so only resume something already running.
-      if (!el.paused) void el.play().catch(() => {});
+      // Plays even from a paused element, because death now cuts the track and
+      // every respawn therefore starts from a paused one. The guard this
+      // replaced ("only resume something already running") made the music stop
+      // permanently after the first death.
+      void el.play().catch(() => {});
+    },
+    cut() {
+      if (!el) return;
+      el.pause();
+      el.currentTime = 0;
     },
     pause() {
       el?.pause();
