@@ -23,8 +23,23 @@ export const metadata: Metadata = {
     description: PERSON.summary,
     url: SITE_URL,
     locale: "en_US",
+    // The og:image completes the four signals agents use for entity
+    // resolution (canonical, lang, og:type, og:image).
+    images: [
+      {
+        url: "/profile-picture.png",
+        width: 688,
+        height: 810,
+        alt: `Portrait of ${PERSON.name}`,
+      },
+    ],
   },
-  twitter: { card: "summary", title: PERSON.name, description: PERSON.summary },
+  twitter: {
+    card: "summary",
+    title: PERSON.name,
+    description: PERSON.summary,
+    images: ["/profile-picture.png"],
+  },
   robots: { index: true, follow: true },
 };
 
@@ -62,7 +77,8 @@ const jsonLd = {
     name: PERSON.name,
     inLanguage: "en-US",
   },
-  hasPart: ROUTES.filter((r) => r.path !== "/").map((r) => ({
+  // Info pages (about/contact/privacy) are site chrome, not creative works.
+  hasPart: ROUTES.filter((r) => r.path !== "/" && !r.info).map((r) => ({
     "@type": "CreativeWork",
     name: r.title,
     abstract: r.summary,

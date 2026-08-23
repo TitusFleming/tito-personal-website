@@ -65,3 +65,28 @@ test("every absolute link uses the canonical origin", () => {
     }
   }
 });
+
+test("trust-anchor pages exist and carry substantive content", () => {
+  // The audit's bar: /about, /contact and /privacy each real, each with at
+  // least 500 characters of content. The markdown variant serves the same
+  // `details` paragraphs the HTML page renders, so this asserts both at once.
+  for (const path of ["/about", "/contact", "/privacy"]) {
+    const route = ROUTES.find((r) => r.path === path);
+    assert.ok(route, `${path} must be a declared route`);
+    assert.ok(route.info, `${path} must be flagged as an info page`);
+    const body = (route.details ?? []).join("\n\n");
+    assert.ok(
+      body.length >= 500,
+      `${path} carries ${body.length} chars of content, needs 500+`,
+    );
+    const md = markdownFor(path);
+    assert.ok(md && md.includes(route.details![0]), `${path} markdown must serve the details`);
+  }
+});
+
+test("trust pages appear in llms.txt so agents can find them", () => {
+  const txt = llmsTxt();
+  for (const path of ["/about", "/contact", "/privacy"]) {
+    assert.ok(txt.includes(`${SITE_URL}${path}`), `llms.txt must list ${path}`);
+  }
+});

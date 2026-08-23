@@ -47,7 +47,7 @@ function project(path: string): string {
   return `# ${route.title}
 
 ${route.summary}
-${route.agentUse ? `\n**When to use:** ${route.agentUse}\n` : ""}
+${route.details ? `\n${route.details.join("\n\n")}\n` : ""}${route.agentUse ? `\n**When to use:** ${route.agentUse}\n` : ""}
 - Page: ${abs(route.path)}
 - Part of: [${PERSON.name}](${SITE_URL})
 - Contact: <mailto:${PERSON.email}>

@@ -28,8 +28,10 @@ type Particle = {
 };
 type Flash = { x: number; y: number; life: number };
 
-/** Two at a time. The backdrop sits behind a menu, not a level. */
-const ICON_COUNT = 2;
+/** How many icons drift at once. Raised from two — the backdrop should read
+ *  as busy, closer to the game's own menu, while everything else about each
+ *  icon (size, speed, forms, popping) stays exactly as it was. */
+const ICON_COUNT = 6;
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
 export default function GdBackground() {

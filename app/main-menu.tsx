@@ -55,10 +55,23 @@ export default function MainMenu() {
   return (
     <div className="menu-screen">
       <div className="menu-panel" id="menu-panel" aria-live="polite" ref={panelRef}>
-        {active === "about" ? <AboutSection /> : null}
-        {active === "resume" ? <ResumeSection /> : null}
-        {active === "projects" ? <ProjectsSection /> : null}
-        {active === "contact" ? <ContactSection /> : null}
+        {/* Every section is in the DOM and the inactive ones are `hidden`,
+            rather than mounted on demand. Visually identical — but the server
+            HTML now carries the whole resume, project list and contact card,
+            so a crawler or a no-JS agent reads the full page instead of just
+            the About blurb. */}
+        <div hidden={active !== "about"}>
+          <AboutSection />
+        </div>
+        <div hidden={active !== "resume"}>
+          <ResumeSection />
+        </div>
+        <div hidden={active !== "projects"}>
+          <ProjectsSection />
+        </div>
+        <div hidden={active !== "contact"}>
+          <ContactSection />
+        </div>
       </div>
 
       <nav className="menu-nav" aria-label="Main menu">
