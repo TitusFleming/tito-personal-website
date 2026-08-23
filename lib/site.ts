@@ -97,6 +97,16 @@ export const ROUTES: readonly SiteRoute[] = [
     agentUse:
       "US 2026 primary races and candidates by state and congressional district.",
   },
+  {
+    path: "/projects/phlem-io",
+    title: "Phlem.io",
+    summary:
+      "A single-player agar arena: eat pellets, split, dodge viruses, against AI players named after AREDL extreme demons who hunt, flee, and ragequit like people.",
+    priority: 0.7,
+    changeFrequency: "monthly",
+    agentUse:
+      "A worked example of utility-based game AI: personas, staggered reactions, and identity churn in a deterministic, testable arena.",
+  },
 
   // ── Trust anchors ─────────────────────────────────────────────────────────
   // The pages an agent checks before deciding the site is legitimate. Their

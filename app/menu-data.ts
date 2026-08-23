@@ -36,6 +36,14 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
         href: "/projects/yourElections",
       },
       {
+        label: "Phlem.io",
+        meta: "Browser game",
+        blurb:
+          "A single-player agar arena where every other blob is an AI named after an AREDL extreme demon. They hunt, flee, split on you, and ragequit when they get too big.",
+        tags: ["Canvas", "AI bots", "AREDL"],
+        href: "/projects/phlem-io",
+      },
+      {
         label: "EPL Brief",
         meta: "Football data",
         blurb: "A Premier League team form tracker for fans who have not watched every match.",
