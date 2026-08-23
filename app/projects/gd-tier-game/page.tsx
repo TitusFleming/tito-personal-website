@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function GDDLPage() {
   return (
-    <main className="min-h-screen text-[#181713]">
+    <main className="min-h-screen">
       <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10">
         <header className="site-header">
           <Link className="site-mark" href="/" aria-label="Back to Tito Fleming home">

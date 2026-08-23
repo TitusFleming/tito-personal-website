@@ -1,14 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f1e6d6;
-  --foreground: #2a211c;
-  --brown: #4e3629;
-  --red: #c00404;
-  --line: #d6c5b1;
-  --card: #fffaf0;
-  --tan: #e4d2bc;
-  --muted: #6d5d51;
+  /* The site is Geometry-Dash blue now, so the base tokens are too. The names
+     are kept — --brown, --tan — because they are referenced in a dozen places
+     and renaming them is churn without benefit; what they MEAN is "the strong
+     accent" and "the soft panel edge". */
+  --background: #123467;
+  --foreground: #eaf2ff;
+  --brown: #0b1220;
+  --red: #ff6b5b;
+  --line: rgba(120, 190, 255, 0.28);
+  --card: #16336b;
+  --tan: #1d4c9e;
+  --muted: #9fbbe4;
+  --accent: #7ee63f;
+  --accent-ink: #0b1220;
   /* Party palette for the yourElections map — desaturated so it sits
      alongside the warm browns rather than election-night primaries.
      Mirrored as constants in us-map.tsx. */
@@ -37,8 +43,8 @@ html {
 body,
 main {
   background:
-    linear-gradient(90deg, rgba(78, 54, 41, 0.04) 1px, transparent 1px),
-    var(--background);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    radial-gradient(120% 90% at 50% 0%, #2f6fd0 0%, #1d4c9e 45%, #123467 100%);
   background-size: 72px 72px;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
@@ -57,7 +63,7 @@ a {
 
 .site-header {
   align-items: center;
-  border-bottom: 1px solid rgba(78, 54, 41, 0.22);
+  border-bottom: 1px solid var(--line);
   display: flex;
   gap: 1.5rem;
   justify-content: space-between;
@@ -66,8 +72,8 @@ a {
 
 .site-mark {
   align-items: center;
-  background: var(--brown);
-  color: #fffaf0;
+  background: var(--accent);
+  color: var(--accent-ink);
   display: inline-flex;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.78rem;
@@ -128,17 +134,17 @@ p {
 .portrait-frame {
   aspect-ratio: 1;
   background:
-    linear-gradient(rgba(78, 54, 41, 0.08), rgba(78, 54, 41, 0.08)),
+    linear-gradient(rgba(6, 16, 38, 0.22), rgba(6, 16, 38, 0.22)),
     url("/profile-picture.png") center 34% / cover no-repeat,
     var(--brown);
   border: 1px solid var(--brown);
-  box-shadow: 12px 12px 0 rgba(78, 54, 41, 0.16);
+  box-shadow: 12px 12px 0 rgba(6, 16, 38, 0.42);
   max-width: 18rem;
   width: 100%;
 }
 
 h1 {
-  color: var(--brown);
+  color: var(--foreground);
   font-size: clamp(3.25rem, 8vw, 6.6rem);
   font-weight: 760;
   letter-spacing: 0;
@@ -148,7 +154,7 @@ h1 {
 }
 
 h2 {
-  color: var(--brown);
+  color: var(--foreground);
   font-size: clamp(1.65rem, 3vw, 2.65rem);
   font-weight: 760;
   letter-spacing: 0;
@@ -190,7 +196,7 @@ h3 {
 
 .hero-links a {
   border: 1px solid var(--brown);
-  color: var(--brown);
+  color: var(--foreground);
   font-weight: 700;
   padding: 0.62rem 0.8rem;
   text-decoration: none;
@@ -198,7 +204,7 @@ h3 {
 
 .hero-links a:hover {
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .section-block {
@@ -221,7 +227,7 @@ h3 {
 .project-card {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   color: inherit;
   display: flex;
   flex-direction: column;
@@ -240,13 +246,13 @@ a.project-card {
 }
 
 .project-card-linked {
-  border-color: var(--brown);
+  border-color: var(--foreground);
 }
 
 a.project-card:hover,
 a.project-card:focus-visible {
-  border-color: var(--brown);
-  box-shadow: 8px 8px 0 rgba(78, 54, 41, 0.18);
+  border-color: var(--foreground);
+  box-shadow: 8px 8px 0 rgba(6, 16, 38, 0.45);
   outline: none;
   transform: translateY(-2px);
 }
@@ -276,14 +282,14 @@ a.project-card:focus-visible {
 .tag-row span {
   background: var(--tan);
   border: 1px solid var(--line);
-  color: #373229;
+  color: #eaf2ff;
   padding: 0.42rem 0.55rem;
 }
 
 .project-link-cue {
   align-items: center;
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: inline-flex;
   font-weight: 800;
   justify-content: center;
@@ -312,7 +318,7 @@ a.project-card:focus-visible {
 .mini-section {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   padding: 1.25rem;
 }
 
@@ -349,7 +355,7 @@ footer {
 .pulse-controls {
   align-items: center;
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
@@ -358,7 +364,7 @@ footer {
 
 .pulse-controls .eyebrow,
 .pulse-controls h2 {
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .pulse-controls label {
@@ -375,9 +381,9 @@ footer {
 
 .pulse-controls select {
   appearance: none;
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--foreground);
   font: inherit;
   font-weight: 700;
   min-height: 2.75rem;
@@ -396,19 +402,19 @@ footer {
 .table-panel {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   padding: 1.15rem;
 }
 
 .score-card {
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .score-card .eyebrow,
 .score-card h2,
 .score-card p {
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .score-header {
@@ -419,8 +425,8 @@ footer {
 }
 
 .rank-pill {
-  background: #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  color: var(--foreground);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.9rem;
   font-weight: 800;
@@ -428,7 +434,7 @@ footer {
 }
 
 .score-number {
-  color: #fffaf0;
+  color: #eaf2ff;
   font-size: clamp(4.6rem, 13vw, 8rem);
   font-weight: 850;
   letter-spacing: 0;
@@ -444,7 +450,7 @@ footer {
 }
 
 .score-bar span {
-  background: #fffaf0;
+  background: var(--card);
   display: block;
   height: 100%;
 }
@@ -479,12 +485,12 @@ footer {
 }
 
 .graph-grid-line {
-  stroke: rgba(78, 54, 41, 0.22);
+  stroke: rgba(120, 190, 255, 0.28);
   stroke-width: 1;
 }
 
 .graph-area {
-  fill: rgba(78, 54, 41, 0.14);
+  fill: rgba(120, 190, 255, 0.18);
 }
 
 .graph-line {
@@ -502,7 +508,7 @@ footer {
 }
 
 .result-w-dot {
-  fill: #fffaf0;
+  fill: #eaf2ff;
 }
 
 .result-d-dot {
@@ -548,7 +554,7 @@ footer {
 }
 
 .metric-grid span {
-  color: var(--brown);
+  color: var(--foreground);
   display: block;
   font-size: 2rem;
   font-weight: 850;
@@ -583,7 +589,7 @@ footer {
 .match-card span {
   align-items: center;
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: inline-flex;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.78rem;
@@ -640,8 +646,8 @@ footer {
 .pulse-table button:hover,
 .pulse-table button.active {
   background: var(--brown);
-  border-color: var(--brown);
-  color: #fffaf0;
+  border-color: var(--foreground);
+  color: #eaf2ff;
 }
 
 .pulse-loading {
@@ -669,9 +675,9 @@ footer {
 .gddl-range-row input[type="number"] {
   appearance: none;
   -moz-appearance: textfield;
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--foreground);
   font: inherit;
   font-weight: 700;
   min-height: 2.75rem;
@@ -686,9 +692,9 @@ footer {
 
 .gddl-start-btn {
   align-self: flex-end;
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 800;
@@ -706,7 +712,7 @@ footer {
 .gddl-ghost-btn {
   background: transparent;
   border: 1px solid var(--brown);
-  color: var(--brown);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -751,8 +757,8 @@ footer {
 }
 
 .gddl-card:hover:not(:disabled) {
-  border-color: var(--brown);
-  box-shadow: 6px 6px 0 rgba(78, 54, 41, 0.18);
+  border-color: var(--foreground);
+  box-shadow: 6px 6px 0 rgba(6, 16, 38, 0.45);
   transform: translateY(-2px);
 }
 
@@ -788,7 +794,7 @@ footer {
 }
 
 .gddl-card-tier {
-  color: var(--brown);
+  color: var(--foreground);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 1.15rem;
   font-weight: 800;
@@ -826,7 +832,7 @@ footer {
 /* Result screen */
 
 .gddl-result-score {
-  color: var(--brown);
+  color: var(--foreground);
   font-size: clamp(5rem, 16vw, 9rem);
   font-weight: 850;
   letter-spacing: 0;
@@ -884,7 +890,7 @@ footer {
 .elections-controls {
   align-items: center;
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
@@ -893,7 +899,7 @@ footer {
 
 .elections-controls .eyebrow,
 .elections-controls h2 {
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .elections-input-row {
@@ -916,9 +922,9 @@ footer {
 }
 
 .elections-input-row input {
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--foreground);
   font: inherit;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -928,9 +934,9 @@ footer {
 }
 
 .elections-input-row button {
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 800;
@@ -953,7 +959,7 @@ footer {
 .elections-status {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   display: grid;
   gap: 0.6rem;
   margin-top: 1rem;
@@ -1001,7 +1007,7 @@ footer {
 .race-card {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   padding: 1.15rem;
 }
 
@@ -1188,7 +1194,7 @@ footer {
 .candidate-rest-trigger {
   background: transparent;
   border: none;
-  color: var(--brown);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-size: 0.82rem;
@@ -1208,7 +1214,7 @@ footer {
 .candidate-incumbent {
   background: var(--tan);
   border: 1px solid var(--line);
-  color: #373229;
+  color: #eaf2ff;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.68rem;
   font-weight: 700;
@@ -1218,7 +1224,7 @@ footer {
 }
 
 .candidate-row a {
-  color: var(--brown);
+  color: var(--foreground);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1311,7 +1317,7 @@ footer {
 .us-map {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   padding: 0.75rem;
   position: relative;
 }
@@ -1400,7 +1406,7 @@ footer {
 
 .map-district-label {
   dominant-baseline: middle;
-  fill: #fffaf0;
+  fill: #eaf2ff;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-weight: 700;
   paint-order: stroke;
@@ -1423,7 +1429,7 @@ footer {
 .map-breadcrumb button {
   background: none;
   border: none;
-  color: var(--brown);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 800;
@@ -1441,7 +1447,7 @@ footer {
 
 .map-tooltip {
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: grid;
   font-size: 0.82rem;
   gap: 0.15rem;
@@ -1460,7 +1466,7 @@ footer {
 }
 
 .map-zip-hint {
-  color: var(--brown);
+  color: var(--foreground);
   font-weight: 700;
   margin-top: 0.75rem;
 }
@@ -1519,7 +1525,7 @@ footer {
 .map-panel {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   padding: 1.15rem;
 }
 
@@ -1586,7 +1592,7 @@ footer {
 }
 
 .senator-list li a {
-  color: var(--brown);
+  color: var(--foreground);
   font-weight: 700;
   margin-left: auto;
   white-space: nowrap;
@@ -1597,7 +1603,7 @@ footer {
 .voice-card {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   display: grid;
   gap: 0.6rem;
   justify-items: start;
@@ -1621,7 +1627,7 @@ footer {
  * sitting in body copy. tel: links matter here — most visitors are on the
  * device they'd call from. */
 .voice-number {
-  color: var(--brown);
+  color: var(--foreground);
   font-size: 1.55rem;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -1636,7 +1642,7 @@ footer {
 .voice-wake-btn {
   background: transparent;
   border: 1px solid var(--brown);
-  color: var(--brown);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -1692,7 +1698,7 @@ footer {
   aspect-ratio: 16 / 10;
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   margin-top: 1rem;
   max-height: 70vh;
   padding: 0.75rem;
@@ -1732,14 +1738,14 @@ footer {
 
 .engine-explode-control input[type="range"]::-webkit-slider-runnable-track {
   background: rgba(255, 250, 240, 0.26);
-  border: 1px solid #fffaf0;
+  border: 1px solid var(--line);
   height: 0.5rem;
 }
 
 .engine-explode-control input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
+  background: var(--card);
+  border: 1px solid var(--line);
   height: 1.5rem;
   /* (track 0.5rem + 2 × 1px border − thumb 1.5rem) / 2 */
   margin-top: -0.56rem;
@@ -1748,16 +1754,16 @@ footer {
 
 .engine-explode-control input[type="range"]::-moz-range-track {
   background: rgba(255, 250, 240, 0.26);
-  border: 1px solid #fffaf0;
+  border: 1px solid var(--line);
   height: 0.5rem;
 }
 
 .engine-explode-control input[type="range"]::-moz-range-thumb {
-  background: #fffaf0;
+  background: var(--card);
   /* Firefox draws its own thumb border unless one is declared, and its own
      rounding unless border-radius is zeroed — this stylesheet has exactly one
      border-radius in it and a rounded thumb would be the second. */
-  border: 1px solid #fffaf0;
+  border: 1px solid var(--line);
   border-radius: 0;
   height: 1.5rem;
   width: 1rem;
@@ -1778,7 +1784,7 @@ footer {
 .engine-ghost-btn {
   background: transparent;
   border: 1px solid var(--brown);
-  color: var(--brown);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -1789,7 +1795,7 @@ footer {
 .engine-ghost-btn:hover:not(:disabled),
 .engine-ghost-btn[aria-pressed="true"] {
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .engine-ghost-btn:disabled {
@@ -1838,7 +1844,7 @@ footer {
 .engine-callout {
   background: var(--card);
   border: 1px solid var(--brown);
-  box-shadow: 5px 5px 0 rgba(78, 54, 41, 0.18);
+  box-shadow: 5px 5px 0 rgba(6, 16, 38, 0.45);
   left: 0;
   max-width: min(21rem, 70%);
   padding: 0.8rem 0.9rem;
@@ -1906,14 +1912,14 @@ footer {
 .engine-part-button:hover,
 .engine-part-button:focus-visible {
   background: var(--tan);
-  border-color: var(--brown);
+  border-color: var(--foreground);
   outline: none;
 }
 
 .engine-part-button.selected {
   background: var(--brown);
-  border-color: var(--brown);
-  color: #fffaf0;
+  border-color: var(--foreground);
+  color: #eaf2ff;
 }
 
 .engine-part-name {
@@ -1928,7 +1934,7 @@ footer {
 }
 
 .engine-part-button.selected .engine-part-count {
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .engine-detail {
@@ -2011,11 +2017,6 @@ footer {
    blue — that palette lives in play/renderer.ts and stops at the canvas edge. */
 .fdash-main {
   min-height: 100vh;
-  /* Same gradient as the menu backdrop (.gd-bg), so the project page reads as
-     the same site rather than a warm-cream page with a blue game pasted on it. */
-  background:
-    radial-gradient(120% 90% at 50% 0%, #2f6fd0 0%, #1d4c9e 45%, #123467 100%);
-  color: #eaf2ff;
 }
 
 .fdash-page {
@@ -2544,13 +2545,13 @@ footer {
 
 .menu-item:hover,
 .menu-item:focus-visible {
-  color: var(--brown);
+  color: var(--foreground);
   outline: none;
 }
 
 .menu-item.selected {
-  border-left-color: var(--brown);
-  color: var(--brown);
+  border-left-color: var(--foreground);
+  color: var(--foreground);
 }
 
 /* Hidden rather than removed, so rows never shift sideways as the highlight
@@ -2582,7 +2583,7 @@ footer {
 .menu-panel {
   background: var(--card);
   border: 1px solid var(--brown);
-  box-shadow: 8px 8px 0 rgba(78, 54, 41, 0.16);
+  box-shadow: 8px 8px 0 rgba(6, 16, 38, 0.42);
   grid-column: 1;
   grid-row: 1;
   max-height: min(78vh, 46rem);
@@ -2621,11 +2622,11 @@ footer {
 .menu-portrait {
   aspect-ratio: 1;
   background:
-    linear-gradient(rgba(78, 54, 41, 0.08), rgba(78, 54, 41, 0.08)),
+    linear-gradient(rgba(6, 16, 38, 0.22), rgba(6, 16, 38, 0.22)),
     url("/profile-picture.png") center 34% / cover no-repeat,
     var(--brown);
   border: 1px solid var(--brown);
-  box-shadow: 6px 6px 0 rgba(78, 54, 41, 0.16);
+  box-shadow: 6px 6px 0 rgba(6, 16, 38, 0.42);
   width: 100%;
 }
 
@@ -2678,7 +2679,7 @@ footer {
 }
 
 .project-row-name {
-  color: var(--brown);
+  color: var(--foreground);
   font-size: 1.15rem;
   font-weight: 760;
 }
@@ -2700,7 +2701,7 @@ footer {
 .menu-open {
   align-items: center;
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: inline-flex;
   font-weight: 800;
   justify-content: center;
@@ -2717,7 +2718,7 @@ footer {
 
 .menu-open:hover,
 .menu-open:focus-visible {
-  box-shadow: 5px 5px 0 rgba(78, 54, 41, 0.18);
+  box-shadow: 5px 5px 0 rgba(6, 16, 38, 0.45);
   outline: none;
 }
 
