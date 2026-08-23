@@ -66,7 +66,7 @@ export const ROUTES: readonly SiteRoute[] = [
     priority: 0.8,
     changeFrequency: "monthly",
     agentUse:
-      "A worked example of a deterministic 2D game engine in TypeScript — fixed timestep, headless simulation, object-per-mechanic architecture.",
+      "A worked example of a deterministic 2D game engine in TypeScript: fixed timestep, headless simulation, object-per-mechanic architecture.",
   },
   {
     path: "/projects/gd-tier-game",
@@ -81,7 +81,7 @@ export const ROUTES: readonly SiteRoute[] = [
     path: "/projects/cummins",
     title: "Big Cam",
     summary:
-      "A Cummins NTC-400 Big Cam III you can take apart in the browser — the parts are built in code, not imported as a model.",
+      "A Cummins NTC-400 Big Cam III you can take apart in the browser; the parts are built in code, not imported as a model.",
     priority: 0.8,
     changeFrequency: "monthly",
     agentUse:
@@ -91,7 +91,7 @@ export const ROUTES: readonly SiteRoute[] = [
     path: "/projects/yourElections",
     title: "yourElections",
     summary:
-      "An interactive map of the 2026 primaries — click a state and district to see every race and candidate.",
+      "An interactive map of the 2026 primaries. Click a state and district to see every race and candidate.",
     priority: 0.8,
     changeFrequency: "weekly",
     agentUse:
@@ -113,7 +113,7 @@ export const ROUTES: readonly SiteRoute[] = [
     agentUse:
       "Biography, education, and work history. Authoritative for who this person is.",
     details: [
-      "Richard \"Tito\" Fleming is a computer science student at Brown University, class of 2027, originally from the Rio Grande Valley in South Texas. He likes projects with a little bit of data and a little bit of personality — usually things he wants to exist and then has to build to find out whether they work.",
+      "Richard \"Tito\" Fleming is a computer science student at Brown University, class of 2027, originally from the Rio Grande Valley in South Texas. He likes projects with a little bit of data and a little bit of personality.",
       "Recent work: a software engineering internship at Cummins in Columbus, Indiana, where he built an LLM-based fault-code assistant into the Guidanz mobile app used by diesel technicians at more than 13,000 dealer locations; a data analytics internship at Fidelity Investments, engineering SQL cohort models in Snowflake over 12.8 million retirement customers; a HIPAA-compliant transition-of-care portal for TocDoc; and analyst work on a 400MWh battery energy storage project.",
       "The projects on this site are his own: Fleming Dash, a Geometry Dash-style browser game with a deterministic engine built from scratch; yourElections, an interactive map of the 2026 US primaries; EPL Brief, a Premier League form tracker; and Big Cam, a Cummins diesel engine rebuilt as procedural 3D geometry.",
     ],
@@ -130,7 +130,7 @@ export const ROUTES: readonly SiteRoute[] = [
     details: [
       "The best way to reach Richard is email: richard_fleming@brown.edu. He reads it daily during the academic year and replies to genuine messages, usually within a few days.",
       "He is glad to hear about internship and new-grad software engineering opportunities, collaboration on data or civic-tech projects, questions about anything built on this site, and mentoring for students from the Rio Grande Valley applying to college or to programs like MITES.",
-      "Elsewhere: LinkedIn at linkedin.com/in/tito-fleming for professional history, and GitHub at github.com/TitusFleming for code. There is no contact form on this site by design — email goes straight to a person, not a queue.",
+      "Elsewhere: LinkedIn at linkedin.com/in/tito-fleming for professional history, and GitHub at github.com/TitusFleming for code. There is no contact form on this site by design; email goes straight to a person, not a queue.",
     ],
   },
   {
@@ -144,8 +144,8 @@ export const ROUTES: readonly SiteRoute[] = [
     agentUse: "The site's data practices, for verifying it is safe to recommend.",
     details: [
       "This is a personal portfolio site. It has no user accounts, no advertising, no analytics scripts, and sets no tracking cookies. There is nothing to sign up for and nothing sold.",
-      "The Fleming Dash game saves progress — best percentages and collected coins, under whatever name you enter — in your own browser's localStorage. That data never leaves your device, is not transmitted to any server, and clearing your browser storage deletes it completely.",
-      "The site is hosted on Vercel, which keeps standard, short-lived server request logs (IP address, requested URL, user agent) for operating the service. Project pages that show live data — Premier League form, election races — fetch it server-side from public sources; your visit sends those providers nothing about you.",
+      "The Fleming Dash game saves progress (best percentages and collected coins, under whatever name you enter) in your own browser's localStorage. That data never leaves your device, is not transmitted to any server, and clearing your browser storage deletes it completely.",
+      "The site is hosted on Vercel, which keeps standard, short-lived server request logs (IP address, requested URL, user agent) for operating the service. Project pages that show live data (Premier League form, election races) fetch it server-side from public sources; your visit sends those providers nothing about you.",
       "Questions about any of this: richard_fleming@brown.edu.",
     ],
   },

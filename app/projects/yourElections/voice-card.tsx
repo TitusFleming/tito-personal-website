@@ -88,14 +88,14 @@ export default function VoiceCard() {
       ) : status === "waking" ? (
         <>
           <p className="voice-status">
-            Waking the agent up (it spins down when idle) — this takes about
+            Waking the agent up (it spins down when idle). This takes about
             thirty seconds.
           </p>
           <div className="pulse-loading" />
         </>
       ) : status === "slow" ? (
         <p className="voice-status">
-          Still not up. You can call anyway — it&rsquo;ll greet you and ask you
+          Still not up. You can call anyway; it&rsquo;ll greet you and ask you
           to hold while it starts.
         </p>
       ) : (
@@ -104,7 +104,7 @@ export default function VoiceCard() {
             Wake the agent
           </button>
           <p className="voice-card-note">
-            Optional. Calling cold works too — you&rsquo;ll just be asked to
+            Optional. Calling cold works too; you&rsquo;ll just be asked to
             hold for the first half-minute while it boots.
           </p>
         </>

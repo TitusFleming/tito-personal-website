@@ -107,7 +107,7 @@ export const RESUME = {
     {
       place: "Cummins Inc.",
       detail:
-        "Software engineering intern. Built an AI diagnostic feature in the Guidanz app letting service technicians query and interpret engine fault codes with LLMs — Android Studio in Java and C++, integrating OpenAI ChatKit. Shipped to production and live in diagnostic workflows at 13,000+ dealer and 640+ distributor locations.",
+        "Software engineering intern. Built an AI diagnostic feature in the Guidanz app letting service technicians query and interpret engine fault codes with LLMs, using Android Studio in Java and C++, integrating OpenAI ChatKit. Shipped to production and live in diagnostic workflows at 13,000+ dealer and 640+ distributor locations.",
       when: "May – Aug 2026 · Columbus, IN",
     },
     {

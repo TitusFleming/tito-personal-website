@@ -106,8 +106,7 @@ export default function CandidateRow({ candidate }: { candidate: Candidate }) {
               Currently serves in the U.S.{" "}
               {member.district !== null
                 ? `House, District ${member.district}`
-                : "Senate"}{" "}
-              — not this seat.
+                : "Senate"}, not this seat.
             </p>
           ) : null}
 
@@ -145,7 +144,7 @@ export default function CandidateRow({ candidate }: { candidate: Candidate }) {
               <span className="candidate-policy-label">Files bills about</span>{" "}
               {member.policy_areas}
               <span className="candidate-caveat">
-                Subjects of their recent bills — not positions on them.
+                Subjects of their recent bills, not positions on them.
               </span>
             </p>
           ) : null}

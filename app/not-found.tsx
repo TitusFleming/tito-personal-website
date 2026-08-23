@@ -49,7 +49,9 @@ export default function NotFound() {
             <h2 id="pages-title">All pages</h2>
           </div>
           <div className="project-grid">
-            {ROUTES.map((route) => (
+            {/* Info pages (about/contact/privacy) exist for agents doing
+                due diligence; the human index doesn't advertise them. */}
+            {ROUTES.filter((route) => !route.info).map((route) => (
               <Link className="project-card project-card-linked" href={route.path} key={route.path}>
                 <h3>{route.title}</h3>
                 <p>{route.summary}</p>

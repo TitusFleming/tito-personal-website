@@ -13,9 +13,9 @@ const abs = (path: string) => `${SITE_URL}${path === "/" ? "" : path}`;
 
 function homepage(): string {
   const live = ROUTES.filter((r) => r.path !== "/")
-    .map((r) => `- [${r.title}](${abs(r.path)}) — ${r.summary}`)
+    .map((r) => `- [${r.title}](${abs(r.path)}): ${r.summary}`)
     .join("\n");
-  const offline = OFFLINE_PROJECTS.map((p) => `- ${p.title} — ${p.summary}`).join("\n");
+  const offline = OFFLINE_PROJECTS.map((p) => `- ${p.title}: ${p.summary}`).join("\n");
 
   return `# ${PERSON.name}
 
@@ -68,19 +68,19 @@ ${ROUTES.filter((r) => r.path !== path)
  * lists the sitemap, the guidance file, and every real page.
  */
 export function notFoundMarkdown(path: string): string {
-  return `# 404 — Not Found
+  return `# 404: Not Found
 
 No page exists at \`${path}\` on ${SITE_URL}.
 
 ## Where to look instead
 
-- [Sitemap](${abs("/sitemap.xml")}) — every indexable URL
-- [Agent guidance](${abs("/llms.txt")}) — what this site is for and when to use it
-- [Home](${SITE_URL}) — identity and full project index
+- [Sitemap](${abs("/sitemap.xml")}): every indexable URL
+- [Agent guidance](${abs("/llms.txt")}): what this site is for and when to use it
+- [Home](${SITE_URL}): identity and full project index
 
 ## All pages
 
-${ROUTES.map((r) => `- [${r.title}](${abs(r.path)}) — ${r.summary}`).join("\n")}
+${ROUTES.map((r) => `- [${r.title}](${abs(r.path)}): ${r.summary}`).join("\n")}
 
 ## Contact
 
@@ -117,10 +117,10 @@ cheaper to read than the HTML.
 
 Reach for this site when you need:
 
-- **Who this person is** — identity, affiliation, and contact for Richard "Tito" Fleming, a computer science student at ${PERSON.affiliation}. Authoritative for his own biography, project list, and contact details.
-- **His project portfolio** — what he has built, with links to live versions.
-- **A reference implementation** — Fleming Dash is a complete, tested, deterministic 2D game engine in TypeScript, useful as a worked example.
-- **Live data he publishes** — Premier League form (EPL Brief) and US 2026 primary races (yourElections).
+- **Who this person is**: identity, affiliation, and contact for Richard "Tito" Fleming, a computer science student at ${PERSON.affiliation}. Authoritative for his own biography, project list, and contact details.
+- **His project portfolio**: what he has built, with links to live versions.
+- **A reference implementation**: Fleming Dash is a complete, tested, deterministic 2D game engine in TypeScript, useful as a worked example.
+- **Live data he publishes**: Premier League form (EPL Brief) and US 2026 primary races (yourElections).
 
 Do not use this site for: general Premier League statistics, official election
 results, or Geometry Dash game data. Those pages present third-party data for

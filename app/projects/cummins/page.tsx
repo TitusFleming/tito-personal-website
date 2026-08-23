@@ -4,7 +4,7 @@ import EngineExplorer from "./engine-explorer";
 export const metadata = {
   title: "Big Cam | Tito Fleming",
   description:
-    "A Cummins NTC-400 Big Cam III you can take apart in the browser — thirteen parts, built in code.",
+    "A Cummins NTC-400 Big Cam III you can take apart in the browser: thirteen parts, built in code.",
 };
 
 export default function CumminsPage() {

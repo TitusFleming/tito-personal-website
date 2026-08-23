@@ -68,7 +68,7 @@ async function handle(request: Request) {
   // seconds is worse than a bit of hold silence.
   const greeting =
     attempt === 0
-      ? "<Say>Hi! Give me about thirty seconds to wake up — " +
+      ? "<Say>Hi! Give me about thirty seconds to wake up. " +
         "this runs on a free server that goes to sleep.</Say>"
       : "";
 

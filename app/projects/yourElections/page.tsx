@@ -6,7 +6,7 @@ import VoiceCard from "./voice-card";
 export const metadata = {
   title: "yourElections | Tito Fleming",
   description:
-    "An interactive map of the 2026 primaries — click your state and district to see every race and candidate.",
+    "An interactive map of the 2026 primaries. Click your state and district to see every race and candidate.",
 };
 
 export default function YourElectionsPage() {
@@ -28,7 +28,7 @@ export default function YourElectionsPage() {
           <p className="eyebrow">Civic tech</p>
           <h1>yourElections</h1>
           <p className="lede">
-            Click your state — or jump by zip — to see your 2026 primary ballot.
+            Click your state, or jump by zip, to see your 2026 primary ballot.
           </p>
         </section>
 
