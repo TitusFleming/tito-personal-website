@@ -43,13 +43,13 @@ const TILE = 30;
 const SPEED_INDEX = { 0: 1, 1: 0, 2: 2, 3: 3, 4: 4 };
 
 /**
- * A flying section's height when the level puts nothing in it to measure.
+ * How tall a section each flying mode's portal establishes, in tiles.
  *
- * Only a fallback — a corridor with any geometry is measured from that
- * geometry. This is the game's standard ship border height and is the one
- * number here that is a convention rather than a reading.
+ * The portal defines the window: entering one is what sets the play area, which
+ * is why the camera locks to it. Keyed by mode so a new flying mode brings its
+ * own section height instead of inheriting the ship's.
  */
-const EMPTY_SECTION_TILES = 10;
+const SECTION_TILES = { ship: 10, ufo: 10, wave: 10 };
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OBJECTS = JSON.parse(
   readFileSync(join(HERE, "../app/projects/fleming-dash/levels/gd-objects.json"), "utf8"),
@@ -310,13 +310,17 @@ function convert(objects, meta) {
       if (typeof o.y !== "number" || o.x < start || o.x >= end) continue;
       roof = Math.max(roof, o.y + (typeof o.h === "number" ? o.h : 1));
     }
-    // A tile of clearance above the tallest thing in the corridor. The floor of
-    // 10 that used to sit here was the original hardcoded corridor height in
-    // disguise: it silently overrode any corridor shorter than ten tiles.
-    // Only a corridor with nothing in it to measure falls back to a convention,
-    // and then it is anchored to the portal rather than to the ground.
-    const ceilingY =
-      roof > 0 ? Math.ceil(roof) + 1 : Math.ceil(start_y) + EMPTY_SECTION_TILES;
+    // The portal establishes the section, and the level may extend it.
+    //
+    // Two rules, and both are needed. Portal-derived alone clips corridor two of
+    // Stereo Madness, whose geometry reaches 15 while its portal sits at 3.5.
+    // Geometry-derived alone leaves an empty corridor with no window at all and
+    // needs an invented fallback. Taking the larger means the section is never
+    // smaller than the mode's standard window, and never smaller than what the
+    // level actually puts inside it.
+    const fromPortal = start_y + (SECTION_TILES[portals[i].t] ?? 10);
+    const fromGeometry = roof > 0 ? Math.ceil(roof) + 1 : 0;
+    const ceilingY = Math.max(fromPortal, fromGeometry);
     zones.push({ t: "zone", x: start, w: Math.max(1, end - start), ceilingY });
   }
 
