@@ -180,6 +180,11 @@ const PAD_COLORS: Record<string, string> = {
   pink: PALETTE.padPink,
   red: PALETTE.padRed,
   blue: PALETTE.padBlue,
+  // Ring-only colours. These used to be missing, so a green gravity orb and a
+  // black slam orb both rendered as yellow jump orbs — reading an orb's colour
+  // IS reading what it does, so that was gameplay-visible, not cosmetic.
+  green: "#4DE94C",
+  black: "#20242E",
 };
 
 /** A pad: a low dome sitting on the surface, coloured by strength. */
@@ -302,6 +307,45 @@ export function drawCoin(
 }
 
 /**
+ * A rotating blade: dark disc, serrated rim, pale hub. Origin at the circle's
+ * CENTRE and sized by the kill radius, not the sprite cell — the drawn teeth
+ * end exactly at the radius, so what looks lethal is lethal. `phase` spins it.
+ */
+export function drawSaw(ctx: CanvasRenderingContext2D, r: number, phase: number): void {
+  const teeth = 8;
+  ctx.save();
+  ctx.rotate(phase);
+
+  // Serrated rim: alternating radii make a gear-like silhouette.
+  ctx.beginPath();
+  const steps = teeth * 2;
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * Math.PI * 2;
+    const rr = i % 2 === 0 ? r : r * 0.72;
+    if (i === 0) ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    else ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+  }
+  ctx.closePath();
+  ctx.fillStyle = PALETTE.spike;
+  ctx.fill();
+  ctx.strokeStyle = PALETTE.spikeEdge;
+  ctx.lineWidth = EDGE * 0.8;
+  ctx.lineJoin = "round";
+  ctx.stroke();
+
+  // Hub, so the spin is visible even between teeth.
+  ctx.fillStyle = PALETTE.spikeGloss;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.34, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = PALETTE.spikeEdge;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.34, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
  * The cube. Origin at its centre, rotation already applied.
  *
  * Proportions are fractions of the box, so the mini cube is the same icon at
@@ -384,4 +428,69 @@ export function drawShip(ctx: CanvasRenderingContext2D, w: number, h: number): v
   ctx.translate(-hw * 0.16, deck - side / 2 + edge * 0.4);
   drawCube(ctx, side, side);
   ctx.restore();
+}
+
+/**
+ * The ball: a disc that rolls, in the shared icon palette. The rotation is
+ * applied by the renderer, so the face needs asymmetry to make rolling
+ * legible — two opposing quarter wedges, like the default GD ball.
+ */
+export function drawBall(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  const r = Math.min(w, h) / 2;
+  const edge = r * 0.18;
+
+  ctx.fillStyle = PALETTE.player;
+  ctx.beginPath();
+  ctx.arc(0, 0, r - edge / 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Opposing wedges in the accent colour: the roll indicator.
+  ctx.fillStyle = PALETTE.playerInner;
+  for (const start of [0, Math.PI]) {
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, r - edge, start, start + Math.PI / 2);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Hub and outline.
+  ctx.fillStyle = PALETTE.playerEdge;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = PALETTE.playerEdge;
+  ctx.lineWidth = edge;
+  ctx.beginPath();
+  ctx.arc(0, 0, r - edge / 2, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+/**
+ * The UFO: a saucer dish with a glass dome, the cube's colours throughout.
+ * Never rotates in play (the mode pins rot to 0), so it is drawn upright.
+ */
+export function drawUfo(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  const hw = w / 2;
+  const hh = h / 2;
+  const edge = h * 0.12;
+
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = PALETTE.playerEdge;
+  ctx.lineWidth = edge;
+
+  // Dome: a glass half-sphere over the saucer line.
+  ctx.fillStyle = PALETTE.playerInner;
+  ctx.beginPath();
+  ctx.arc(0, hh * 0.05, hw * 0.62, Math.PI, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Saucer: a wide lens shape across the lower half.
+  ctx.fillStyle = PALETTE.player;
+  ctx.beginPath();
+  ctx.ellipse(0, hh * 0.35, hw - edge / 2, hh * 0.58, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
 }

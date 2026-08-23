@@ -70,6 +70,15 @@ export class Player {
     return MODES[this.mode];
   }
 
+  /**
+   * Whether a mini portal is in effect. Modes ask this for the VELOCITY side
+   * of mini (jump x0.8, flying accel and clamps /0.85) — sizeScale itself is
+   * only the hitbox side, and the two are different numbers in the real game.
+   */
+  isMini(): boolean {
+    return this.sizeScale !== SIZE_NORMAL;
+  }
+
   /** Horizontal px/s. Constant while no speed portal is crossed. */
   speed(): number {
     return SPEEDS[this.speedIndex];

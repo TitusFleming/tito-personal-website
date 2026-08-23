@@ -1,86 +1,111 @@
 // Every tunable number in the game, in one file.
 //
 // World space is y-up, in pixels, with the origin at the level's default ground
-// surface. Gravity is therefore negative and jump velocity positive, which lets
-// these read exactly as they were researched. The renderer flips y once, on the
-// way to the screen, and nothing else in the engine has to think about it.
+// surface. Gravity is therefore negative and jump velocity positive. The
+// renderer flips y once, on the way to the screen, and nothing else in the
+// engine has to think about it.
 //
-// A note on where these came from: they are the community-documented Geometry
-// Dash values, converted from blocks/s^2 to px/s^2. They land within a pixel or
-// two of the real game, not on it — real GD triggers a jump on the frame after
-// landing and uses its own integration order. Tune these to feel, not to a
-// reference video.
+// ── WHERE THE PHYSICS NUMBERS COME FROM ─────────────────────────────────────
+//
+// Real GD integrates per 60 Hz frame, in "units" (30 units = one grid block =
+// one of our tiles), and multiplies every velocity step by 0.9 before use
+// (`dtSlow = dt * 0.9` — the game's own timescale). Sources, in order of
+// authority:
+//
+//   1. github.com/camila314/gdp — decompilations of the live 2.2 binary
+//      (PlayerObject::updateJump, ::boostPlayer). Gravity 0.9582, flying
+//      clamps 8.0 / -6.4, UFO tap 7.0 (mini 8.0 * 0.85), ball and UFO gravity
+//      multipliers, terminal fall 15, mini jump scale 0.8.
+//   2. github.com/Open-GD/OpenGD — reverse-engineered recreation. Exact
+//      constants m_dGravity = 0.958199, m_dJumpHeight = 11.180032, the
+//      0.9 timescale, ship accel states, pad force 16, orb multipliers.
+//   3. GD Docs (boomlings.dev/reference/player_physics/hitboxes) — hitboxes:
+//      every mode's outer box 30 units (18 mini), inner box 9, wave 10/3.
+//
+// Converting per-frame units to this engine's continuous px/s:
+//
+//   velocity: 1 unit/frame  = 0.9 * 60           = 54 px/s
+//   accel:    1 unit/frame^2 = 0.9^2 * 60^2      = 2916 px/s^2
+//
+// (One 0.9 lands on the velocity update, the second on the position update —
+// both integrations pass through dtSlow.) The proof the model is right is the
+// speed table: GD's 1x horizontal speed is 5.77 units/frame * 54 = 311.58 px/s,
+// exactly the long-established community figure in SPEEDS below.
 
 /** Grid cell size. Everything is authored in grid units; pixels appear here and in the renderer. */
 export const TILE = 30;
+
+/** px/s per (GD unit per frame). The 0.9 is GD's own timescale. See header. */
+export const GD_VEL = 0.9 * 60;
+/** px/s^2 per (GD unit per frame^2). 0.9 applies to both integrations. */
+export const GD_ACC = 0.9 * 0.9 * 60 * 60;
+
+/** The decompiled base gravity, GD units/frame^2. Shared by every mode. */
+const GD_GRAVITY = 0.958199;
 
 // Horizontal speed lives in the SPEEDS table further down: it is player state
 // set by speed portals, not a level-wide constant.
 
 // ── Cube ────────────────────────────────────────────────────────────────────
-// Apex height and horizontal reach are set independently, and only one of them
-// is safe to change:
+// Straight conversions of the decompiled constants. Derived behaviour:
 //
-//   apex     = CUBE_JUMP_VY^2 / (2 * |CUBE_GRAVITY|) = 559^2 / 5200 = 60.09 px = 2.00 tiles
-//   airtime  = 2 * CUBE_JUMP_VY / |CUBE_GRAVITY|     = 1118 / 2600  = 0.4300 s
-//   distance = airtime * SPEEDS[1]                   = 0.4300 * 311.58 = 134.0 px = 4.47 tiles
+//   apex     = 603.72^2 / (2 * 2794.11) = 65.22 px = 2.174 tiles
+//   airtime  = 2 * 603.72 / 2794.11     = 0.4321 s
+//   distance = 0.4321 * SPEEDS[1]       = 134.6 px = 4.49 tiles at 1x
 //
-// The apex MUST stay at two tiles: Stereo Madness contains two-tile steps, and
-// dropping below that makes parts of the real level impossible. So the fix for
-// "the jump goes too far" is to raise gravity and jump velocity together, which
-// keeps the height and shortens the arc — a snappier jump, not a smaller one.
-//
-// This moved from 2160/509 (4.90 tiles of reach, which read as floaty and
-// overshot landings) to 2600/559 (4.47 tiles). If it still feels long, scale
-// both numbers up again keeping v^2 / 2g = 60, e.g. 3000 / 600.
+// all of which match the community-measured figures for the real game (jump
+// height "2.17 blocks", jump length "about 4.5 blocks at 1x").
 
-export const CUBE_GRAVITY = -2600;
-export const CUBE_JUMP_VY = 559;
+export const CUBE_GRAVITY = -GD_GRAVITY * GD_ACC; // -2794.108 px/s^2
+export const CUBE_JUMP_VY = 11.180032 * GD_VEL; // 603.72 px/s
 
 /**
- * Downward speed cap.
+ * Downward speed cap: the decompiled -15 units/frame clamp, applied in every
+ * non-flying mode.
  *
- * Also the number that keeps collision simple: at 1400 px/s a 1/240 s step moves
- * 5.83 px, well under one 30 px tile, so a discrete overlap test cannot tunnel
+ * Also the number that keeps collision simple: at 810 px/s a 1/240 s step moves
+ * 3.4 px, well under one 30 px tile, so a discrete overlap test cannot tunnel
  * through a floor. See FIXED_DT.
  */
-export const CUBE_TERMINAL_VY = -1400;
+export const CUBE_TERMINAL_VY = -15 * GD_VEL; // -810 px/s
+
+// ── Mini ────────────────────────────────────────────────────────────────────
+/**
+ * Mini velocity scales, decompiled: jumps scale by 0.8 (`v16` in updateJump),
+ * and flying modes divide accel and clamps by 0.85 instead. Distinct from
+ * SIZE_MINI, which is the HITBOX scale (18/30 per GD Docs).
+ */
+export const MINI_JUMP_SCALE = 0.8;
+export const MINI_FLY_SCALE = 0.85;
 
 // ── Ship ────────────────────────────────────────────────────────────────────
-// Held = thrust up, released = fall. The *ratio* of thrust to gravity is the
-// feel here, and only the gravity figure is well-sourced, so expect to tune
-// SHIP_THRUST first when the ship handles wrong.
+/**
+ * The ship is gravity with a state-dependent multiplier — there is no separate
+ * "thrust" constant in the real game. Decompiled (camila314/gdp, OpenGD):
+ *
+ *   holding, moving up    ->  0.4 * g upward
+ *   holding, still diving ->  0.5 * g upward   (catches a dive faster)
+ *   released, moving up   -> 0.48 * g downward (1.2 * 0.4)
+ *   released, falling     -> 0.32 * g downward (0.8 * 0.4)
+ *
+ * "up/down" here are relative to current gravity. The stronger catch on a dive
+ * and the gentler pull once already falling are what make the real ship feel
+ * eager without a fake thrust figure.
+ */
+export const SHIP_ACCEL = {
+  holdRising: 0.4 * GD_GRAVITY * GD_ACC,
+  holdDiving: 0.5 * GD_GRAVITY * GD_ACC,
+  releaseRising: 1.2 * 0.4 * GD_GRAVITY * GD_ACC,
+  releaseFalling: 0.8 * 0.4 * GD_GRAVITY * GD_ACC,
+} as const;
 
 /**
- * SHIP FEEL. Three numbers, and only the first is documented.
- *
- * -25 b/s^2 (= -750 px/s^2 at 30 px per block) is the community-documented
- * ship gravity. Thrust is NOT documented anywhere I could find, and making it
- * equal and opposite — which an earlier version did, reasoning about "centred
- * controls" — is what made the ship feel heavy: with equal accelerations,
- * reversing from full dive to full climb takes 2 * MAX_VY / ACCEL, over a
- * second, which reads as flying a brick.
- *
- * Thrust therefore exceeds gravity, which is also how the real thing behaves:
- * holding climbs decisively rather than merely arresting a fall. Raise
- * SHIP_THRUST to make the ship lighter and more eager, lower it toward
- * |SHIP_GRAVITY| to make it heavier.
- *
- * Gravity is pulled slightly below the documented figure for the same reason.
- * Set it back to -750 for strict fidelity at the cost of feel.
+ * Flying-mode velocity clamps, decompiled: rise capped at 8 units/frame, fall
+ * at 6.4 (the 0.8 * 8 in updateJump). Asymmetric — the real ship dives slower
+ * than it climbs. Mini divides both by MINI_FLY_SCALE (decomp: 9.4118/7.5294).
  */
-export const SHIP_GRAVITY = -760;
-/** Replaces gravity while held. Deliberately stronger than gravity. */
-export const SHIP_THRUST = 1180;
-/**
- * Clamp on vertical speed, symmetric. Not documented; derived from the
- * corridor, which is ten tiles: this crosses one in roughly 0.9 s, fast enough
- * to feel responsive and slow enough to still be steerable.
- *
- * Lowering this makes the ship feel lighter and more twitchy; raising it lets
- * the ship build real momentum and feel heavier.
- */
-export const SHIP_MAX_VY = 455;
+export const FLY_RISE_MAX = 8 * GD_VEL; // 432 px/s
+export const FLY_FALL_MAX = 6.4 * GD_VEL; // 345.6 px/s
 // The ship's 30x20 body is declared as a scale in the MODES table, not as a
 // pixel size here — see engine/core/hitbox.ts for why sizes are scales.
 
@@ -103,14 +128,14 @@ export const SHIP_ROT_K = 22;
 /**
  * Exactly one half-turn per jump.
  *
- * This is why a jump between two surfaces at the same height lands the cube
- * 180 degrees flipped rather than at some arbitrary angle: airtime is 0.43 s
- * and the rate is PI per 0.43 s, so a full uninterrupted jump accumulates
- * exactly PI. Landing then snaps to the nearest quarter turn, which that lands
- * on exactly. Keep this tied to the airtime above — if the jump arc changes,
- * this has to change with it or cubes start landing crooked.
+ * DERIVED from the jump constants, never set by hand: a full uninterrupted
+ * jump lasts 2 * CUBE_JUMP_VY / |CUBE_GRAVITY| seconds and accumulates exactly
+ * PI, so a hop between two same-height surfaces lands the cube 180 degrees
+ * flipped and the landing snap to a quarter turn is exact. When the jump arc
+ * changes, this follows automatically.
  */
-export const CUBE_SPIN_RATE = Math.PI / 0.43;
+export const CUBE_AIRTIME = (2 * CUBE_JUMP_VY) / -CUBE_GRAVITY; // 0.4321 s
+export const CUBE_SPIN_RATE = Math.PI / CUBE_AIRTIME;
 
 
 // ── Boosts ──────────────────────────────────────────────────────────────────
@@ -126,10 +151,14 @@ export const CUBE_SPIN_RATE = Math.PI / 0.43;
  * Ratios rather than pixel velocities, so they stay correct if the jump is
  * ever retuned and a new colour is one row. An earlier version guessed these.
  */
-const JUMP_UNITS = 1.94;
-
 /**
  * Convert a documented Y-speed into px/s, KEEPING ITS SIGN.
+ *
+ * The table's unit is now pinned exactly: the game's displayed "Y speed" is in
+ * multiples of the 1x horizontal speed, 5.77 units/frame — so one Y-speed unit
+ * is precisely SPEEDS[1] = 311.58 px/s. The figures cross-check against the
+ * decompilation: yellow pad 2.77 * 5.77 = 15.98 ~ OpenGD's propellPlayer force
+ * of 16, and a normal jump is 11.18 / 5.77 = 1.94, the table's own jump row.
  *
  * The sign is not decoration. In the game's own figures a negative Y-speed on a
  * boost means it launches you toward what will be "up" AFTER the gravity flip
@@ -143,7 +172,7 @@ const JUMP_UNITS = 1.94;
  * boost therefore pushes away from the current floor, and a flipping one pushes
  * away from the floor it just left.
  */
-const ratio = (units: number) => (units / JUMP_UNITS) * CUBE_JUMP_VY;
+const ratio = (units: number) => units * 311.58;
 
 export const PAD_TABLE = {
   yellow: { vy: ratio(2.77), flipsGravity: false },
@@ -177,9 +206,11 @@ export const LAND_TOLERANCE = 2;
  * much smaller centre box decides whether running into a block's face kills
  * you. Clipping a corner is therefore survivable without any special-case rule.
  *
- * The community documents the main box as exactly 30 units and this one as
- * "much smaller" but publishes no figure, so it is a tunable: raise it to make
- * wall deaths harsher, lower it to be kinder.
+ * No longer a guess: the GD Docs hitbox table gives the inner box as exactly
+ * 9 units against a 30 unit body — 0.3. (Their table also says the MINI inner
+ * box grows to 10 units rather than shrinking with the body; that quirk is
+ * deliberately not modelled, which makes mini wall deaths here very slightly
+ * kinder than the real game.)
  */
 export const SOLID_HITBOX_SCALE = 0.3;
 
@@ -210,39 +241,48 @@ export const SPEED_NORMAL = 1;
 
 // ── Size ────────────────────────────────────────────────────────────────────
 /**
- * Mini portal scale.
+ * Mini portal HITBOX scale: 18 / 30 units, straight from the GD Docs hitbox
+ * table (boomlings.dev/reference/player_physics/hitboxes).
  *
- * The entire implementation of "mini" is this number reaching Player.sizeScale:
- * every box the player owns comes from one rule, so they all shrink together.
+ * The entire implementation of "mini" is this number reaching Player.sizeScale
+ * (every box the player owns comes from one rule, so they all shrink together)
+ * plus the MINI_JUMP_SCALE / MINI_FLY_SCALE velocity factors above — hitbox
+ * scale and velocity scale are different numbers in the real game.
  */
-export const SIZE_MINI = 0.5;
+export const SIZE_MINI = 0.6;
 export const SIZE_NORMAL = 1;
 
-// ── Modes beyond cube and ship ──────────────────────────────────────────────
-// UNTUNED, AND NOW REACHABLE. Clubstep contains one ball and two UFO portals,
-// so these numbers are live rather than theoretical.
-//
-// Their BEHAVIOUR is sourced: the ball reverses gravity on a tap and keeps its
-// momentum, and the UFO gives a fixed mid-air hop per tap. Both match what is
-// implemented. Their NUMBERS are not sourced — the community physics
-// documentation covers only the cube (-72 b/s^2) and the ship (-25 b/s^2), and
-// nothing published gives ball, UFO or wave figures.
-//
-// I attempted to tune the UFO by sweeping tap velocity and gravity against
-// Clubstep's own two UFO sections. The sweep was inconclusive: every
-// combination scored identically because the scripted driver dies on the same
-// obstacle regardless, so the measurement could not tell good values from bad.
-// These therefore remain judgement calls, and the ball and UFO sections will
-// not feel like the real game until someone plays them and adjusts by hand.
+// ── Ball and UFO ────────────────────────────────────────────────────────────
+// Sourced from the same decompilations as the cube and ship (see header).
+// Clubstep contains one ball and two UFO portals, so these are live.
 
-export const BALL_GRAVITY = -2600;
-export const BALL_TERMINAL_VY = -1000;
+/** Ball gravity is the base gravity at the decompiled 0.6 multiplier. */
+export const BALL_GRAVITY = 0.6 * CUBE_GRAVITY; // -1676.46 px/s^2
+export const BALL_TERMINAL_VY = CUBE_TERMINAL_VY; // the shared -15 clamp
+/**
+ * A ball tap flips gravity AND launches at 0.6 of the jump velocity toward the
+ * old "up" (decomp: setYVelocity(jump) then flipGravity + vy *= 0.6). The
+ * launch keeps the flip readable — the ball visibly leaves the surface rather
+ * than merely beginning to fall away from it.
+ */
+export const BALL_TAP_VY = 0.6 * CUBE_JUMP_VY; // 362.2 px/s
+/** Roll rate is presentation only: radians per px of travel, not sourced. */
 export const BALL_ROLL_RATE = Math.PI / 45;
 
-export const UFO_GRAVITY = -1600;
-export const UFO_TAP_VY = 400;
-export const UFO_TERMINAL_VY = -1000;
+/**
+ * UFO gravity is asymmetric in the decompilation: 0.6 * g while moving up
+ * (the hop dies quickly), 0.4 * g while falling (the descent is gentle).
+ */
+export const UFO_GRAVITY_RISING = 0.6 * CUBE_GRAVITY; // -1676.46 px/s^2
+export const UFO_GRAVITY_FALLING = 0.4 * CUBE_GRAVITY; // -1117.64 px/s^2
+/** A tap SETS velocity to 7 units/frame (8 * 0.85 when mini), never adds. */
+export const UFO_TAP_VY = 7 * GD_VEL; // 378 px/s
+export const UFO_TAP_VY_MINI = 8 * MINI_FLY_SCALE * GD_VEL; // 367.2 px/s
 
+/**
+ * Wave moves on an exact 45-degree diagonal: the decompiled updateJump sets
+ * vertical speed to the horizontal speed. No level here reaches it yet.
+ */
 export const WAVE_SLOPE = 1;
 
 // ── Loop ────────────────────────────────────────────────────────────────────

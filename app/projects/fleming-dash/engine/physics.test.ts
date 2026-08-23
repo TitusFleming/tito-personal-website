@@ -9,10 +9,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  CUBE_AIRTIME,
+  CUBE_GRAVITY,
   CUBE_JUMP_VY,
   CUBE_TERMINAL_VY,
   FIXED_DT,
-  SHIP_MAX_VY,
+  FLY_FALL_MAX,
+  FLY_RISE_MAX,
   SPEEDS,
   TILE,
 } from "./constants.ts";
@@ -49,25 +52,29 @@ function simulateJump(speedIndex: SpeedIndex = 1) {
   return { apex, airtime: steps * FIXED_DT, distance: p.x, rotation: p.rot, events: out };
 }
 
-test("a cube jump clears exactly two tiles", () => {
+test("a cube jump peaks at the real game's 2.174 tiles", () => {
   const { apex } = simulateJump();
-  // The analytical apex is vy^2 / 2g = 60.09 px, but a discrete integrator
-  // lands slightly above it: the step that sets the jump velocity moves a full
-  // vy*dt with no gravity applied yet, so the arc starts about vy*dt/2 high.
-  // That is inherent to semi-implicit Euler, not a wrong constant, so the
-  // tolerance is derived from it rather than guessed.
+  // The real figure, derived from the decompiled constants (see constants.ts
+  // header): vy^2 / 2g = 65.22 px = 2.174 tiles — the community-measured
+  // "2.17 blocks". A discrete integrator lands slightly above the analytical
+  // apex: the step that sets the jump velocity moves a full vy*dt with no
+  // gravity applied yet, so the arc starts about vy*dt/2 high. That is
+  // inherent to semi-implicit Euler, so the tolerance is derived from it.
+  const analytic = (CUBE_JUMP_VY * CUBE_JUMP_VY) / (2 * -CUBE_GRAVITY);
+  assert.ok(Math.abs(analytic - 2.174 * TILE) < 0.1, `analytic apex ${analytic.toFixed(2)}`);
   const overshoot = (CUBE_JUMP_VY * FIXED_DT) / 2;
   assert.ok(
-    Math.abs(apex - 2 * TILE) < overshoot + 0.5,
-    `apex was ${apex.toFixed(2)} px, expected ${2 * TILE} px + ~${overshoot.toFixed(2)} px overshoot`,
+    Math.abs(apex - analytic) < overshoot + 0.5,
+    `apex was ${apex.toFixed(2)} px, expected ${analytic.toFixed(2)} px + ~${overshoot.toFixed(2)} px overshoot`,
   );
 });
 
-test("a cube jump lasts about 0.43 s", () => {
+test("a cube jump lasts the real game's 0.432 s", () => {
   const { airtime } = simulateJump();
+  assert.ok(Math.abs(CUBE_AIRTIME - 0.4321) < 0.001, `derived airtime ${CUBE_AIRTIME}`);
   assert.ok(
-    Math.abs(airtime - 0.43) < FIXED_DT * 3,
-    `airtime was ${airtime.toFixed(4)} s, expected ~0.43 s`,
+    Math.abs(airtime - CUBE_AIRTIME) < FIXED_DT * 3,
+    `airtime was ${airtime.toFixed(4)} s, expected ~${CUBE_AIRTIME.toFixed(4)} s`,
   );
 });
 
@@ -152,15 +159,17 @@ test("the ship climbs while held and falls when released", () => {
   assert.ok(p.vy < 0, "ship should be falling once released");
 });
 
-test("ship vertical speed clamps symmetrically", () => {
+test("ship vertical speed clamps at the decompiled asymmetric limits", () => {
+  // The real ship climbs faster than it dives: rise caps at 8 units/frame
+  // (432 px/s), fall at 6.4 (345.6 px/s). See FLY_RISE_MAX / FLY_FALL_MAX.
   const out: SimEvent[] = [];
   const up = makePlayer({ mode: "ship", onGround: false });
   for (let i = 0; i < 2000; i++) up.def.applyInput(up, { ...HELD }, FIXED_DT, out);
-  assert.equal(up.vy, SHIP_MAX_VY);
+  assert.equal(up.vy, FLY_RISE_MAX);
 
   const down = makePlayer({ mode: "ship", onGround: false });
   for (let i = 0; i < 2000; i++) down.def.applyInput(down, { ...RELEASED }, FIXED_DT, out);
-  assert.equal(down.vy, -SHIP_MAX_VY);
+  assert.equal(down.vy, -FLY_FALL_MAX);
 });
 
 test("the ship never jumps, however hard you hold", () => {

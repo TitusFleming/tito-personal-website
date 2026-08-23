@@ -212,6 +212,14 @@ function convert(objects, meta) {
           rest.push({ t: "pit", x, y });
           break;
         }
+        // Sawblades and 1.6 blades are CIRCULAR hazards: the table carries
+        // their kill radius (cr, px) from the game's own object radius data,
+        // and the engine tests a circle rather than a rect. Rotation is
+        // irrelevant to a disc, so it is dropped.
+        if (def.sub === "saw") {
+          rest.push({ t: "saw", x, y, cr: def.cr, gw, gh });
+          break;
+        }
         // GD encodes orientation as rotation plus a vertical flip; we only need
         // the four cardinal directions.
         let r = (((Math.round(o.rot / 90) * 90) % 360) + 360) % 360;
@@ -264,12 +272,16 @@ function convert(objects, meta) {
         break;
       }
 
+      // Colour comes from the table's sub field (35/36 yellow, 140/141 pink,
+      // 1332/1333 red) because strength does: a pink pad launches at 65% of a
+      // yellow one, and before the table carried colours every pink imported
+      // as a yellow at full strength.
       case "pad":
-        rest.push({ t: "pad", x, y });
+        rest.push({ t: "pad", x, y, ...(def.sub && def.sub !== "yellow" ? { c: def.sub } : {}) });
         break;
 
       case "ring":
-        rest.push({ t: "ring", x, y });
+        rest.push({ t: "ring", x, y, ...(def.sub && def.sub !== "yellow" ? { c: def.sub } : {}) });
         break;
 
       // Gravity pads and rings are ordinary pads and rings whose colour flips

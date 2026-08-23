@@ -49,14 +49,24 @@ test("the camera ceiling comes from the level's own geometry", () => {
   assert.equal(tall.maxHeight, 9 * TILE);
 });
 
-test("validateLevel flags a ship ending with no ceiling", () => {
-  const warnings = validateLevel(doc({ objects: [{ t: "ship", x: 10, y: 0 }, { t: "end", x: 100 }] }));
-  assert.ok(warnings.some((w) => /ship mode with no ceiling/i.test(w.message)));
+test("validateLevel accepts a level that ends in a flying mode", () => {
+  // The mode portal supplies the section's ceiling now, so ending in a ship
+  // is fine — Clubstep does. A redundant portal is still worth a warning.
+  const ship = validateLevel(doc({ objects: [{ t: "ship", x: 10, y: 0 }, { t: "end", x: 100 }] }));
+  assert.deepEqual(ship, []);
+  const twice = validateLevel(
+    doc({ objects: [{ t: "ship", x: 10, y: 0 }, { t: "ship", x: 20, y: 0 }, { t: "end", x: 100 }] }),
+  );
+  assert.ok(twice.some((w) => /redundant/i.test(w.message)));
 });
 
 test("validateLevel flags modes that exist but are not tuned", () => {
-  const warnings = validateLevel(doc({ objects: [{ t: "ball", x: 10, y: 0 }, { t: "end", x: 100 }] }));
+  // Ball and UFO graduated to PLAYABLE_MODES when their physics were sourced
+  // from the decompilation; the wave has no sourced level yet and stays flagged.
+  const warnings = validateLevel(doc({ objects: [{ t: "wave", x: 10, y: 0 }, { t: "end", x: 100 }] }));
   assert.ok(warnings.some((w) => /not yet tuned/i.test(w.message)));
+  const ok = validateLevel(doc({ objects: [{ t: "ball", x: 10, y: 0 }, { t: "end", x: 100 }] }));
+  assert.ok(!ok.some((w) => /not yet tuned/i.test(w.message)), "ball is tuned now");
 });
 
 // ── forgiveness ─────────────────────────────────────────────────────────────

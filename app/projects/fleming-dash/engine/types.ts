@@ -57,6 +57,11 @@ export type LevelObject =
       hw?: number;
       hh?: number;
     }
+  /**
+   * A rotating blade whose kill area is a circle of radius `cr` px, from the
+   * game's own per-object radius data. gw/gh are the drawn footprint.
+   */
+  | { t: "saw"; x: number; y: number; cr: number; gw?: number; gh?: number }
   // ── portals ──
   // gw/gh are the portal's real cell size. Every GD portal is 3 tiles tall, so
   // the authored y is already the cell BOTTOM — an object that shifts it again

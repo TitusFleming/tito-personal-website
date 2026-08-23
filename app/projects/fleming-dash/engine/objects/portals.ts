@@ -101,6 +101,11 @@ export class GravityPortal extends Portal {
     const p = ctx.player;
     if (p.gravitySign === this.sign) return true;
     p.gravitySign = this.sign;
+    // The real game halves vertical velocity on a flip (decompiled
+    // flipGravity: m_dYVel /= 2), which is what makes chained gravity portals
+    // controllable — carrying full speed through a flip overshoots the next
+    // corridor. Clubstep's 62-64% portal chain is built around this.
+    p.vy /= 2;
     p.onGround = false;
     ctx.events.push({ type: "gravity", sign: this.sign });
     return true;

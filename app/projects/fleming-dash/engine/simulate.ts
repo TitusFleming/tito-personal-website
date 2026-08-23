@@ -267,7 +267,11 @@ export class Simulation {
     if (hitsHazard(p, world)) return this.die(out, "hazard");
 
     // Fell out of the world, in whichever direction that currently means.
-    const depth = p.gravitySign === 1 ? ground - (p.y + hh) : (p.y - hh) - ceiling;
+    // Deliberately NOT symmetric under open sky: an inverted player with no
+    // ceiling above them floats until the level flips them back, matching the
+    // real game (which has an invisible playfield top, not an upward void) —
+    // and every inverted stretch in the imported levels does flip back.
+    const depth = p.gravitySign === 1 ? ground - (p.y + hh) : p.y - hh - ceiling;
     if (Number.isFinite(depth) && depth > VOID_DEPTH) return this.die(out, "void");
 
     // ── finish ──────────────────────────────────────────────────────────────

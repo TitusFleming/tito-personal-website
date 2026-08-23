@@ -38,9 +38,22 @@ import type { Palette } from "../engine/palette.ts";
 import type { Effects } from "./effects.ts";
 import { ModePortal, Portal } from "../engine/objects/portals.ts";
 import { Coin } from "../engine/objects/coin.ts";
+import { Saw } from "../engine/objects/saw.ts";
 import { Pad } from "../engine/objects/boosts.ts";
 import { Ring } from "../engine/objects/boosts.ts";
-import { drawBlock, drawCoin, drawCube, drawPad, drawPortal, drawRing, drawShip, drawSpike } from "./sprites.ts";
+import {
+  drawBall,
+  drawBlock,
+  drawCoin,
+  drawCube,
+  drawPad,
+  drawPortal,
+  drawRing,
+  drawSaw,
+  drawShip,
+  drawSpike,
+  drawUfo,
+} from "./sprites.ts";
 
 const COLORS = {
   skyTop: "#1E6BFF",
@@ -76,6 +89,8 @@ const COLORS = {
 
 /** Radians per second for the idle coin spin. Slow enough to read as a turn. */
 const COIN_SPIN_RATE = 1.9;
+/** Radians per second for blade spin. Presentation only, staggered per saw. */
+const SAW_SPIN_RATE = 4.2;
 
 export type Camera = { x: number; y: number };
 
@@ -385,12 +400,19 @@ export function draw(
       // in the cell, so building the triangle from it put every spike in the
       // wrong place, at the wrong size, always pointing up.
       ctx.save();
-      ctx.translate(sx(hz.cell.x + hz.cell.w / 2), sy(hz.cell.y + hz.cell.h / 2));
-      // Hazard rotation is authored clockwise in the level file, matching the
-      // source game's own convention, so it is applied to the y-down canvas
-      // directly rather than through the world-space flip above.
-      ctx.rotate((hz.rot * Math.PI) / 180);
-      drawSpike(ctx, hz.cell.w, hz.cell.h);
+      if (hz instanceof Saw) {
+        // A saw is drawn from its kill CIRCLE, spinning with time — rotation
+        // and cell are meaningless to a disc.
+        ctx.translate(sx(hz.cx), sy(hz.cy));
+        drawSaw(ctx, hz.radius, (info.time ?? 0) * SAW_SPIN_RATE + hz.cx * 0.05);
+      } else {
+        ctx.translate(sx(hz.cell.x + hz.cell.w / 2), sy(hz.cell.y + hz.cell.h / 2));
+        // Hazard rotation is authored clockwise in the level file, matching the
+        // source game's own convention, so it is applied to the y-down canvas
+        // directly rather than through the world-space flip above.
+        ctx.rotate((hz.rot * Math.PI) / 180);
+        drawSpike(ctx, hz.cell.w, hz.cell.h);
+      }
       ctx.restore();
     }
 
@@ -471,6 +493,8 @@ export function draw(
 
   if (!info.hidePlayer) {
     if (p.mode === "ship") drawShip(ctx, box.w, box.h);
+    else if (p.mode === "ball") drawBall(ctx, box.w, box.h);
+    else if (p.mode === "ufo") drawUfo(ctx, box.w, box.h);
     else drawCube(ctx, box.w, box.h);
   }
   ctx.restore();

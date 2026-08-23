@@ -44,10 +44,10 @@ export function validateLevel(doc: LevelDoc): LevelWarning[] {
     mode = next;
   }
 
-  const flying = mode === "ship" || mode === "wave";
-  if (flying && doc.ceilingY === null) {
-    out.push({ severity: "warn", message: `Level ends in ${mode} mode with no ceiling.` });
-  }
+  // A level may end in a flying mode with no zone ceiling: the mode portal
+  // itself establishes the section's floor and ceiling (see ModePortal), so
+  // the old "ship with no ceiling plays as an empty void" warning is obsolete
+  // — and Clubstep, which genuinely ends in a ship, would trip it.
 
   return out;
 }

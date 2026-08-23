@@ -15,6 +15,7 @@ import { ColorTrigger } from "./color.ts";
 import { Pad, Ring } from "./boosts.ts";
 import { Pit } from "./decoration.ts";
 import { GravityPortal, ModePortal, SizePortal, SpeedPortal } from "./portals.ts";
+import { Saw } from "./saw.ts";
 import { Spike } from "./spike.ts";
 import type { GameObject } from "./object.ts";
 import type { LevelObject } from "../types.ts";
@@ -32,6 +33,8 @@ export function buildObject(o: LevelObject): GameObject | null {
       return new Block(o.x, o.y, o.w ?? 1, o.h ?? 1);
     case "spike":
       return new Spike(o.x, o.y, o.r ?? 0, o.hw, o.hh, o.gw ?? 1, o.gh ?? 1);
+    case "saw":
+      return new Saw(o.x, o.y, o.cr, o.gw ?? 1, o.gh ?? 1);
     case "pit":
       return new Pit(o.x, o.y);
     case "coin":

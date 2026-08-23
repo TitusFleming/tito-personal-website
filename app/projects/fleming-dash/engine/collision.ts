@@ -21,6 +21,7 @@
 
 import { LAND_TOLERANCE, TILE } from "./constants.ts";
 import { overlaps } from "./core/aabb.ts";
+import { Saw, circleHitsRect } from "./objects/saw.ts";
 import type { Player } from "./player.ts";
 import type { World } from "./world.ts";
 
@@ -54,22 +55,39 @@ export function resolveSolids(
       const rectBottom = rect.y;
       const hh = p.halfH();
 
-      if (p.vy <= 0 && prevBottom >= rectTop - LAND_TOLERANCE) {
-        // Came down onto it.
-        p.y = rectTop + hh;
+      // Which face is "the floor" depends on gravity. Under normal gravity the
+      // player lands on tops and bonks undersides; flipped, the underside IS
+      // the floor — Clubstep's inverted cube section lands on exactly those.
+      // Before this was gravity-aware, a flipped player could never ground on
+      // a block at all and every inverted section played as a fall with no
+      // landings.
+      const falling = p.gravitySign === 1 ? p.vy <= 0 : p.vy >= 0;
+      const rushing = p.gravitySign === 1 ? p.vy > 0 : p.vy < 0;
+      const clearedFloor =
+        p.gravitySign === 1
+          ? prevBottom >= rectTop - LAND_TOLERANCE
+          : prevTop <= rectBottom + LAND_TOLERANCE;
+      const clearedCeil =
+        p.gravitySign === 1
+          ? prevTop <= rectBottom + LAND_TOLERANCE
+          : prevBottom >= rectTop - LAND_TOLERANCE;
+
+      if (falling && clearedFloor) {
+        // Came down (in gravity terms) onto its floor face.
+        p.y = p.gravitySign === 1 ? rectTop + hh : rectBottom - hh;
         p.vy = 0;
         p.onGround = true;
         result = "land";
-      } else if (p.vy > 0 && prevTop <= rectBottom + LAND_TOLERANCE) {
-        // Came up into the underside. Fatal, as in the real game — a block's
-        // bottom face is as lethal as its side. This used to be a survivable
-        // bonk that zeroed the climb, which let the player headbutt geometry
-        // and carry on.
+      } else if (rushing && clearedCeil) {
+        // Came up into the face opposite the floor. Fatal, as in the real
+        // game — a block's far face is as lethal as its side. This used to be
+        // a survivable bonk that zeroed the climb, which let the player
+        // headbutt geometry and carry on.
         //
         // Judged on the SOLID box, exactly like a wall: clipping the corner of
         // an overhang stays survivable, so the forgiveness model is unchanged.
         if (overlaps(p.box("solid"), rect)) return "death";
-        p.y = rectBottom - hh;
+        p.y = p.gravitySign === 1 ? rectBottom - hh : rectTop + hh;
         p.vy = 0;
         if (result === "none") result = "ceiling";
       } else if (overlaps(p.box("solid"), rect)) {
@@ -93,7 +111,15 @@ export function hitsHazard(p: Player, world: World): boolean {
     const col = world.columns[gx];
     if (!col) continue;
     for (const hazard of col.hazards) {
-      if (overlaps(kill, hazard.box)) return true;
+      if (!overlaps(kill, hazard.box)) continue;
+      // A saw's box is only the bounding square of its kill circle; the rect
+      // pass above is the broad phase and the circle decides. Everything else
+      // kills on the rect itself.
+      if (hazard instanceof Saw) {
+        if (circleHitsRect(hazard.cx, hazard.cy, hazard.radius, kill)) return true;
+        continue;
+      }
+      return true;
     }
   }
   return false;

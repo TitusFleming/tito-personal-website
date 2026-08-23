@@ -11,22 +11,26 @@
 
 import {
   BALL_GRAVITY,
+  BALL_ROLL_RATE,
+  BALL_TAP_VY,
+  BALL_TERMINAL_VY,
   CAM_K_CUBE,
   CAM_K_SHIP,
-  BALL_ROLL_RATE,
-  BALL_TERMINAL_VY,
   CUBE_GRAVITY,
   CUBE_JUMP_VY,
   CUBE_SPIN_RATE,
   CUBE_TERMINAL_VY,
-  SHIP_GRAVITY,
-  SHIP_MAX_VY,
+  FLY_FALL_MAX,
+  FLY_RISE_MAX,
+  MINI_FLY_SCALE,
+  MINI_JUMP_SCALE,
+  SHIP_ACCEL,
   SHIP_ROT_K,
   SHIP_ROT_MAX,
-  SHIP_THRUST,
-  UFO_GRAVITY,
+  UFO_GRAVITY_FALLING,
+  UFO_GRAVITY_RISING,
   UFO_TAP_VY,
-  UFO_TERMINAL_VY,
+  UFO_TAP_VY_MINI,
   WAVE_SLOPE,
   clamp,
   expSmooth,
@@ -96,6 +100,24 @@ function capFall(p: Player, terminal: number): void {
   p.vy = p.gravitySign === 1 ? Math.max(p.vy, terminal) : Math.min(p.vy, -terminal);
 }
 
+/** Velocity relative to gravity: positive while moving toward current "up". */
+function riseVel(p: Player): number {
+  return p.vy * p.gravitySign;
+}
+
+/**
+ * The flying clamp, decompiled: rise capped harder than fall, both divided by
+ * MINI_FLY_SCALE when mini (a mini ship is FASTER vertically, which is why
+ * mini ship corridors feel so twitchy in the real game).
+ */
+function capFlying(p: Player): void {
+  const s = p.isMini() ? MINI_FLY_SCALE : 1;
+  const rise = FLY_RISE_MAX / s;
+  const fall = -FLY_FALL_MAX / s;
+  const v = clamp(riseVel(p), fall, rise);
+  p.vy = v * p.gravitySign;
+}
+
 const cube: ModeDef = {
   id: "cube",
   label: "Cube",
@@ -109,7 +131,8 @@ const cube: ModeDef = {
     // not a simplification: holding makes the cube re-jump the instant it
     // lands, which is why the core loop needs no edge detection anywhere.
     if (input.held && p.onGround) {
-      p.vy = CUBE_JUMP_VY * p.gravitySign;
+      // Mini jumps at 0.8x, the decompiled v16 factor — velocity, not hitbox.
+      p.vy = CUBE_JUMP_VY * (p.isMini() ? MINI_JUMP_SCALE : 1) * p.gravitySign;
       p.onGround = false;
       out.push({ type: "jump" });
     } else {
@@ -145,8 +168,21 @@ const ship: ModeDef = {
   sectionTiles: 10,
   grounded: false,
   applyInput(p, input, dt) {
-    p.vy += (input.held ? SHIP_THRUST : SHIP_GRAVITY) * p.gravitySign * dt;
-    p.vy = clamp(p.vy, -SHIP_MAX_VY, SHIP_MAX_VY);
+    // The real ship is gravity with a state-dependent multiplier, four states
+    // in total (see SHIP_ACCEL — positive magnitudes). Everything is relative
+    // to current gravity: "rising" means moving toward current up, holding
+    // accelerates toward up, releasing toward down.
+    const rising = riseVel(p) >= 0;
+    const a = input.held
+      ? rising
+        ? SHIP_ACCEL.holdRising
+        : SHIP_ACCEL.holdDiving
+      : rising
+        ? -SHIP_ACCEL.releaseRising
+        : -SHIP_ACCEL.releaseFalling;
+    const mini = p.isMini() ? 1 / MINI_FLY_SCALE : 1;
+    p.vy += a * mini * p.gravitySign * dt;
+    capFlying(p);
   },
   applyRotation(p, _input, speed, dt) {
     // Straight from the velocity vector, which is how the real game does it:
@@ -157,11 +193,6 @@ const ship: ModeDef = {
   },
 };
 
-// ── Untuned modes ───────────────────────────────────────────────────────────
-// Real implementations, but no level in this project reaches them yet and the
-// numbers are not measured against the real game. They are here because a seam
-// you have never put a second thing through is not yet known to be a seam.
-
 const ball: ModeDef = {
   id: "ball",
   label: "Ball",
@@ -171,10 +202,12 @@ const ball: ModeDef = {
   sectionTiles: 10,
   grounded: true,
   applyInput(p, input, dt, out) {
-    // A tap flips gravity instead of launching. Edge-triggered: holding must
-    // not flip every step.
+    // A tap on a surface flips gravity AND launches at 0.6x jump velocity
+    // toward the old up (decompiled: the jump fires, then the flip, then
+    // vy *= 0.6). Edge-triggered: holding must not flip every step.
     if (input.held && input.ringArmed && p.onGround) {
       input.ringArmed = false;
+      p.vy = BALL_TAP_VY * (p.isMini() ? MINI_JUMP_SCALE : 1) * p.gravitySign;
       p.gravitySign = p.gravitySign === 1 ? -1 : 1;
       p.onGround = false;
       out.push({ type: "gravity", sign: p.gravitySign });
@@ -197,16 +230,25 @@ const ufo: ModeDef = {
   sectionTiles: 10,
   grounded: true,
   applyInput(p, input, dt, out) {
-    // Unlike the cube, a tap works in mid-air — but only on the press edge.
+    // Unlike the cube, a tap works in mid-air — but only on the press edge,
+    // and it SETS velocity rather than adding (decompiled setYVelocity).
+    // The real game only applies the hop when it would not slow an existing
+    // climb; a chained tap mid-rise therefore cannot brake the UFO.
     if (input.held && input.ringArmed) {
       input.ringArmed = false;
-      p.vy = UFO_TAP_VY * p.gravitySign;
-      p.onGround = false;
-      out.push({ type: "jump" });
-    } else {
-      p.vy += UFO_GRAVITY * p.gravitySign * dt;
+      const tap = p.isMini() ? UFO_TAP_VY_MINI : UFO_TAP_VY;
+      if (riseVel(p) < tap) {
+        p.vy = tap * p.gravitySign;
+        p.onGround = false;
+        out.push({ type: "jump" });
+      }
     }
-    capFall(p, UFO_TERMINAL_VY);
+    // Gravity is asymmetric: stronger while the hop is rising than in the
+    // fall that follows. See UFO_GRAVITY_* for the decompiled multipliers.
+    const g = riseVel(p) >= 0 ? UFO_GRAVITY_RISING : UFO_GRAVITY_FALLING;
+    const mini = p.isMini() ? 1 / MINI_FLY_SCALE : 1;
+    p.vy += g * mini * p.gravitySign * dt;
+    capFlying(p);
   },
   applyRotation(p) {
     p.rot = 0;
@@ -233,4 +275,4 @@ const wave: ModeDef = {
 export const MODES: Record<GameMode, ModeDef> = { cube, ship, ball, ufo, wave };
 
 /** Modes a level file is currently allowed to reference. */
-export const PLAYABLE_MODES: GameMode[] = ["cube", "ship"];
+export const PLAYABLE_MODES: GameMode[] = ["cube", "ship", "ball", "ufo"];

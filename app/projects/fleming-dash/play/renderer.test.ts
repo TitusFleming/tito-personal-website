@@ -5,9 +5,9 @@ import { CAM_RISE_TILES, GROUND_BAND_TILES, TILE, VIEW_TILES } from "../engine/c
 import { Simulation } from "../engine/simulate.ts";
 import { World } from "../engine/world.ts";
 import { runUntil, world as makeWorld } from "../engine/test-support.ts";
-import { CanvasRecorder } from "./canvas-recorder.ts";
+import { CanvasRecorder, type Shape } from "./canvas-recorder.ts";
 import { PALETTE, drawCoin, drawRing } from "./sprites.ts";
-import { createCamera, draw, interpolate, snapCamera } from "./renderer.ts";
+import { createCamera, draw, interpolate, snapCamera, viewport } from "./renderer.ts";
 import { Player } from "../engine/player.ts";
 import { MODES } from "../engine/modes/mode.ts";
 import { Palette } from "../engine/palette.ts";
@@ -496,4 +496,54 @@ test("the spin is wall-clock, never simulation state", () => {
     return JSON.stringify(rec.shapes.length);
   };
   assert.ok(at(0) !== undefined && at(1) !== undefined);
+});
+
+// ── Clubstep's new object kinds, proven ON SCREEN ───────────────────────────
+// rec.shapes proves something was drawn; rec.visible(w, h) proves it landed in
+// the viewport. Off-screen draws pass a .shapes assertion, which once hid a
+// coin bug — everything below asserts visibility.
+
+test("a saw is drawn as a visible gear at its kill circle", () => {
+  const w = makeWorld([{ t: "saw", x: 8, y: 2, cr: 21.6 }]);
+  const sim = new Simulation(w);
+  sim.player.x = 6 * TILE;
+  const cam = createCamera(w);
+  snapCamera(cam, sim.player, w, VIEW.w, VIEW.h);
+  const rec = new CanvasRecorder();
+  const view = interpolate({ x: sim.player.x, y: sim.player.y, rot: sim.player.rot }, sim.player, 1);
+  draw(rec.asContext(), sim.player, view, w, cam, VIEW.w, VIEW.h, { ...INFO, time: 0.5 });
+
+  const gear = rec
+    .visible(VIEW.w, VIEW.h)
+    .filter(
+      (s): s is Extract<Shape, { kind: "path" }> =>
+        s.kind === "path" && s.op === "fill" && s.style === PALETTE.spike && s.points.length > 12,
+    );
+  assert.equal(gear.length, 1, "expected one serrated silhouette on screen");
+  // The silhouette's extent must match the kill circle's diameter, scaled by
+  // the camera: what looks lethal IS lethal.
+  const xs = gear[0].points.map((p) => p.x);
+  const { scale } = viewport(VIEW.w, VIEW.h);
+  const worldSpan = (Math.max(...xs) - Math.min(...xs)) / scale;
+  assert.ok(Math.abs(worldSpan - 2 * 21.6) < 2, `gear spans ${worldSpan.toFixed(1)}px, expected ~43.2`);
+});
+
+test("ball and UFO players render visibly in their own shapes", () => {
+  for (const mode of ["ball", "ufo"] as const) {
+    const w = makeWorld([{ t: "block", x: 3, y: 0, w: 10 }]);
+    const sim = new Simulation(w);
+    sim.player.mode = mode;
+    sim.player.x = 5 * TILE;
+    sim.player.y = 2 * TILE;
+    const cam = createCamera(w);
+    snapCamera(cam, sim.player, w, VIEW.w, VIEW.h);
+    const rec = new CanvasRecorder();
+    const view = interpolate({ x: sim.player.x, y: sim.player.y, rot: sim.player.rot }, sim.player, 1);
+    draw(rec.asContext(), sim.player, view, w, cam, VIEW.w, VIEW.h, INFO);
+
+    const body = rec
+      .visible(VIEW.w, VIEW.h)
+      .filter((s) => (s.kind === "path" || s.kind === "arc") && s.style === PALETTE.player);
+    assert.ok(body.length > 0, `${mode} player must be drawn with the icon body colour, on screen`);
+  }
 });
