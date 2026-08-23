@@ -261,9 +261,8 @@ export default function PhlemGame() {
             <p className="eyebrow">Phlem.io</p>
             <h2>Eat or be eaten</h2>
             <p className="menu-blurb">
-              A single-player agar arena. Everyone else in the lobby is named
-              after an extreme demon from the AREDL, and none of them know
-              you&apos;re the only human here.
+              An (un)Faithful agar.io inspired project. Single player, nobody
+              in the lobby knows you&apos;re the only human in it.
             </p>
             <form
               className="phlem-form"

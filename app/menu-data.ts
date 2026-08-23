@@ -39,7 +39,7 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
         label: "Phlem.io",
         meta: "Browser game",
         blurb:
-          "A single-player agar arena where every other blob is an AI named after an AREDL extreme demon. They hunt, flee, split on you, and ragequit when they get too big.",
+          "A single-player agar.io inspired arena where every other blob is an AI named after an extreme demon from Geometry Dash. They hunt, flee, split on you, and ragequit if they get eaten too much.",
         tags: ["Canvas", "AI bots", "AREDL"],
         href: "/projects/phlem-io",
       },
