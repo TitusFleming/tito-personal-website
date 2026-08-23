@@ -172,7 +172,7 @@ h3 {
 .eyebrow,
 .project-topline,
 .tag-row span {
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
   font-weight: 700;
@@ -1012,7 +1012,7 @@ footer {
 }
 
 .race-party {
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
   font-weight: 700;
@@ -1280,7 +1280,7 @@ footer {
 }
 
 .race-accordion-title {
-  color: #7a3027;
+  color: #5fe0f5;
   flex: 1;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
@@ -1927,7 +1927,7 @@ footer {
 }
 
 .engine-part-count {
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
   font-weight: 700;
@@ -1970,7 +1970,7 @@ footer {
 }
 
 .engine-spec dt {
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
   font-weight: 700;
@@ -2557,7 +2557,7 @@ footer {
 /* Hidden rather than removed, so rows never shift sideways as the highlight
    moves — the arrow keeps its slot either way. */
 .menu-arrow {
-  color: #7a3027;
+  color: #5fe0f5;
   flex: none;
   opacity: 0;
   width: 1ch;
@@ -2604,7 +2604,7 @@ footer {
 }
 
 .menu-meta {
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.72rem;
   font-weight: 700;
@@ -2632,7 +2632,7 @@ footer {
 
 .resume-heading {
   border-bottom: 1px solid var(--line);
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
   font-weight: 700;
