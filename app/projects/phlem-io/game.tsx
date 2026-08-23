@@ -96,7 +96,10 @@ export default function PhlemGame() {
       };
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.code !== "Space" || live.current.phase !== "playing") return;
+      // S is the split key — it leaves the mouse hand free to aim. Space
+      // still works for agar muscle memory. The on-screen button exists only
+      // on touch devices (see .phlem-split in globals.css).
+      if ((e.code !== "KeyS" && e.code !== "Space") || live.current.phase !== "playing") return;
       e.preventDefault();
       live.current.splitEdge = true;
     };
@@ -281,8 +284,8 @@ export default function PhlemGame() {
               </button>
             </form>
             <p className="phlem-hint">
-              Move with the mouse or a finger · Space or the button to split ·
-              green spiky things pop you
+              Move with the mouse or a finger · press S to split · green spiky
+              things pop you
             </p>
           </div>
         ) : null}

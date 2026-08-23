@@ -107,6 +107,17 @@ export const BIG_QUIT_MASS = 9000;
 export const BIG_QUIT_MIN_S = 50;
 export const BIG_QUIT_MAX_S = 110;
 
+// ── Session start (judgement) ───────────────────────────────────────────────
+/**
+ * The lobby the player walks into is mid-match, not a fresh one: bot starting
+ * masses are drawn log-skewed from START_MASS up to this cap, so most blobs
+ * are small-to-middling and a couple are already monsters. Respawns DURING
+ * the session start at START_MASS like anyone else. The skew exponent >1
+ * pushes the distribution toward the small end.
+ */
+export const INITIAL_MASS_MAX = 3000;
+export const INITIAL_MASS_SKEW = 1.35;
+
 // ── Bot behaviour (all judgement — "human-like", not optimal) ───────────────
 /** Seconds between decisions; randomised per bot so reactions are staggered. */
 export const BOT_THINK_MIN_S = 0.15;
@@ -117,6 +128,12 @@ export const BOT_VIEW_RADII = 11;
 export const BOT_VIEW_MIN = 900;
 /** Threats inside this many of MY radii trigger fleeing. */
 export const BOT_FLEE_RADII = 5.5;
+/**
+ * Bots steer by easing their aim toward what they WANT (per second). People
+ * turn; they do not teleport their cursor. Raising this sharpens reactions,
+ * lowering it makes everyone drift like they are half asleep.
+ */
+export const BOT_AIM_SMOOTH = 3.2;
 
 // ── Loop ────────────────────────────────────────────────────────────────────
 export const FIXED_DT = 1 / 60;

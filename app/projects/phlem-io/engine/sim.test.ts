@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 
 import {
   BIG_QUIT_MASS,
+  INITIAL_MASS_MAX,
   BOT_COUNT,
   BOT_DEATHS_MAX,
   BOT_DEATHS_MIN,
@@ -119,7 +120,19 @@ test("pieces re-merge only after the cooldown", () => {
 
 test("eating a virus pops the piece into shards and respawns the virus", () => {
   const s = sim();
+  // Hermetic: the uneven lobby can seed a monster near the virus, and a
+  // shard flying into its mouth is not what this test is about.
+  for (const a of s.actors) {
+    if (a.isPlayer) continue;
+    for (const piece of a.pieces) {
+      piece.x = WORLD_SIZE - 60;
+      piece.y = WORLD_SIZE - 60;
+    }
+  }
   const p = s.player.pieces[0];
+  // And pellet-free: the scattering shards would hoover up pellets in the
+  // same step, which is correct play but noise in a conservation check.
+  s.pellets = [];
   p.mass = 400;
   const virusCount = s.viruses.length;
   const v = s.viruses[0];
@@ -156,13 +169,19 @@ test("prey choice follows size and distance, never identity", () => {
   // Identical prey; the bot is closer. The bot must be chosen even though
   // the player is on the menu too.
   thinkBot(hunter, s);
-  assert.ok(Math.abs(hunter.aimX - 2800) < 50, `aimed at ${hunter.aimX}, expected the closer bot`);
+  assert.ok(
+    Math.abs(hunter.desiredX - 2800) < 50,
+    `aimed at ${hunter.desiredX}, expected the closer bot`,
+  );
 
   // Swap the distances and the player becomes the pick, for the same reason.
   s.player.pieces[0].x = 2800;
   otherBot.pieces[0].x = 3400;
   thinkBot(hunter, s);
-  assert.ok(Math.abs(hunter.aimX - 2800) < 50, `aimed at ${hunter.aimX}, expected the closer player`);
+  assert.ok(
+    Math.abs(hunter.desiredX - 2800) < 50,
+    `aimed at ${hunter.desiredX}, expected the closer player`,
+  );
 });
 
 test("a bot flees a blob that can eat it", () => {
@@ -172,7 +191,41 @@ test("a bot flees a blob that can eat it", () => {
   runner.pieces = [{ x: 3000, y: 3000, mass: 50, ix: 0, iy: 0, cooldown: 0 }];
   monster.pieces = [{ x: 3200, y: 3000, mass: 800, ix: 0, iy: 0, cooldown: 0 }];
   thinkBot(runner, s);
-  assert.ok(runner.aimX < 3000, `fled toward ${runner.aimX}, expected away from the monster`);
+  assert.ok(
+    runner.desiredX < 3000,
+    `fled toward ${runner.desiredX}, expected away from the monster`,
+  );
+});
+
+test("bot steering eases toward the decision instead of snapping", () => {
+  const s = sim();
+  const bot = s.actors[1];
+  bot.pieces = [{ x: 3000, y: 3000, mass: 50, ix: 0, iy: 0, cooldown: 0 }];
+  bot.aimX = 3000;
+  bot.aimY = 3000;
+  bot.desiredX = 4000;
+  bot.desiredY = 3000;
+  bot.thinkIn = 999; // no re-decision this step; only the easing acts
+  s.step(DT, idle);
+  assert.ok(bot.aimX > 3000, "the aim moves toward the want");
+  assert.ok(bot.aimX < 3100, `moved ${(bot.aimX - 3000).toFixed(1)}px in one step — a snap, not a turn`);
+});
+
+test("the lobby starts uneven, like a match already in progress", () => {
+  // Across seeds: the player always starts at 10, every bot is somewhere
+  // between START_MASS and the cap, and the spread genuinely contains both
+  // grazers and monsters rather than an even footing.
+  for (const seed of [1, 7, 99]) {
+    const s = new PhlemSim(seed, "Fresh");
+    assert.equal(totalMass(s.player), START_MASS, "the newcomer starts small");
+    const masses = s.actors.filter((a) => !a.isPlayer).map((a) => totalMass(a));
+    for (const m of masses) {
+      assert.ok(m >= START_MASS - 1 && m <= INITIAL_MASS_MAX + 1, `mass ${m} out of range`);
+    }
+    assert.ok(masses.filter((m) => m < 100).length >= 4, "plenty of small blobs");
+    assert.ok(masses.filter((m) => m > 400).length >= 2, "a mid-to-heavy tier exists");
+    assert.ok(Math.max(...masses) > 1000, "somebody is already massive");
+  }
 });
 
 test("an identity leaves only after its 10-15 deaths, then a new demon joins", () => {

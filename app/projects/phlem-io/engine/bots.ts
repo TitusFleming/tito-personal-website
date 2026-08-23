@@ -115,8 +115,9 @@ export function thinkBot(bot: Actor, sim: PhlemSim): void {
   // ── choose ────────────────────────────────────────────────────────────
   if (fleeing) {
     const len = Math.hypot(fleeX, fleeY) || 1;
-    bot.aimX = me.cx + (fleeX / len) * 600;
-    bot.aimY = me.cy + (fleeY / len) * 600;
+    bot.desiredX = me.cx + (fleeX / len) * 600;
+    bot.desiredY = me.cy + (fleeY / len) * 600;
+    bot.graze = null;
     bot.wantSplit = false;
     steerInsideWalls(bot, me.cx, me.cy);
     avoidViruses(bot, sim, me.biggest.mass, me.cx, me.cy);
@@ -124,8 +125,9 @@ export function thinkBot(bot: Actor, sim: PhlemSim): void {
   }
 
   if (prey && sim.rng() < bot.persona.aggression) {
-    bot.aimX = prey.x;
-    bot.aimY = prey.y;
+    bot.desiredX = prey.x;
+    bot.desiredY = prey.y;
+    bot.graze = null;
     // Split-kill: only when the launched half still out-masses the target
     // and the lunge can actually reach them. Impulse travels roughly
     // launch/friction before dying out.
@@ -143,46 +145,54 @@ export function thinkBot(bot: Actor, sim: PhlemSim): void {
   }
 
   // ── graze ─────────────────────────────────────────────────────────────
-  // Sample a handful of pellets and drift toward the best-value one. The
-  // sampling (rather than a full scan) is deliberate: it makes pathing a
-  // little sloppy, which reads as human.
-  let bestX = 0;
-  let bestY = 0;
-  let bestScore = 0;
-  for (let i = 0; i < 14 && sim.pellets.length > 0; i++) {
-    const pe = sim.pellets[Math.floor(sim.rng() * sim.pellets.length)];
-    const d = Math.hypot(pe.x - me.cx, pe.y - me.cy);
-    if (d > view) continue;
-    const score = 1 / (d + 60);
-    if (score > bestScore) {
-      bestScore = score;
-      bestX = pe.x;
-      bestY = pe.y;
-    }
+  // Commit to ONE pellet and finish the trip. Re-choosing every think made
+  // bots zig between equally good pellets, which read as jitter, not
+  // indecision. A committed target is dropped only when reached (the pellet
+  // is gone by then) or when it has left the view.
+  if (bot.graze) {
+    const d = Math.hypot(bot.graze.x - me.cx, bot.graze.y - me.cy);
+    if (d < myR || d > view) bot.graze = null;
   }
-  if (bestScore > 0) {
-    bot.aimX = bestX;
-    bot.aimY = bestY;
+  if (!bot.graze && sim.pellets.length > 0) {
+    // Sample a handful and take the best value. Sampling (not a full scan)
+    // keeps pathing a little sloppy, which reads as human.
+    let best: { x: number; y: number } | null = null;
+    let bestScore = 0;
+    for (let i = 0; i < 14; i++) {
+      const pe = sim.pellets[Math.floor(sim.rng() * sim.pellets.length)];
+      const d = Math.hypot(pe.x - me.cx, pe.y - me.cy);
+      if (d > view) continue;
+      const score = 1 / (d + 60);
+      if (score > bestScore) {
+        bestScore = score;
+        best = { x: pe.x, y: pe.y };
+      }
+    }
+    bot.graze = best;
+  }
+  if (bot.graze) {
+    bot.desiredX = bot.graze.x;
+    bot.desiredY = bot.graze.y;
   } else {
-    // Nothing in view: wander, drifting the heading rather than snapping.
-    bot.persona.wanderAngle += range(sim.rng, -0.9, 0.9);
-    bot.aimX = me.cx + Math.cos(bot.persona.wanderAngle) * 500;
-    bot.aimY = me.cy + Math.sin(bot.persona.wanderAngle) * 500;
+    // Nothing in view: wander on a gently drifting heading.
+    bot.persona.wanderAngle += range(sim.rng, -0.35, 0.35);
+    bot.desiredX = me.cx + Math.cos(bot.persona.wanderAngle) * 500;
+    bot.desiredY = me.cy + Math.sin(bot.persona.wanderAngle) * 500;
   }
   bot.wantSplit = false;
   steerInsideWalls(bot, me.cx, me.cy);
   avoidViruses(bot, sim, me.biggest.mass, me.cx, me.cy);
 }
 
-/** Corners are where blobs die; drift the aim back toward open water. */
+/** Corners are where blobs die; drift the wanted point back toward open water. */
 function steerInsideWalls(bot: Actor, cx: number, cy: number): void {
   const margin = 350;
-  if (cx < margin) bot.aimX = Math.max(bot.aimX, cx + 400);
-  if (cx > WORLD_SIZE - margin) bot.aimX = Math.min(bot.aimX, cx - 400);
-  if (cy < margin) bot.aimY = Math.max(bot.aimY, cy + 400);
-  if (cy > WORLD_SIZE - margin) bot.aimY = Math.min(bot.aimY, cy - 400);
-  bot.aimX = clamp(bot.aimX, 0, WORLD_SIZE);
-  bot.aimY = clamp(bot.aimY, 0, WORLD_SIZE);
+  if (cx < margin) bot.desiredX = Math.max(bot.desiredX, cx + 400);
+  if (cx > WORLD_SIZE - margin) bot.desiredX = Math.min(bot.desiredX, cx - 400);
+  if (cy < margin) bot.desiredY = Math.max(bot.desiredY, cy + 400);
+  if (cy > WORLD_SIZE - margin) bot.desiredY = Math.min(bot.desiredY, cy - 400);
+  bot.desiredX = clamp(bot.desiredX, 0, WORLD_SIZE);
+  bot.desiredY = clamp(bot.desiredY, 0, WORLD_SIZE);
 }
 
 /**
@@ -200,7 +210,7 @@ function avoidViruses(bot: Actor, sim: PhlemSim, biggestMass: number, cx: number
     const awayX = cx - v.x;
     const awayY = cy - v.y;
     const len = Math.hypot(awayX, awayY) || 1;
-    bot.aimX += (awayX / len) * 500;
-    bot.aimY += (awayY / len) * 500;
+    bot.desiredX += (awayX / len) * 500;
+    bot.desiredY += (awayY / len) * 500;
   }
 }

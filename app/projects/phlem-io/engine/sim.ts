@@ -8,6 +8,7 @@
 
 import {
   BIG_QUIT_MASS,
+  BOT_AIM_SMOOTH,
   BIG_QUIT_MAX_S,
   BIG_QUIT_MIN_S,
   BOT_COUNT,
@@ -17,6 +18,8 @@ import {
   DECAY_PER_S,
   EAT_DEPTH_FRAC,
   EAT_MASS_RATIO,
+  INITIAL_MASS_MAX,
+  INITIAL_MASS_SKEW,
   MAX_PIECES,
   MIN_SPLIT_MASS,
   PELLET_MASS,
@@ -69,9 +72,15 @@ export type Actor = {
   bigFor: number;
   quitAfter: number;
   persona: Persona;
-  // Steering state, written by the bot brain (or the player's input).
+  // Steering state. The brain writes desired*; the sim eases aim toward it
+  // every step, which is what keeps bot movement from snapping. The player's
+  // aim is written directly from input and never smoothed.
   aimX: number;
   aimY: number;
+  desiredX: number;
+  desiredY: number;
+  /** The pellet a grazing bot has committed to, so it stops dithering. */
+  graze: { x: number; y: number } | null;
   wantSplit: boolean;
   thinkIn: number;
 };
@@ -145,7 +154,10 @@ export class PhlemSim {
     for (let i = 0; i < BOT_COUNT; i++) {
       const bot = this.makeActor(this.drawName(), false);
       this.actors.push(bot);
-      this.spawnActor(bot);
+      // The session is already in progress when the player arrives: starting
+      // masses are log-skewed, mostly small with a couple of monsters.
+      const u = Math.pow(this.rng(), INITIAL_MASS_SKEW);
+      this.spawnActor(bot, START_MASS * Math.pow(INITIAL_MASS_MAX / START_MASS, u));
     }
 
     for (let i = 0; i < PELLET_TARGET; i++) this.pellets.push(this.makePellet());
@@ -180,6 +192,9 @@ export class PhlemSim {
       persona: makePersona(this.rng),
       aimX: 0,
       aimY: 0,
+      desiredX: 0,
+      desiredY: 0,
+      graze: null,
       wantSplit: false,
       thinkIn: 0,
     };
@@ -201,8 +216,8 @@ export class PhlemSim {
     };
   }
 
-  /** Place a fresh start-mass piece somewhere not instantly fatal. */
-  private spawnActor(a: Actor): void {
+  /** Place a fresh piece somewhere not instantly fatal. */
+  private spawnActor(a: Actor, mass = START_MASS): void {
     let best = { x: WORLD_SIZE / 2, y: WORLD_SIZE / 2 };
     let bestDist = -1;
     // A handful of samples, keep the one furthest from any piece that could
@@ -223,9 +238,12 @@ export class PhlemSim {
         best = { x, y };
       }
     }
-    a.pieces = [{ x: best.x, y: best.y, mass: START_MASS, ix: 0, iy: 0, cooldown: 0 }];
+    a.pieces = [{ x: best.x, y: best.y, mass, ix: 0, iy: 0, cooldown: 0 }];
     a.aimX = best.x;
     a.aimY = best.y;
+    a.desiredX = best.x;
+    a.desiredY = best.y;
+    a.graze = null;
     a.bigFor = 0;
   }
 
@@ -245,6 +263,11 @@ export class PhlemSim {
       if (a.isPlayer || a.pieces.length === 0) continue;
       a.thinkIn -= dt;
       if (a.thinkIn <= 0) thinkBot(a, this);
+      // Ease toward the wanted point instead of snapping: the think decides,
+      // the hand takes a moment to follow.
+      const k = 1 - Math.exp(-BOT_AIM_SMOOTH * dt);
+      a.aimX += (a.desiredX - a.aimX) * k;
+      a.aimY += (a.desiredY - a.aimY) * k;
     }
 
     // ── move ────────────────────────────────────────────────────────────

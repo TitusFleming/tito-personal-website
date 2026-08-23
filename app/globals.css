@@ -2967,6 +2967,9 @@ footer {
 }
 
 .phlem-split {
+  /* Touch-only: a desktop player splits with S and never needs a target on
+     the screen edge. Coarse-pointer is the standard "this is a finger" test. */
+  display: none;
   position: absolute;
   right: 0.75rem;
   bottom: 0.75rem;
@@ -2979,6 +2982,12 @@ footer {
   cursor: pointer;
   user-select: none;
   touch-action: none;
+}
+
+@media (pointer: coarse) {
+  .phlem-split {
+    display: block;
+  }
 }
 
 .phlem-overlay {
