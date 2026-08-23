@@ -17,13 +17,26 @@ const SECTIONS: { id: SectionId; label: string }[] = [
 export default function MainMenu() {
   const [active, setActive] = useState<SectionId>("about");
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
-  const move = useCallback((next: number) => {
-    // Wrap at both ends, the way every game menu since the cartridge era has.
-    const wrapped = (next + SECTIONS.length) % SECTIONS.length;
-    setActive(SECTIONS[wrapped].id);
-    itemRefs.current[wrapped]?.focus();
+  // Every section opens at its top. The panel is the scroll container on
+  // desktop and the window is on mobile, so both are reset — without this,
+  // scrolling deep into the resume left Projects opening mid-list.
+  const open = useCallback((id: SectionId) => {
+    setActive(id);
+    panelRef.current?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
   }, []);
+
+  const move = useCallback(
+    (next: number) => {
+      // Wrap at both ends, the way every game menu since the cartridge era has.
+      const wrapped = (next + SECTIONS.length) % SECTIONS.length;
+      open(SECTIONS[wrapped].id);
+      itemRefs.current[wrapped]?.focus();
+    },
+    [open],
+  );
 
   const handleKeyDown = (event: React.KeyboardEvent, i: number) => {
     const keys: Record<string, number> = {
@@ -41,7 +54,7 @@ export default function MainMenu() {
 
   return (
     <div className="menu-screen">
-      <div className="menu-panel" id="menu-panel" aria-live="polite">
+      <div className="menu-panel" id="menu-panel" aria-live="polite" ref={panelRef}>
         {active === "about" ? <AboutSection /> : null}
         {active === "resume" ? <ResumeSection /> : null}
         {active === "projects" ? <ProjectsSection /> : null}
@@ -50,7 +63,7 @@ export default function MainMenu() {
 
       <nav className="menu-nav" aria-label="Main menu">
         <div className="menu-identity">
-          <h1>Tito Fleming</h1>
+          <h1>Richard Fleming</h1>
         </div>
 
         <ul className="menu-list">
@@ -70,8 +83,8 @@ export default function MainMenu() {
                   aria-current={isActive ? "true" : undefined}
                   aria-controls="menu-panel"
                   onKeyDown={(event) => handleKeyDown(event, i)}
-                  onClick={() => setActive(section.id)}
-                  onFocus={() => setActive(section.id)}
+                  onClick={() => open(section.id)}
+                  onFocus={() => open(section.id)}
                 >
                   <span className="menu-arrow" aria-hidden="true">
                     ▸
@@ -99,15 +112,11 @@ function AboutSection() {
       <div className="about-body">
         <div className="menu-portrait" aria-hidden="true" />
         <div>
+          {/* The about from the pre-menu site, kept short on purpose. */}
+          <h2>I like projects with a little bit of data and a little bit of personality.</h2>
           <p className="menu-blurb">
-            I&apos;m a computer science student at Brown, making software, data
-            projects and technical experiments. Usually things I want to exist
-            and then have to build to find out whether they work.
-          </p>
-          <p className="menu-blurb">
-            Most recently at Cummins in Columbus, Indiana, building diagnostic
-            tooling for diesel technicians. Before that, retirement data models
-            at Fidelity.
+            Currently at Brown. Reach me at{" "}
+            <a href="mailto:richard_fleming@brown.edu">richard_fleming@brown.edu</a>.
           </p>
         </div>
       </div>
@@ -202,22 +211,19 @@ function ContactSection() {
     <div className="menu-section">
       <p className="eyebrow">Contact</p>
       <h2>Get in touch</h2>
-      <p className="menu-blurb">
-        Say hello, or ask about anything on this menu.
-      </p>
       <ul className="contact-list">
         <li>
           <span className="menu-meta">Email</span>
           <a href="mailto:richard_fleming@brown.edu">richard_fleming@brown.edu</a>
         </li>
         <li>
-          <span className="menu-meta">LinkedIn</span>
+          {/* Just the one word — the profile slug read as clutter here. */}
           <a
             href="https://www.linkedin.com/in/tito-fleming/"
             target="_blank"
             rel="noopener noreferrer"
           >
-            /in/tito-fleming
+            LinkedIn
           </a>
         </li>
         <li>

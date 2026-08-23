@@ -12,11 +12,21 @@ export type ProjectGroup = {
 };
 
 /** Grouped by where the work happened, so the professional work reads as
- *  professional work rather than sitting in one undifferentiated pile. */
+ *  professional work rather than sitting in one undifferentiated pile.
+ *  Within a group, items run most impressive first — the top of the list is
+ *  what a skimming reader takes away. */
 export const PROJECT_GROUPS: ProjectGroup[] = [
   {
     title: "Personal",
     items: [
+      {
+        label: "Fleming Dash",
+        meta: "Browser game",
+        blurb:
+          "A Geometry Dash-style platformer built from scratch: a deterministic fixed-timestep engine, physics sourced from the real game's decompilation, and Stereo Madness imported from the original level data. More levels in progress.",
+        tags: ["Canvas", "Game engine", "TypeScript"],
+        href: "/projects/fleming-dash",
+      },
       {
         label: "yourElections",
         meta: "Civic tech",
@@ -31,14 +41,6 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
         blurb: "A Premier League team form tracker for fans who have not watched every match.",
         tags: ["Next.js", "Runtime API"],
         href: "/projects/epl-brief",
-      },
-      {
-        label: "Fleming Dash",
-        meta: "Browser game",
-        blurb:
-          "A Geometry Dash-style platformer built from scratch: fixed-timestep physics, cube and ship modes, practice checkpoints, and two levels imported from the original game data.",
-        tags: ["Canvas", "Game engine", "TypeScript"],
-        href: "/projects/fleming-dash",
       },
       {
         label: "GDDL Higher or Lower",

@@ -11,8 +11,7 @@ export const PERSON = {
   name: 'Richard "Tito" Fleming',
   shortName: "Tito Fleming",
   email: "richard_fleming@brown.edu",
-  summary:
-    "Computer science student at Brown building useful software across data systems, energy infrastructure, aerospace, and education.",
+  summary: "Brown CS student making software, data projects, and technical experiments.",
   affiliation: "Brown University",
   sameAs: ["https://www.linkedin.com/in/tito-fleming/"],
 } as const;
