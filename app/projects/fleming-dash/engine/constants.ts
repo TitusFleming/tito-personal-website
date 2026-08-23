@@ -127,22 +127,39 @@ export const CUBE_SPIN_RATE = Math.PI / 0.43;
  * ever retuned and a new colour is one row. An earlier version guessed these.
  */
 const JUMP_UNITS = 1.94;
-const ratio = (units: number) => (Math.abs(units) / JUMP_UNITS) * CUBE_JUMP_VY;
+
+/**
+ * Convert a documented Y-speed into px/s, KEEPING ITS SIGN.
+ *
+ * The sign is not decoration. In the game's own figures a negative Y-speed on a
+ * boost means it launches you toward what will be "up" AFTER the gravity flip
+ * that accompanies it. Taking the absolute value — which this used to do —
+ * threw that away, and then launch() re-derived a direction from gravitySign
+ * and got the opposite one. Every blue and green boost fired the player into
+ * the surface they were standing on and killed them instantly.
+ *
+ * The rule, stated once: the table holds the game's signed value, launch()
+ * flips gravity first and then applies `value * gravitySign`. A non-flipping
+ * boost therefore pushes away from the current floor, and a flipping one pushes
+ * away from the floor it just left.
+ */
+const ratio = (units: number) => (units / JUMP_UNITS) * CUBE_JUMP_VY;
 
 export const PAD_TABLE = {
   yellow: { vy: ratio(2.77), flipsGravity: false },
   pink: { vy: ratio(1.79), flipsGravity: false },
   red: { vy: ratio(3.65), flipsGravity: false },
-  blue: { vy: ratio(1.37), flipsGravity: true },
+  blue: { vy: ratio(-1.37), flipsGravity: true },
 } as const;
 
 export const RING_TABLE = {
   yellow: { vy: ratio(1.91), flipsGravity: false },
   pink: { vy: ratio(1.37), flipsGravity: false },
   red: { vy: ratio(2.68), flipsGravity: false },
-  blue: { vy: ratio(1.37), flipsGravity: true },
-  green: { vy: ratio(1.91), flipsGravity: true },
-  black: { vy: -ratio(2.6), flipsGravity: false },
+  blue: { vy: ratio(-1.37), flipsGravity: true },
+  green: { vy: ratio(-1.91), flipsGravity: true },
+  /** Slams you along the current down. Negative, and no flip. */
+  black: { vy: ratio(-2.6), flipsGravity: false },
 } as const;
 
 // ── Collision forgiveness ───────────────────────────────────────────────────
@@ -202,9 +219,21 @@ export const SIZE_MINI = 0.5;
 export const SIZE_NORMAL = 1;
 
 // ── Modes beyond cube and ship ──────────────────────────────────────────────
-// UNTUNED. These exist to prove the MODES table is a real seam — each is a
-// table entry and nothing else. No level here reaches them yet, so the numbers
-// are plausible starting points, NOT measured against the real game.
+// UNTUNED, AND NOW REACHABLE. Clubstep contains one ball and two UFO portals,
+// so these numbers are live rather than theoretical.
+//
+// Their BEHAVIOUR is sourced: the ball reverses gravity on a tap and keeps its
+// momentum, and the UFO gives a fixed mid-air hop per tap. Both match what is
+// implemented. Their NUMBERS are not sourced — the community physics
+// documentation covers only the cube (-72 b/s^2) and the ship (-25 b/s^2), and
+// nothing published gives ball, UFO or wave figures.
+//
+// I attempted to tune the UFO by sweeping tap velocity and gravity against
+// Clubstep's own two UFO sections. The sweep was inconclusive: every
+// combination scored identically because the scripted driver dies on the same
+// obstacle regardless, so the measurement could not tell good values from bad.
+// These therefore remain judgement calls, and the ball and UFO sections will
+// not feel like the real game until someone plays them and adjusts by hand.
 
 export const BALL_GRAVITY = -2600;
 export const BALL_TERMINAL_VY = -1000;

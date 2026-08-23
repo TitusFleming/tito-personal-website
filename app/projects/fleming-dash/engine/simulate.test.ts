@@ -596,3 +596,76 @@ test("an orb still fires only once per press", () => {
   }
   assert.equal(out.filter((e) => e.type === "ring").length, 1);
 });
+
+// ── gravity boosts ──────────────────────────────────────────────────────────
+// Exercised the way a player uses them: arrive with the button UP and press
+// while overlapping, from the floor and from the ceiling. Holding from frame
+// one is not a test of an orb — that mistake hid a bug where every orb was dead.
+
+function useBoost(kind: "ring" | "pad", color: string, fromCeiling: boolean) {
+  const objs = [
+    { t: kind, x: 8, y: fromCeiling ? 9 : 0, c: color },
+    ...(fromCeiling ? [{ t: "zone", x: 0, w: 60, ceilingY: 10 }] : []),
+  ];
+  const sim = new Simulation(
+    world(objs as never, fromCeiling ? { ceilingY: 10 } : {}),
+  );
+  if (fromCeiling) {
+    sim.player.gravitySign = -1;
+    sim.player.y = 10 * TILE - TILE / 2;
+  }
+  const out: SimEvent[] = [];
+  while (sim.player.x < 8 * TILE - 2 && sim.status === "running") {
+    sim.step({ held: false, ringArmed: false }, FIXED_DT, out);
+  }
+  const before = { gravity: sim.player.gravitySign, y: sim.player.y };
+  for (let i = 0; i < 120 && sim.status === "running"; i++) {
+    sim.step({ held: true, ringArmed: true }, FIXED_DT, out);
+  }
+  return { before, sim };
+}
+
+test("REGRESSION: a gravity boost does not fire you into the floor", () => {
+  // ratio() used to take the absolute value of the documented Y-speed. That
+  // sign encodes the launch direction relative to the flip, so discarding it
+  // made every blue and green boost instant death.
+  for (const kind of ["ring", "pad"] as const) {
+    const { before, sim } = useBoost(kind, "blue", false);
+    assert.equal(sim.status, "running", `blue ${kind} from the floor killed the player`);
+    assert.equal(sim.player.gravitySign, -1, "gravity flipped");
+    assert.ok(sim.player.y > before.y + TILE, `should travel away from the floor`);
+  }
+});
+
+test("a gravity boost works from the ceiling too", () => {
+  const { before, sim } = useBoost("ring", "blue", true);
+  assert.equal(sim.status, "running");
+  assert.equal(sim.player.gravitySign, 1, "gravity flipped back");
+  assert.ok(sim.player.y < before.y - TILE, "should travel away from the ceiling");
+});
+
+test("green flips and launches harder than blue", () => {
+  const blue = useBoost("ring", "blue", false);
+  const green = useBoost("ring", "green", false);
+  assert.equal(green.sim.player.gravitySign, -1);
+  assert.ok(
+    green.sim.player.y > blue.sim.player.y,
+    `green (${green.sim.player.y.toFixed(0)}) must out-throw blue (${blue.sim.player.y.toFixed(0)})`,
+  );
+});
+
+test("a non-flipping boost leaves gravity alone and still pushes off the floor", () => {
+  const { before, sim } = useBoost("ring", "yellow", false);
+  assert.equal(sim.player.gravitySign, 1, "yellow must not flip gravity");
+  assert.ok(sim.player.y > before.y, "and must push away from the floor");
+});
+
+test("black slams along the CURRENT down, in either gravity", () => {
+  const floor = useBoost("ring", "black", false);
+  const yellow = useBoost("ring", "yellow", false);
+  assert.equal(floor.sim.player.gravitySign, 1, "black never flips");
+  assert.ok(
+    floor.sim.player.y < yellow.sim.player.y,
+    "black drives down where yellow lifts",
+  );
+});

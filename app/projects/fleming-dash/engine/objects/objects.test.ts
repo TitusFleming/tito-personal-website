@@ -109,13 +109,26 @@ test("colours are table rows, not special cases", () => {
   assert.ok(PAD_TABLE.red.vy > PAD_TABLE.yellow.vy, "red is the strong one");
 });
 
-test("a gravity-flipping boost launches along the NEW down", () => {
+test("a gravity-flipping boost launches AWAY from the floor it just left", () => {
+  // This assertion used to demand the opposite, and the opposite is what killed
+  // the player: flipping gravity and then driving them into the surface they
+  // were standing on. Standing on the ground under normal gravity, a blue pad
+  // flips gravity and throws you world-UP, off that ground.
   const c = ctx();
   c.input.ringArmed = false;
   new Pad(0, 0, "blue").onEnter(c);
-  assert.equal(c.player.gravitySign, -1);
-  assert.ok(c.player.vy < 0, "impulse follows the flipped gravity");
+  assert.equal(c.player.gravitySign, -1, "gravity flips");
+  assert.ok(c.player.vy > 0, "and the impulse carries you off the old floor");
   assert.ok(c.events.some((e) => e.type === "gravity"));
+});
+
+test("the same boost from inverted gravity throws the other way", () => {
+  const c = ctx();
+  c.player.gravitySign = -1;
+  c.input.ringArmed = false;
+  new Pad(0, 0, "blue").onEnter(c);
+  assert.equal(c.player.gravitySign, 1, "flips back");
+  assert.ok(c.player.vy < 0, "and now carries you off the ceiling");
 });
 
 // ── portals ─────────────────────────────────────────────────────────────────
