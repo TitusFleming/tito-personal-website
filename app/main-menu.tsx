@@ -172,9 +172,7 @@ function ResumeSection() {
         ))}
       </div>
 
-      {/* Points at a file that isn't committed yet, drop resume.pdf into
-          public/ and this starts working with no code change. */}
-      <a className="menu-open" href="/resume.pdf" download>
+      <a className="menu-open" href="/resume.pdf" download="Richard Fleming Resume.pdf">
         Download PDF
       </a>
     </div>
