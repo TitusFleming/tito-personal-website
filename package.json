@@ -7,7 +7,9 @@
     "build": "next build",
     "build:geo": "node scripts/build-geo.mjs",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test 'lib/**/*.test.ts'",
+    "import:level": "node scripts/import-gd-level.mjs"
   },
   "dependencies": {
     "d3-geo": "^3.1.1",

@@ -11,7 +11,7 @@ export const metadata = {
 
 export default function YourElectionsPage() {
   return (
-    <main className="min-h-screen text-[#181713]">
+    <main className="min-h-screen">
       <div className="elections-page">
         <header className="site-header">
           <Link className="site-mark" href="/" aria-label="Back to Tito Fleming home">
