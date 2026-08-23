@@ -197,8 +197,14 @@ export class Simulation {
     // Scalars per column, so these are single comparisons. Which one is "the
     // floor" depends on gravity, which is what makes gravity portals work
     // without a second copy of this logic.
-    const ground = world.groundAt(p.x);
-    const ceiling = world.ceilingAt(p.x);
+    // A section NARROWS the level's bounds; it never widens them. The portal
+    // decides where the passage is, but the ground is still the ground — a
+    // section whose floor sits below the terrain would otherwise let a flying
+    // player sink straight through it.
+    const worldGround = world.groundAt(p.x);
+    const worldCeiling = world.ceilingAt(p.x);
+    const ground = p.section ? Math.max(p.section.floor, worldGround) : worldGround;
+    const ceiling = p.section ? Math.min(p.section.ceiling, worldCeiling) : worldCeiling;
     const hh = p.halfH();
     const hasCeiling = Number.isFinite(ceiling);
 

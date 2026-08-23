@@ -115,8 +115,18 @@ export function createCamera(world: World): Camera {
  * so the camera simply follows the player upward. It cannot wander into blank
  * sky because the player cannot get there.
  */
-function clampCamY(y: number, vh: number, world: World, x: number): number {
-  const { floor, ceiling } = world.playBounds(x);
+function clampCamY(
+  y: number,
+  vh: number,
+  world: World,
+  x: number,
+  section: { floor: number; ceiling: number } | null = null,
+): number {
+  // Same rule as the simulation: a section narrows the level, never widens it,
+  // so the view cannot be framed below the ground either.
+  const declared = world.playBounds(x);
+  const floor = section ? Math.max(section.floor, declared.floor) : declared.floor;
+  const ceiling = section ? Math.min(section.ceiling, declared.ceiling) : declared.ceiling;
   const low = floor - GROUND_BAND_TILES * TILE;
 
   if (Number.isFinite(ceiling)) {
@@ -186,7 +196,7 @@ export function snapCamera(
 ): void {
   const { vw, vh } = viewport(viewW, viewH);
   cam.x = p.x - vw * CAM_ANCHOR_FRAC;
-  cam.y = clampCamY(desiredCamY(p, p.y, world, vh, p.x), vh, world, p.x);
+  cam.y = clampCamY(desiredCamY(p, p.y, world, vh, p.x), vh, world, p.x, p.section);
 }
 
 /**
@@ -224,7 +234,7 @@ export function updateCamera(
 
   const desired = desiredCamY(p, view.y, world, vh, view.x);
 
-  cam.y = clampCamY(expSmooth(cam.y, desired, p.def.cameraK || CAM_K_CUBE, dt), vh, world, view.x);
+  cam.y = clampCamY(expSmooth(cam.y, desired, p.def.cameraK || CAM_K_CUBE, dt), vh, world, view.x, p.section);
 }
 
 export type DrawInfo = {

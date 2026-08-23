@@ -65,6 +65,20 @@ export type ModeDef = {
    * body, rather than the renderer growing another `mode === "ship"` branch.
    */
   readonly camera: "ground" | "anchored" | "free";
+  /**
+   * The play area a portal for this mode establishes, in tiles, centred on the
+   * portal it came from.
+   *
+   * null means the mode has no section of its own and plays against the level's
+   * ground — that is the cube. A flying mode MUST declare one: a ship with no
+   * bound is a ship that can leave the level, and the section is what the
+   * designer composed the passage inside.
+   *
+   * Per mode rather than one global corridor height, because the modes are not
+   * the same shape: a wave needs a tighter channel than a ship, and a UFO sits
+   * between them.
+   */
+  readonly sectionTiles: number | null;
   /** Whether this mode rests on surfaces. Flying modes never report onGround. */
   readonly grounded: boolean;
   /** Vertical acceleration and clamp for one step. Mutates the player. */
@@ -88,6 +102,7 @@ const cube: ModeDef = {
   body: shape(1, 1),
   cameraK: CAM_K_CUBE,
   camera: "ground",
+  sectionTiles: null,
   grounded: true,
   applyInput(p, input, dt, out) {
     // The jump condition is `held`, not a press edge. That is the actual rule,
@@ -127,6 +142,7 @@ const ship: ModeDef = {
   body: shape(1, 2 / 3),
   cameraK: CAM_K_SHIP,
   camera: "anchored",
+  sectionTiles: 10,
   grounded: false,
   applyInput(p, input, dt) {
     p.vy += (input.held ? SHIP_THRUST : SHIP_GRAVITY) * p.gravitySign * dt;
@@ -152,6 +168,7 @@ const ball: ModeDef = {
   body: shape(1, 1),
   cameraK: 12,
   camera: "anchored",
+  sectionTiles: 10,
   grounded: true,
   applyInput(p, input, dt, out) {
     // A tap flips gravity instead of launching. Edge-triggered: holding must
@@ -177,6 +194,7 @@ const ufo: ModeDef = {
   body: shape(1, 1),
   cameraK: 16,
   camera: "free",
+  sectionTiles: 10,
   grounded: true,
   applyInput(p, input, dt, out) {
     // Unlike the cube, a tap works in mid-air — but only on the press edge.
@@ -201,6 +219,7 @@ const wave: ModeDef = {
   body: shape(1 / 2, 1 / 2),
   cameraK: 26,
   camera: "free",
+  sectionTiles: 8,
   grounded: false,
   applyInput(p, input) {
     // No gravity and no acceleration: a constant diagonal that reverses on tap.

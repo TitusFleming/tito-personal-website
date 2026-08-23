@@ -284,50 +284,17 @@ function convert(objects, meta) {
     }
   }
 
-  // A ship section with no ceiling plays as an empty void, so give each corridor
-  // one. Derived from the portals rather than authored by hand.
-  const portals = rest.filter((o) => o.t === "ship" || o.t === "cube").sort((a, b) => a.x - b.x);
-  const zones = [];
-  for (let i = 0; i < portals.length; i++) {
-    if (portals[i].t !== "ship") continue;
-    const next = portals.slice(i + 1).find((p) => p.t === "cube");
-    const end = next ? next.x : maxX + 2;
-    // The corridor roof, measured from what the level actually puts inside the
-    // corridor rather than assumed.
-    //
-    // This was hardcoded to 10 because Stereo Madness's second ship section is
-    // lined with ceiling pits at that height. That number is wrong for the
-    // third section, which has geometry up to 14.5 and a secret coin at 12.5 —
-    // a ceiling of 10 walled off the entire upper route and made the coin
-    // literally unreachable, since the simulation clamps the ship at the
-    // ceiling. Measuring per corridor fixes that here and in any level.
-    const start = portals[i].x;
-    const start_y = portals[i].y ?? 0;
-    let roof = 0;
-    for (const o of [...blocks, ...rest]) {
-      // Colour triggers carry an x but no y — they are events, not geometry.
-      // Including them turned the roof into NaN and the ceiling into null.
-      if (typeof o.y !== "number" || o.x < start || o.x >= end) continue;
-      roof = Math.max(roof, o.y + (typeof o.h === "number" ? o.h : 1));
-    }
-    // The portal establishes the section, and the level may extend it.
-    //
-    // Two rules, and both are needed. Portal-derived alone clips corridor two of
-    // Stereo Madness, whose geometry reaches 15 while its portal sits at 3.5.
-    // Geometry-derived alone leaves an empty corridor with no window at all and
-    // needs an invented fallback. Taking the larger means the section is never
-    // smaller than the mode's standard window, and never smaller than what the
-    // level actually puts inside it.
-    const fromPortal = start_y + (SECTION_TILES[portals[i].t] ?? 10);
-    const fromGeometry = roof > 0 ? Math.ceil(roof) + 1 : 0;
-    const ceilingY = Math.max(fromPortal, fromGeometry);
-    zones.push({ t: "zone", x: start, w: Math.max(1, end - start), ceilingY });
-  }
+  // No synthesized corridor zones any more.
+  //
+  // A flying section's bounds are established by its PORTAL and the mode's
+  // declared height (see ModeDef.sectionTiles), which is both where the real
+  // game gets them and the only version that generalises: scanning nearby
+  // geometry made the bound depend on scenery, and a fixed corridor height made
+  // it depend on one level's second ship section.
 
   const objectsOut = [
     ...mergeBlockRuns(blocks),
     ...rest.sort((a, b) => a.x - b.x),
-    ...zones,
     { t: "end", x: maxX + 1 },
   ];
 

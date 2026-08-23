@@ -72,9 +72,17 @@ export class ModePortal extends Portal {
     // A mode with a locked camera is framed by the portal that started it.
     // Modes that do not lock clear the anchor, so walking out of a ship section
     // hands the view back to the ground camera.
-    p.sectionAnchorY = MODES[this.mode].camera === "anchored"
-      ? this.box.y + this.box.h / 2
-      : null;
+    // Both the framing and the bounds come from THIS portal's own position.
+    const centre = this.box.y + this.box.h / 2;
+    const def = MODES[this.mode];
+    p.sectionAnchorY = def.camera === "anchored" ? centre : null;
+    p.section =
+      def.sectionTiles === null
+        ? null
+        : {
+            floor: centre - (def.sectionTiles * TILE) / 2,
+            ceiling: centre + (def.sectionTiles * TILE) / 2,
+          };
     ctx.events.push({ type: "portal", mode: this.mode });
   }
 }

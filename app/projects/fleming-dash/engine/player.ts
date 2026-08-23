@@ -40,6 +40,17 @@ export class Player {
    */
   sectionAnchorY: number | null = null;
 
+  /**
+   * The play area the current section is bounded by, in world px, or null when
+   * the player is on foot and the level's own ground applies.
+   *
+   * Set by the portal, from the PORTAL'S position and the mode's declared
+   * height — never from the icon, and never from scanning what happens to be
+   * built nearby. The section is what the designer composed the passage inside;
+   * geometry above or below it is scenery.
+   */
+  section: { floor: number; ceiling: number } | null = null;
+
   onGround = true;
   /**
    * Rotation in WORLD space: radians, counter-clockwise positive, y-up.
@@ -100,5 +111,6 @@ export class Player {
     this.onGround = true;
     this.rot = 0;
     this.sectionAnchorY = null;
+    this.section = null;
   }
 }

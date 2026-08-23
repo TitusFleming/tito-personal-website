@@ -11,6 +11,9 @@ import { DEATH_FREEZE, FIXED_DT, LAND_TOLERANCE, SIZE_MINI, SPEEDS, TILE } from 
 import { hitsHazard } from "./collision.ts";
 import { validateLevel } from "./level.ts";
 import { Checkpoint, Simulation } from "./simulate.ts";
+import { Player } from "./player.ts";
+import { Palette } from "./palette.ts";
+import { ModePortal } from "./objects/portals.ts";
 import { World } from "./world.ts";
 import { HELD, RELEASED, doc, run, runUntil, stepChecked, world } from "./test-support.ts";
 import type { SimEvent } from "./types.ts";
@@ -492,4 +495,78 @@ test("coins keep their real off-grid position", () => {
   const coin = w.columns[6]!.triggers.find((t) => (t as { kind: string }).kind === "coin")!;
   assert.equal(coin.cell.x, 6.5 * TILE, "fractional x survives compilation");
   assert.equal(coin.cell.y, 2.25 * TILE, "and so does fractional y");
+});
+
+// ── portal-established sections ─────────────────────────────────────────────
+
+test("a flying section is bounded by its portal, not by nearby geometry", () => {
+  // Two levels, identical portals, wildly different scenery. The section must
+  // come out the same: it is composed around the portal, and what happens to be
+  // built beside it is scenery.
+  const bare = new Simulation(world([{ t: "ship", x: 4, y: 0 }]));
+  const cluttered = new Simulation(
+    world([
+      { t: "ship", x: 4, y: 0 },
+      { t: "block", x: 10, y: 0, h: 14 },
+      { t: "block", x: 14, y: 0, h: 9 },
+    ]),
+  );
+  runUntil(bare, (s) => s.player.mode === "ship");
+  runUntil(cluttered, (s) => s.player.mode === "ship");
+  assert.deepEqual(bare.player.section, cluttered.player.section);
+});
+
+test("a ship section is never unbounded", () => {
+  const sim = new Simulation(world([{ t: "ship", x: 4, y: 0 }]));
+  runUntil(sim, (s) => s.player.mode === "ship");
+  assert.notEqual(sim.player.section, null, "a flying mode must have a section");
+  const { floor, ceiling } = sim.player.section!;
+  assert.ok(Number.isFinite(floor) && Number.isFinite(ceiling));
+  assert.equal((ceiling - floor) / TILE, 10, "ship declares a ten-tile section");
+});
+
+test("two portals at different heights give different sections", () => {
+  // The rule tested directly: a portal's section comes from that portal's own
+  // position. Driving a cube into a raised portal would just test gravity.
+  const sectionFloorFor = (gy: number) => {
+    const p = new Player();
+    const portal = new ModePortal(4, gy, "ship");
+    portal.onEnter({
+      player: p,
+      input: { held: false, ringArmed: false },
+      events: [],
+      palette: new Palette([0, 0, 0], [0, 0, 0]),
+      coins: new Set<number>(),
+    });
+    return p.section!.floor;
+  };
+  assert.ok(sectionFloorFor(6) > sectionFloorFor(0), "a higher portal sits higher");
+  assert.equal(
+    sectionFloorFor(6) - sectionFloorFor(0),
+    6 * TILE,
+    "and moves with it one for one",
+  );
+});
+
+test("a section narrows the level but never widens it", () => {
+  // A section whose floor sits below the terrain would let a flying player sink
+  // straight through the ground.
+  const sim = new Simulation(world([{ t: "ship", x: 4, y: 0 }]));
+  runUntil(sim, (s) => s.player.mode === "ship");
+  assert.ok(sim.player.section!.floor < 0, "this portal's raw section is below ground");
+  run(sim, 600);
+  assert.ok(
+    sim.player.y - sim.player.halfH() >= -0.5,
+    `player sank to ${(sim.player.y - sim.player.halfH()).toFixed(2)} below the ground`,
+  );
+});
+
+test("returning to the cube clears the section", () => {
+  const sim = new Simulation(
+    world([{ t: "ship", x: 4, y: 0 }, { t: "cube", x: 20, y: 0 }]),
+  );
+  runUntil(sim, (s) => s.player.mode === "ship");
+  assert.notEqual(sim.player.section, null);
+  runUntil(sim, (s) => s.player.mode === "cube");
+  assert.equal(sim.player.section, null, "on foot, the level's own ground applies");
 });
