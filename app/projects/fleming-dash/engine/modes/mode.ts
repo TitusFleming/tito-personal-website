@@ -233,4 +233,4 @@ const wave: ModeDef = {
 export const MODES: Record<GameMode, ModeDef> = { cube, ship, ball, ufo, wave };
 
 /** Modes a level file is currently allowed to reference. */
-export const PLAYABLE_MODES: GameMode[] = ["cube", "ship"];
+export const PLAYABLE_MODES: GameMode[] = ["cube", "ship", "ball", "ufo"];

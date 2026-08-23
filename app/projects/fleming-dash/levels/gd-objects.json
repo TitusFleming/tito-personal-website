@@ -100,11 +100,11 @@
 },
 "101": {
 "frame": "portal_09_front_001.png",
-"gh": 1.0,
+"gh": 3.0,
 "gw": 1.0,
 "hx": null,
 "hy": null,
-"sub": null,
+"sub": "size_normal",
 "type": "portal"
 },
 "1010": {
@@ -361,11 +361,11 @@
 },
 "111": {
 "frame": "portal_10_front_001.png",
-"gh": 1.0,
+"gh": 3.0,
 "gw": 1.0,
 "hx": null,
 "hy": null,
-"sub": null,
+"sub": "ufo",
 "type": "portal"
 },
 "113": {
@@ -25592,7 +25592,7 @@
 "gw": 1.0,
 "hx": null,
 "hy": null,
-"sub": "fly",
+"sub": "ball",
 "type": "portal"
 },
 "48": {
@@ -25921,11 +25921,11 @@
 },
 "660": {
 "frame": "portal_13_front_001.png",
-"gh": 1.0,
+"gh": 3.0,
 "gw": 1.0,
 "hx": null,
 "hy": null,
-"sub": null,
+"sub": "wave",
 "type": "portal"
 },
 "67": {
@@ -26506,11 +26506,11 @@
 },
 "99": {
 "frame": "portal_08_front_001.png",
-"gh": 1.0,
+"gh": 3.0,
 "gw": 1.0,
 "hx": null,
 "hy": null,
-"sub": null,
+"sub": "mini",
 "type": "portal"
 },
 "990": {

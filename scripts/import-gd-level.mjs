@@ -243,10 +243,13 @@ function convert(objects, meta) {
         // gh is 3 for every portal, so `y` above is already the cell BOTTOM.
         // The object must not shift it again — doing so put every portal a
         // whole tile below where the level places it.
-        const t = def.sub === "fly" ? "ship" : def.sub === "cube" ? "cube" : null;
-        if (t) rest.push({ t, x, y, gw, gh });
+        const MODE = { fly: "ship", cube: "cube", ball: "ball", ufo: "ufo", wave: "wave" };
+        const mode = MODE[def.sub];
+        if (mode) rest.push({ t: mode, x, y, gw, gh });
         else if (def.sub === "normal" || def.sub === "flip") {
           rest.push({ t: "grav", x, y, dir: def.sub === "flip" ? "up" : "down", gw, gh });
+        } else if (def.sub === "mini" || def.sub === "size_normal") {
+          rest.push({ t: "size", x, y, s: def.sub === "mini" ? "mini" : "normal" });
         } else skipped.set(`portal:${def.sub}`, (skipped.get(`portal:${def.sub}`) ?? 0) + 1);
         break;
       }
