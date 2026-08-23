@@ -288,8 +288,8 @@ export function draw(
 
   // ── sky ──────────────────────────────────────────────────────────────────
   const grad = ctx.createLinearGradient(0, 0, 0, vh);
-  grad.addColorStop(0, info.palette.css("bg", 0.82));
-  grad.addColorStop(1, info.palette.css("bg", 1.18));
+  grad.addColorStop(0, info.palette.cssAtLeast("bg", 28, 0.82));
+  grad.addColorStop(1, info.palette.cssAtLeast("bg", 44, 1.18));
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, vw, vh);
 
@@ -322,8 +322,10 @@ export function draw(
     const top = sy(col.groundY);
     if (top >= vh) continue;
     const gGrad = ctx.createLinearGradient(0, top, 0, vh);
-    gGrad.addColorStop(0, info.palette.css("ground", 1.15));
-    gGrad.addColorStop(1, info.palette.css("ground", 0.62));
+    // Floors chosen so a pure-black ground still reads as a surface with a
+    // lit top edge, while a coloured ground keeps its own colour untouched.
+    gGrad.addColorStop(0, info.palette.cssAtLeast("ground", 62, 1.15));
+    gGrad.addColorStop(1, info.palette.cssAtLeast("ground", 26, 0.62));
     ctx.fillStyle = gGrad;
     ctx.fillRect(sx(gx * TILE), top, TILE + 1, vh - top);
   }
@@ -351,7 +353,7 @@ export function draw(
   // Pits: flat dark notches set into the ground and ceiling lines. These used to
   // be drawn as spike triangles, which put hundreds of fake spikes across the
   // level and buried the real ones.
-  ctx.fillStyle = info.palette.css("ground", 0.45);
+  ctx.fillStyle = info.palette.cssAtLeast("ground", 18, 0.45);
   for (let gx = lo; gx <= hi; gx++) {
     for (const decor of world.columns[gx]?.decor ?? []) {
       const d = decor.cell;

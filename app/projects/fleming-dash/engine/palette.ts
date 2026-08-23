@@ -57,4 +57,23 @@ export class Palette {
     const c = (v: number) => Math.max(0, Math.min(255, Math.round(v * shade)));
     return `rgb(${c(r)}, ${c(g)}, ${c(b)})`;
   }
+
+  /**
+   * The same colour, guaranteed to be light enough to see against.
+   *
+   * A multiplicative shade cannot lift pure black: Clubstep's header sets both
+   * background and ground to [0, 0, 0], so `css("ground", 1.15)` returned black
+   * and the ground band vanished into a level whose blocks and spikes are also
+   * near-black. Only the outlines were visible.
+   *
+   * Adding a floor rather than clamping the whole palette keeps a level's own
+   * colours wherever they are already visible, and only intervenes where the
+   * level would otherwise render as an unreadable void.
+   */
+  cssAtLeast(which: "bg" | "ground", floor: number, shade = 1): string {
+    const [r, g, b] = this[which].map((v) => Math.max(0, Math.min(255, v * shade)));
+    const lift = Math.max(0, floor - Math.max(r, g, b));
+    const c = (v: number) => Math.round(Math.min(255, v + lift));
+    return `rgb(${c(r)}, ${c(g)}, ${c(b)})`;
+  }
 }
