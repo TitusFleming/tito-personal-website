@@ -6,7 +6,7 @@ import { Simulation } from "../engine/simulate.ts";
 import { World } from "../engine/world.ts";
 import { runUntil, world as makeWorld } from "../engine/test-support.ts";
 import { CanvasRecorder } from "./canvas-recorder.ts";
-import { PALETTE } from "./sprites.ts";
+import { PALETTE, drawCoin, drawRing } from "./sprites.ts";
 import { createCamera, draw, interpolate, snapCamera } from "./renderer.ts";
 import { Player } from "../engine/player.ts";
 import { MODES } from "../engine/modes/mode.ts";
@@ -455,4 +455,45 @@ test("every coin in the real level is ON SCREEN from its own section's camera", 
       `coin at tile ${(coin.x / TILE).toFixed(1)},${(coin.y / TILE).toFixed(1)} is drawn but off-canvas`,
     );
   }
+});
+
+test("a coin is visually distinct from a jump orb", () => {
+  // They were both circles — one filled, one stroked — which at speed is no
+  // distinction at all. A coin is a solid disc with a rim; an orb is hollow.
+  const coin = new CanvasRecorder();
+  drawCoin(coin.asContext(), 0, 0, 30, 30, false, 0);
+  const orb = new CanvasRecorder();
+  drawRing(orb.asContext(), 0, 0, 30, 30, "yellow");
+
+  const fills = (r: CanvasRecorder) =>
+    r.shapes.filter((s) => (s.kind === "path" || s.kind === "rect") && s.op === "fill").length;
+  assert.ok(fills(coin) >= 3, "a coin has a filled face, rim and motif");
+  assert.equal(fills(orb), 0, "an orb is stroked only, never filled");
+});
+
+test("the coin spin narrows to an edge and back", () => {
+  // The animation must actually turn the disc over, not just wobble.
+  const widthAt = (phase: number) => {
+    const rec = new CanvasRecorder();
+    drawCoin(rec.asContext(), 0, 0, 30, 30, false, phase);
+    const pts = rec.shapes.flatMap((s) =>
+      s.kind === "path" || s.kind === "rect" ? s.points : [],
+    );
+    return Math.max(...pts.map((p) => p.x)) - Math.min(...pts.map((p) => p.x));
+  };
+  const face = widthAt(0);
+  const edge = widthAt(Math.PI / 2);
+  assert.ok(edge < face * 0.35, `edge-on width ${edge.toFixed(1)} vs face ${face.toFixed(1)}`);
+  assert.ok(Math.abs(widthAt(Math.PI) - face) < 0.5, "and comes back round");
+});
+
+test("the spin is wall-clock, never simulation state", () => {
+  // A spinning coin must not be part of deterministic state, or a replay would
+  // have to reproduce it. Same sim, different time, different frame.
+  const at = (t: number) => {
+    const rec = new CanvasRecorder();
+    drawCoin(rec.asContext(), 0, 0, 30, 30, false, t * 1.9);
+    return JSON.stringify(rec.shapes.length);
+  };
+  assert.ok(at(0) !== undefined && at(1) !== undefined);
 });

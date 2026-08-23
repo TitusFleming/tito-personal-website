@@ -74,6 +74,9 @@ const COLORS = {
   hitHazard: "#FFEE00",
 } as const;
 
+/** Radians per second for the idle coin spin. Slow enough to read as a turn. */
+const COIN_SPIN_RATE = 1.9;
+
 export type Camera = { x: number; y: number };
 
 /**
@@ -243,6 +246,13 @@ export type DrawInfo = {
   hidePlayer?: boolean;
   /** Coin indices taken this attempt, so collected ones draw dimmed. */
   coins?: ReadonlySet<number>;
+  /**
+   * Seconds since the page loaded, for idle animation only.
+   *
+   * Wall clock rather than simulation time on purpose: a spinning coin must not
+   * be part of the deterministic state, or it would have to be replayed.
+   */
+  time?: number;
 };
 
 export function draw(
@@ -395,6 +405,8 @@ export function draw(
           t.cell.w,
           t.cell.h,
           info.coins?.has(t.index) ?? false,
+          // Staggered by position so a row of coins does not spin in lockstep.
+          (info.time ?? 0) * COIN_SPIN_RATE + t.cell.x * 0.01,
         );
       }
     }

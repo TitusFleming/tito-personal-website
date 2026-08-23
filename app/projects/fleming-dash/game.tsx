@@ -315,6 +315,7 @@ export default function FlemingDash() {
         showHitboxes: hitboxRef.current,
         effects: effectsRef.current,
         coins: sim.coins,
+        time: now / 1000,
         // The player is drawn only while alive: once it explodes, the debris is
         // the player.
         hidePlayer: sim.status === "dead",

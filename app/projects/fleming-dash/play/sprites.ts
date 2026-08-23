@@ -238,30 +238,65 @@ export function drawCoin(
   w: number,
   h: number,
   taken: boolean,
+  phase: number,
 ): void {
   const cx = x + w / 2;
   const cy = y + h / 2;
-  const r = Math.min(w, h) * 0.36;
+  const r = Math.min(w, h) * 0.38;
+
+  // Spun about its vertical axis: the face squashes to an edge and back. That
+  // motion is what separates a coin from a jump orb at a glance — an orb is a
+  // static hollow ring, a coin is a solid disc turning over.
+  const turn = Math.cos(phase);
+  const squash = Math.abs(turn);
+  const rx = Math.max(r * 0.1, r * squash);
 
   ctx.save();
-  if (taken) ctx.globalAlpha = 0.32;
+  if (taken) ctx.globalAlpha = 0.3;
 
-  ctx.fillStyle = taken ? "rgba(255,255,255,0.08)" : "#FFD23F";
+  const face = taken ? "#6E6A5E" : "#FFD23F";
+  const rim = taken ? "#3E3B34" : "#C98A00";
+
+  // Rim first, a touch larger and offset down, so the disc has thickness.
+  ctx.fillStyle = rim;
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy + r * 0.1, rx, r, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = taken ? "rgba(255,255,255,0.5)" : "#FFFFFF";
-  ctx.lineWidth = EDGE;
+  // Face.
+  ctx.fillStyle = face;
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, rx, r, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = PALETTE.playerEdge;
+  ctx.lineWidth = EDGE * 0.9;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, r, 0, 0, Math.PI * 2);
   ctx.stroke();
 
-  if (!taken) {
-    ctx.fillStyle = "#FFFFFF";
+  // Inner motif, only legible once the face has turned far enough to hold it.
+  if (squash > 0.35) {
+    ctx.strokeStyle = rim;
+    ctx.lineWidth = EDGE * 0.8;
     ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.34, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, rx * 0.55, r * 0.55, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = rim;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx * 0.2, r * 0.2, 0, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  // A bright sliver as it passes edge-on, so the spin reads even when thin.
+  if (squash < 0.25 && !taken) {
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = EDGE * 0.7;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r * 0.9);
+    ctx.lineTo(cx, cy + r * 0.9);
+    ctx.stroke();
   }
   ctx.restore();
 }
