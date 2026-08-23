@@ -269,6 +269,16 @@ function convert(objects, meta) {
         rest.push({ t: "ring", x, y });
         break;
 
+      // Gravity pads and rings are ordinary pads and rings whose colour flips
+      // gravity — the tables already carry that as a property, so they need no
+      // new object type.
+      case "gravpad":
+        rest.push({ t: "pad", x, y, c: "blue" });
+        break;
+      case "gravring":
+        rest.push({ t: "ring", x, y, c: "blue" });
+        break;
+
       // Secret coins. Typed in the object table like everything else, rather
       // than matched by id here — the table is the one place object identity
       // is decided.

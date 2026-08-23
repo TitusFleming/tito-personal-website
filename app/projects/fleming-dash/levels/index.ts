@@ -6,6 +6,7 @@
 
 import stereoMadness from "./stereo-madness.json" with { type: "json" };
 import backOnTrack from "./back-on-track.json" with { type: "json" };
+import clubstep from "./clubstep.json" with { type: "json" };
 import type { LevelDoc } from "../engine/types.ts";
 
 export type LevelEntry = {
@@ -32,6 +33,13 @@ export const LEVELS: LevelEntry[] = [
     number: 2,
     doc: backOnTrack as LevelDoc,
     audio: "/audio/back-on-track.mp3",
+  },
+  {
+    id: "clubstep",
+    name: "Clubstep",
+    number: 14,
+    doc: clubstep as LevelDoc,
+    audio: "/audio/clubstep.mp3",
   },
 ];
 
