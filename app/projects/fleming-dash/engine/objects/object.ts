@@ -80,7 +80,17 @@ export abstract class HazardObject extends GameObject {
  */
 export abstract class TriggerObject extends GameObject {
   abstract readonly box: Aabb;
-  abstract onEnter(ctx: TouchContext): void;
+
+  /**
+   * Fire on entering this volume. Returns whether the touch was CONSUMED.
+   *
+   * Returning false means "not this time, ask again next step". That is what
+   * an orb needs: you fly into it with the button up and press once you are
+   * inside, which is how every orb in the game is used. Marking the trigger
+   * spent the moment the boxes overlapped meant an orb entered without holding
+   * could never fire at all.
+   */
+  abstract onEnter(ctx: TouchContext): boolean;
 }
 
 /** Drawn, never simulated. */

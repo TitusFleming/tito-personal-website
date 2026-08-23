@@ -61,9 +61,9 @@ export class ModePortal extends Portal {
     this.mode = mode;
   }
 
-  onEnter(ctx: TouchContext): void {
+  onEnter(ctx: TouchContext): boolean {
     const p = ctx.player;
-    if (p.mode === this.mode) return;
+    if (p.mode === this.mode) return true;
     this.resize(p, () => {
       p.mode = this.mode;
     });
@@ -84,6 +84,7 @@ export class ModePortal extends Portal {
             ceiling: centre + (def.sectionTiles * TILE) / 2,
           };
     ctx.events.push({ type: "portal", mode: this.mode });
+    return true;
   }
 }
 
@@ -96,12 +97,13 @@ export class GravityPortal extends Portal {
     this.sign = dir === "down" ? 1 : -1;
   }
 
-  onEnter(ctx: TouchContext): void {
+  onEnter(ctx: TouchContext): boolean {
     const p = ctx.player;
-    if (p.gravitySign === this.sign) return;
+    if (p.gravitySign === this.sign) return true;
     p.gravitySign = this.sign;
     p.onGround = false;
     ctx.events.push({ type: "gravity", sign: this.sign });
+    return true;
   }
 }
 
@@ -119,13 +121,14 @@ export class SizePortal extends Portal {
     this.scale = size === "mini" ? SIZE_MINI : SIZE_NORMAL;
   }
 
-  onEnter(ctx: TouchContext): void {
+  onEnter(ctx: TouchContext): boolean {
     const p = ctx.player;
-    if (p.sizeScale === this.scale) return;
+    if (p.sizeScale === this.scale) return true;
     this.resize(p, () => {
       p.sizeScale = this.scale;
     });
     ctx.events.push({ type: "size", scale: this.scale });
+    return true;
   }
 }
 
@@ -139,10 +142,11 @@ export class SpeedPortal extends Portal {
     this.index = index;
   }
 
-  onEnter(ctx: TouchContext): void {
+  onEnter(ctx: TouchContext): boolean {
     const p = ctx.player;
-    if (p.speedIndex === this.index) return;
+    if (p.speedIndex === this.index) return true;
     p.speedIndex = this.index;
     ctx.events.push({ type: "speed", index: this.index });
+    return true;
   }
 }

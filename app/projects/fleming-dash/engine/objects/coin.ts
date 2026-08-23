@@ -29,9 +29,10 @@ export class Coin extends TriggerObject {
     this.box = aabb(gx * TILE - TILE * 0.1, gy * TILE - TILE * 0.1, TILE * 1.2, TILE * 1.2);
   }
 
-  onEnter(ctx: TouchContext): void {
-    if (ctx.coins.has(this.index)) return;
+  onEnter(ctx: TouchContext): boolean {
+    if (ctx.coins.has(this.index)) return true;
     ctx.coins.add(this.index);
     ctx.events.push({ type: "coin", index: this.index });
+    return true;
   }
 }

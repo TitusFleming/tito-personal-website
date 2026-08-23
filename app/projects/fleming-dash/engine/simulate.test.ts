@@ -570,3 +570,29 @@ test("returning to the cube clears the section", () => {
   runUntil(sim, (s) => s.player.mode === "cube");
   assert.equal(sim.player.section, null, "on foot, the level's own ground applies");
 });
+
+test("REGRESSION: an orb fires when you press while already inside it", () => {
+  // How every orb in the game is actually used: you arrive with the button up
+  // and press once you are on it. The edge-tracking used to mark a trigger
+  // spent the moment the boxes overlapped, whether or not it had fired — so an
+  // orb entered without holding could never activate at all.
+  const sim = new Simulation(world([{ t: "ring", x: 8, y: 0 }]));
+  const out: SimEvent[] = [];
+  while (sim.player.x < 8 * TILE - 2) {
+    sim.step({ held: false, ringArmed: false }, FIXED_DT, out);
+  }
+  for (let i = 0; i < 20; i++) sim.step({ held: true, ringArmed: true }, FIXED_DT, out);
+
+  assert.equal(out.filter((e) => e.type === "ring").length, 1, "exactly one activation");
+  assert.ok(sim.player.vy > 0, "and it launched the player");
+});
+
+test("an orb still fires only once per press", () => {
+  // The other half: staying on the orb with the button held must not re-fire.
+  const sim = new Simulation(world([{ t: "ring", x: 8, y: 0 }]));
+  const out: SimEvent[] = [];
+  for (let i = 0; i < 600 && sim.status === "running"; i++) {
+    sim.step({ held: true, ringArmed: true }, FIXED_DT, out);
+  }
+  assert.equal(out.filter((e) => e.type === "ring").length, 1);
+});

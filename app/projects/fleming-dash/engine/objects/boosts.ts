@@ -33,10 +33,11 @@ export class Pad extends TriggerObject {
     this.cell = this.box;
   }
 
-  onEnter(ctx: TouchContext): void {
+  onEnter(ctx: TouchContext): boolean {
     const { vy, flipsGravity } = PAD_TABLE[this.color];
     launch(ctx, vy, flipsGravity);
     ctx.events.push({ type: "pad", vy, color: this.color });
+    return true;
   }
 }
 
@@ -60,11 +61,13 @@ export class Ring extends TriggerObject {
     this.cell = this.box;
   }
 
-  onEnter(ctx: TouchContext): void {
-    if (!ctx.input.ringArmed) return;
+  onEnter(ctx: TouchContext): boolean {
+    // Not armed yet — stay live so a press later in the overlap still works.
+    if (!ctx.input.ringArmed) return false;
     ctx.input.ringArmed = false;
     const { vy, flipsGravity } = RING_TABLE[this.color];
     launch(ctx, vy, flipsGravity);
     ctx.events.push({ type: "ring", vy, color: this.color });
+    return true;
   }
 }

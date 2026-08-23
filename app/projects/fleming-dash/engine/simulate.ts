@@ -257,8 +257,9 @@ export class Simulation {
           continue;
         }
         if (this.triggerTouch[trigger.id]) continue;
-        this.triggerTouch[trigger.id] = 1;
-        trigger.onEnter(ctx);
+        // Only spent once it actually fires. An orb you entered without
+        // holding stays live so a press mid-overlap still activates it.
+        if (trigger.onEnter(ctx)) this.triggerTouch[trigger.id] = 1;
       }
     }
 

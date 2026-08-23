@@ -35,8 +35,9 @@ export class ColorTrigger extends TriggerObject {
     this.cell = aabb(gx * TILE, 0, TILE, TILE);
   }
 
-  onEnter(ctx: TouchContext): void {
+  onEnter(ctx: TouchContext): boolean {
     ctx.palette.fadeTo(this.target, this.rgb, this.fade);
     ctx.events.push({ type: "color", target: this.target });
+    return true;
   }
 }
