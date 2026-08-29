@@ -1,14 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f1e6d6;
-  --foreground: #2a211c;
-  --brown: #4e3629;
-  --red: #c00404;
-  --line: #d6c5b1;
-  --card: #fffaf0;
-  --tan: #e4d2bc;
-  --muted: #6d5d51;
+  /* The site is Geometry-Dash blue now, so the base tokens are too. The names
+     are kept — --brown, --tan — because they are referenced in a dozen places
+     and renaming them is churn without benefit; what they MEAN is "the strong
+     accent" and "the soft panel edge". */
+  --background: #123467;
+  --foreground: #eaf2ff;
+  --brown: #0b1220;
+  --red: #ff6b5b;
+  --line: rgba(120, 190, 255, 0.28);
+  --card: #16336b;
+  --tan: #1d4c9e;
+  --muted: #9fbbe4;
+  --accent: #7ee63f;
+  --accent-ink: #0b1220;
   /* Party palette for the yourElections map — desaturated so it sits
      alongside the warm browns rather than election-night primaries.
      Mirrored as constants in us-map.tsx. */
@@ -37,8 +43,8 @@ html {
 body,
 main {
   background:
-    linear-gradient(90deg, rgba(78, 54, 41, 0.04) 1px, transparent 1px),
-    var(--background);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    radial-gradient(120% 90% at 50% 0%, #2f6fd0 0%, #1d4c9e 45%, #123467 100%);
   background-size: 72px 72px;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
@@ -57,7 +63,7 @@ a {
 
 .site-header {
   align-items: center;
-  border-bottom: 1px solid rgba(78, 54, 41, 0.22);
+  border-bottom: 1px solid var(--line);
   display: flex;
   gap: 1.5rem;
   justify-content: space-between;
@@ -66,8 +72,8 @@ a {
 
 .site-mark {
   align-items: center;
-  background: var(--brown);
-  color: #fffaf0;
+  background: var(--accent);
+  color: var(--accent-ink);
   display: inline-flex;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.78rem;
@@ -128,17 +134,17 @@ p {
 .portrait-frame {
   aspect-ratio: 1;
   background:
-    linear-gradient(rgba(78, 54, 41, 0.08), rgba(78, 54, 41, 0.08)),
+    linear-gradient(rgba(6, 16, 38, 0.22), rgba(6, 16, 38, 0.22)),
     url("/profile-picture.png") center 34% / cover no-repeat,
     var(--brown);
   border: 1px solid var(--brown);
-  box-shadow: 12px 12px 0 rgba(78, 54, 41, 0.16);
+  box-shadow: 12px 12px 0 rgba(6, 16, 38, 0.42);
   max-width: 18rem;
   width: 100%;
 }
 
 h1 {
-  color: var(--brown);
+  color: var(--foreground);
   font-size: clamp(3.25rem, 8vw, 6.6rem);
   font-weight: 760;
   letter-spacing: 0;
@@ -148,7 +154,7 @@ h1 {
 }
 
 h2 {
-  color: var(--brown);
+  color: var(--foreground);
   font-size: clamp(1.65rem, 3vw, 2.65rem);
   font-weight: 760;
   letter-spacing: 0;
@@ -166,7 +172,7 @@ h3 {
 .eyebrow,
 .project-topline,
 .tag-row span {
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
   font-weight: 700;
@@ -190,7 +196,7 @@ h3 {
 
 .hero-links a {
   border: 1px solid var(--brown);
-  color: var(--brown);
+  color: var(--foreground);
   font-weight: 700;
   padding: 0.62rem 0.8rem;
   text-decoration: none;
@@ -198,7 +204,7 @@ h3 {
 
 .hero-links a:hover {
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .section-block {
@@ -221,7 +227,7 @@ h3 {
 .project-card {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   color: inherit;
   display: flex;
   flex-direction: column;
@@ -240,13 +246,13 @@ a.project-card {
 }
 
 .project-card-linked {
-  border-color: var(--brown);
+  border-color: var(--foreground);
 }
 
 a.project-card:hover,
 a.project-card:focus-visible {
-  border-color: var(--brown);
-  box-shadow: 8px 8px 0 rgba(78, 54, 41, 0.18);
+  border-color: var(--foreground);
+  box-shadow: 8px 8px 0 rgba(6, 16, 38, 0.45);
   outline: none;
   transform: translateY(-2px);
 }
@@ -276,14 +282,14 @@ a.project-card:focus-visible {
 .tag-row span {
   background: var(--tan);
   border: 1px solid var(--line);
-  color: #373229;
+  color: #eaf2ff;
   padding: 0.42rem 0.55rem;
 }
 
 .project-link-cue {
   align-items: center;
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: inline-flex;
   font-weight: 800;
   justify-content: center;
@@ -312,7 +318,7 @@ a.project-card:focus-visible {
 .mini-section {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   padding: 1.25rem;
 }
 
@@ -349,7 +355,7 @@ footer {
 .pulse-controls {
   align-items: center;
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
@@ -358,7 +364,7 @@ footer {
 
 .pulse-controls .eyebrow,
 .pulse-controls h2 {
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .pulse-controls label {
@@ -375,9 +381,9 @@ footer {
 
 .pulse-controls select {
   appearance: none;
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--foreground);
   font: inherit;
   font-weight: 700;
   min-height: 2.75rem;
@@ -396,19 +402,19 @@ footer {
 .table-panel {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   padding: 1.15rem;
 }
 
 .score-card {
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .score-card .eyebrow,
 .score-card h2,
 .score-card p {
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .score-header {
@@ -419,8 +425,8 @@ footer {
 }
 
 .rank-pill {
-  background: #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  color: var(--foreground);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.9rem;
   font-weight: 800;
@@ -428,7 +434,7 @@ footer {
 }
 
 .score-number {
-  color: #fffaf0;
+  color: #eaf2ff;
   font-size: clamp(4.6rem, 13vw, 8rem);
   font-weight: 850;
   letter-spacing: 0;
@@ -444,7 +450,7 @@ footer {
 }
 
 .score-bar span {
-  background: #fffaf0;
+  background: var(--card);
   display: block;
   height: 100%;
 }
@@ -479,12 +485,12 @@ footer {
 }
 
 .graph-grid-line {
-  stroke: rgba(78, 54, 41, 0.22);
+  stroke: rgba(120, 190, 255, 0.28);
   stroke-width: 1;
 }
 
 .graph-area {
-  fill: rgba(78, 54, 41, 0.14);
+  fill: rgba(120, 190, 255, 0.18);
 }
 
 .graph-line {
@@ -502,7 +508,7 @@ footer {
 }
 
 .result-w-dot {
-  fill: #fffaf0;
+  fill: #eaf2ff;
 }
 
 .result-d-dot {
@@ -548,7 +554,7 @@ footer {
 }
 
 .metric-grid span {
-  color: var(--brown);
+  color: var(--foreground);
   display: block;
   font-size: 2rem;
   font-weight: 850;
@@ -583,7 +589,7 @@ footer {
 .match-card span {
   align-items: center;
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: inline-flex;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.78rem;
@@ -640,8 +646,8 @@ footer {
 .pulse-table button:hover,
 .pulse-table button.active {
   background: var(--brown);
-  border-color: var(--brown);
-  color: #fffaf0;
+  border-color: var(--foreground);
+  color: #eaf2ff;
 }
 
 .pulse-loading {
@@ -669,9 +675,9 @@ footer {
 .gddl-range-row input[type="number"] {
   appearance: none;
   -moz-appearance: textfield;
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--foreground);
   font: inherit;
   font-weight: 700;
   min-height: 2.75rem;
@@ -686,9 +692,9 @@ footer {
 
 .gddl-start-btn {
   align-self: flex-end;
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 800;
@@ -706,7 +712,7 @@ footer {
 .gddl-ghost-btn {
   background: transparent;
   border: 1px solid var(--brown);
-  color: var(--brown);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -751,8 +757,8 @@ footer {
 }
 
 .gddl-card:hover:not(:disabled) {
-  border-color: var(--brown);
-  box-shadow: 6px 6px 0 rgba(78, 54, 41, 0.18);
+  border-color: var(--foreground);
+  box-shadow: 6px 6px 0 rgba(6, 16, 38, 0.45);
   transform: translateY(-2px);
 }
 
@@ -788,7 +794,7 @@ footer {
 }
 
 .gddl-card-tier {
-  color: var(--brown);
+  color: var(--foreground);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 1.15rem;
   font-weight: 800;
@@ -826,7 +832,7 @@ footer {
 /* Result screen */
 
 .gddl-result-score {
-  color: var(--brown);
+  color: var(--foreground);
   font-size: clamp(5rem, 16vw, 9rem);
   font-weight: 850;
   letter-spacing: 0;
@@ -884,7 +890,7 @@ footer {
 .elections-controls {
   align-items: center;
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
@@ -893,7 +899,7 @@ footer {
 
 .elections-controls .eyebrow,
 .elections-controls h2 {
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .elections-input-row {
@@ -916,9 +922,9 @@ footer {
 }
 
 .elections-input-row input {
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--foreground);
   font: inherit;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -928,9 +934,9 @@ footer {
 }
 
 .elections-input-row button {
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
-  color: var(--brown);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 800;
@@ -953,7 +959,7 @@ footer {
 .elections-status {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   display: grid;
   gap: 0.6rem;
   margin-top: 1rem;
@@ -1001,12 +1007,12 @@ footer {
 .race-card {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   padding: 1.15rem;
 }
 
 .race-party {
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
   font-weight: 700;
@@ -1188,7 +1194,7 @@ footer {
 .candidate-rest-trigger {
   background: transparent;
   border: none;
-  color: var(--brown);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-size: 0.82rem;
@@ -1208,7 +1214,7 @@ footer {
 .candidate-incumbent {
   background: var(--tan);
   border: 1px solid var(--line);
-  color: #373229;
+  color: #eaf2ff;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.68rem;
   font-weight: 700;
@@ -1218,7 +1224,7 @@ footer {
 }
 
 .candidate-row a {
-  color: var(--brown);
+  color: var(--foreground);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1274,7 +1280,7 @@ footer {
 }
 
 .race-accordion-title {
-  color: #7a3027;
+  color: #5fe0f5;
   flex: 1;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
@@ -1311,7 +1317,7 @@ footer {
 .us-map {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   padding: 0.75rem;
   position: relative;
 }
@@ -1400,7 +1406,7 @@ footer {
 
 .map-district-label {
   dominant-baseline: middle;
-  fill: #fffaf0;
+  fill: #eaf2ff;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-weight: 700;
   paint-order: stroke;
@@ -1423,7 +1429,7 @@ footer {
 .map-breadcrumb button {
   background: none;
   border: none;
-  color: var(--brown);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 800;
@@ -1441,7 +1447,7 @@ footer {
 
 .map-tooltip {
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: grid;
   font-size: 0.82rem;
   gap: 0.15rem;
@@ -1460,7 +1466,7 @@ footer {
 }
 
 .map-zip-hint {
-  color: var(--brown);
+  color: var(--foreground);
   font-weight: 700;
   margin-top: 0.75rem;
 }
@@ -1519,7 +1525,7 @@ footer {
 .map-panel {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   padding: 1.15rem;
 }
 
@@ -1586,7 +1592,7 @@ footer {
 }
 
 .senator-list li a {
-  color: var(--brown);
+  color: var(--foreground);
   font-weight: 700;
   margin-left: auto;
   white-space: nowrap;
@@ -1597,7 +1603,7 @@ footer {
 .voice-card {
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   display: grid;
   gap: 0.6rem;
   justify-items: start;
@@ -1621,7 +1627,7 @@ footer {
  * sitting in body copy. tel: links matter here — most visitors are on the
  * device they'd call from. */
 .voice-number {
-  color: var(--brown);
+  color: var(--foreground);
   font-size: 1.55rem;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -1636,7 +1642,7 @@ footer {
 .voice-wake-btn {
   background: transparent;
   border: 1px solid var(--brown);
-  color: var(--brown);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -1692,7 +1698,7 @@ footer {
   aspect-ratio: 16 / 10;
   background: var(--card);
   border: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(78, 54, 41, 0.08);
+  box-shadow: 0 1px 0 rgba(6, 16, 38, 0.22);
   margin-top: 1rem;
   max-height: 70vh;
   padding: 0.75rem;
@@ -1732,14 +1738,14 @@ footer {
 
 .engine-explode-control input[type="range"]::-webkit-slider-runnable-track {
   background: rgba(255, 250, 240, 0.26);
-  border: 1px solid #fffaf0;
+  border: 1px solid var(--line);
   height: 0.5rem;
 }
 
 .engine-explode-control input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  background: #fffaf0;
-  border: 1px solid #fffaf0;
+  background: var(--card);
+  border: 1px solid var(--line);
   height: 1.5rem;
   /* (track 0.5rem + 2 × 1px border − thumb 1.5rem) / 2 */
   margin-top: -0.56rem;
@@ -1748,16 +1754,16 @@ footer {
 
 .engine-explode-control input[type="range"]::-moz-range-track {
   background: rgba(255, 250, 240, 0.26);
-  border: 1px solid #fffaf0;
+  border: 1px solid var(--line);
   height: 0.5rem;
 }
 
 .engine-explode-control input[type="range"]::-moz-range-thumb {
-  background: #fffaf0;
+  background: var(--card);
   /* Firefox draws its own thumb border unless one is declared, and its own
      rounding unless border-radius is zeroed — this stylesheet has exactly one
      border-radius in it and a rounded thumb would be the second. */
-  border: 1px solid #fffaf0;
+  border: 1px solid var(--line);
   border-radius: 0;
   height: 1.5rem;
   width: 1rem;
@@ -1778,7 +1784,7 @@ footer {
 .engine-ghost-btn {
   background: transparent;
   border: 1px solid var(--brown);
-  color: var(--brown);
+  color: var(--foreground);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -1789,7 +1795,7 @@ footer {
 .engine-ghost-btn:hover:not(:disabled),
 .engine-ghost-btn[aria-pressed="true"] {
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .engine-ghost-btn:disabled {
@@ -1838,7 +1844,7 @@ footer {
 .engine-callout {
   background: var(--card);
   border: 1px solid var(--brown);
-  box-shadow: 5px 5px 0 rgba(78, 54, 41, 0.18);
+  box-shadow: 5px 5px 0 rgba(6, 16, 38, 0.45);
   left: 0;
   max-width: min(21rem, 70%);
   padding: 0.8rem 0.9rem;
@@ -1906,14 +1912,14 @@ footer {
 .engine-part-button:hover,
 .engine-part-button:focus-visible {
   background: var(--tan);
-  border-color: var(--brown);
+  border-color: var(--foreground);
   outline: none;
 }
 
 .engine-part-button.selected {
   background: var(--brown);
-  border-color: var(--brown);
-  color: #fffaf0;
+  border-color: var(--foreground);
+  color: #eaf2ff;
 }
 
 .engine-part-name {
@@ -1921,14 +1927,14 @@ footer {
 }
 
 .engine-part-count {
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
   font-weight: 700;
 }
 
 .engine-part-button.selected .engine-part-count {
-  color: #fffaf0;
+  color: #eaf2ff;
 }
 
 .engine-detail {
@@ -1964,7 +1970,7 @@ footer {
 }
 
 .engine-spec dt {
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
   font-weight: 700;
@@ -2000,9 +2006,254 @@ footer {
   }
 }
 
+/* ── Fleming Dash ─────────────────────────────────────────────── */
+
+/* The game gets the viewport, not a box under a hero. Its own palette lives in
+   play/renderer.ts — it is Geometry Dash blue, deliberately not the site's
+   browns, because a clone that isn't the game's colour reads as a different
+   game. Only the chrome around the canvas uses the site palette. */
+
+/* The page keeps the site's own palette. Only the canvas is Geometry Dash
+   blue — that palette lives in play/renderer.ts and stops at the canvas edge. */
+.fdash-main {
+  min-height: 100vh;
+}
+
+.fdash-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100vh;
+  margin: 0 auto;
+  max-width: min(100%, 100rem);
+  padding: 0.85rem 1rem 1rem;
+  width: 100%;
+}
+
+/* The shared .site-header / .site-mark styling is warm-palette, so the game
+   page restates the few colours rather than inheriting browns onto blue. */
+.fdash-header {
+  border-bottom-color: rgba(120, 190, 255, 0.28);
+  flex: 0 0 auto;
+  padding-bottom: 0.7rem;
+}
+
+.fdash-header .site-mark {
+  background: #7ee63f;
+  color: #0b1220;
+}
+
+.fdash-header nav a {
+  color: rgba(234, 242, 255, 0.82);
+}
+
+.fdash-header nav a:hover {
+  color: #7ee63f;
+}
+
+.fdash-shell {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.fdash-canvas-wrap {
+  background: #0b2a8a;
+  /* Was var(--brown), left over from the warm-palette version of the site. */
+  border: 2px solid rgba(120, 190, 255, 0.55);
+  border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(3, 14, 36, 0.45);
+  flex: 1 1 auto;
+  line-height: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+/* Fullscreen: the shell is the fullscreen element, so the wrap simply fills it. */
+.fdash-shell-full {
+  height: 100%;
+  width: 100%;
+}
+
+.fdash-shell:fullscreen .fdash-canvas-wrap,
+.fdash-shell-full .fdash-canvas-wrap {
+  border: 0;
+}
+
+.fdash-canvas {
+  display: block;
+  height: 100%;
+  /* Without this a mobile tap scrolls the page instead of reaching the game. */
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  width: 100%;
+}
+
+/* ── overlays ── */
+
+.fdash-overlay {
+  align-items: center;
+  background: rgba(6, 14, 44, 0.86);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  inset: 0;
+  justify-content: center;
+  line-height: 1.4;
+  position: absolute;
+  text-align: center;
+}
+
+.fdash-over-eyebrow {
+  color: #7ee63f;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.fdash-over-title {
+  color: #fff;
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.fdash-over-note {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.92rem;
+}
+
+.fdash-over-keys {
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  margin-top: 0.4rem;
+}
+
+.fdash-name-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.fdash-pause-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.fdash-name-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font: inherit;
+  min-height: 2.6rem;
+  padding: 0 0.75rem;
+  width: 12rem;
+}
+
+.fdash-name-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fdash-btn {
+  background: #7ee63f;
+  border: 0;
+  color: #0b1220;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 2.6rem;
+  padding: 0 1.5rem;
+  transition: filter 140ms ease, transform 140ms ease;
+}
+
+.fdash-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* Round buttons, the way the real game's pause screen does it. */
+.fdash-circle-row {
+  display: flex;
+  gap: 1.1rem;
+  margin-top: 0.6rem;
+}
+
+.fdash-circle {
+  align-items: center;
+  aspect-ratio: 1;
+  background: #7ee63f;
+  border: 3px solid #0b1220;
+  border-radius: 50%;
+  color: #0b1220;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 1.65rem;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  transition: transform 120ms ease, filter 120ms ease;
+  width: 4.2rem;
+}
+
+.fdash-circle:hover {
+  filter: brightness(1.12);
+  transform: translateY(-2px) scale(1.04);
+}
+
+.fdash-circle-on {
+  background: #5fe0f5;
+}
+
+/* ── control strip ── */
+
+.fdash-controls {
+  bottom: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  left: 0.6rem;
+  position: absolute;
+  z-index: 2;
+}
+
+.fdash-ghost-btn {
+  background: rgba(11, 18, 32, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  padding: 0.36rem 0.6rem;
+  text-transform: uppercase;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.fdash-ghost-btn:hover {
+  background: rgba(126, 230, 63, 0.28);
+  border-color: #7ee63f;
+}
+
+.fdash-ghost-btn[aria-pressed="true"] {
+  background: #7ee63f;
+  border-color: #7ee63f;
+  color: #0b1220;
+}
+
 /* ── Responsive ───────────────────────────────────────────────── */
 
 @media (max-width: 620px) {
+  .fdash-controls {
+    bottom: 0.4rem;
+    left: 0.4rem;
+  }
+
   .site-header {
     align-items: flex-start;
     flex-direction: column;
@@ -2062,6 +2313,33 @@ footer {
   }
 }
 
+/* Level picker on the Fleming Dash start screen. */
+.fdash-level-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.fdash-level-btn {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cfe3ff;
+  cursor: pointer;
+}
+.fdash-level-btn:hover { background: rgba(255, 255, 255, 0.14); }
+.fdash-level-btn-on {
+  /* Same green as the menu backdrop icons and the in-game cube. */
+  background: #7ee63f;
+  border-color: #7ee63f;
+  color: #0b1220;
+  font-weight: 700;
+}
 /* ── Geometry-Dash-style menu backdrop ────────────────────────── */
 
 /* Original art, not RobTop's: blue ground, a diagonal lattice, and icons that
@@ -2202,6 +2480,34 @@ footer {
   margin-bottom: clamp(1.25rem, 3vw, 2rem);
 }
 
+/* The nav sits directly on the blue, so its colours come from a light set
+   rather than the warm tokens used inside the panel. */
+.menu-nav .eyebrow {
+  color: #ffd23f;
+}
+
+.menu-identity h1 {
+  color: #ffffff;
+  text-shadow: 0 3px 0 rgba(8, 26, 52, 0.45);
+}
+
+.menu-item {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.menu-item:hover,
+.menu-item:focus-visible,
+.menu-item.selected {
+  color: #ffffff;
+}
+
+.menu-item.selected {
+  border-left-color: #ffd23f;
+}
+
+.menu-arrow {
+  color: #ffd23f;
+}
 
 .menu-identity h1 {
   font-size: clamp(2.2rem, 4.5vw, 3.4rem);
@@ -2239,19 +2545,19 @@ footer {
 
 .menu-item:hover,
 .menu-item:focus-visible {
-  color: var(--brown);
+  color: var(--foreground);
   outline: none;
 }
 
 .menu-item.selected {
-  border-left-color: var(--brown);
-  color: var(--brown);
+  border-left-color: var(--foreground);
+  color: var(--foreground);
 }
 
 /* Hidden rather than removed, so rows never shift sideways as the highlight
    moves — the arrow keeps its slot either way. */
 .menu-arrow {
-  color: #7a3027;
+  color: #5fe0f5;
   flex: none;
   opacity: 0;
   width: 1ch;
@@ -2277,7 +2583,7 @@ footer {
 .menu-panel {
   background: var(--card);
   border: 1px solid var(--brown);
-  box-shadow: 8px 8px 0 rgba(78, 54, 41, 0.16);
+  box-shadow: 8px 8px 0 rgba(6, 16, 38, 0.42);
   grid-column: 1;
   grid-row: 1;
   max-height: min(78vh, 46rem);
@@ -2298,7 +2604,7 @@ footer {
 }
 
 .menu-meta {
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.72rem;
   font-weight: 700;
@@ -2316,17 +2622,17 @@ footer {
 .menu-portrait {
   aspect-ratio: 1;
   background:
-    linear-gradient(rgba(78, 54, 41, 0.08), rgba(78, 54, 41, 0.08)),
+    linear-gradient(rgba(6, 16, 38, 0.22), rgba(6, 16, 38, 0.22)),
     url("/profile-picture.png") center 34% / cover no-repeat,
     var(--brown);
   border: 1px solid var(--brown);
-  box-shadow: 6px 6px 0 rgba(78, 54, 41, 0.16);
+  box-shadow: 6px 6px 0 rgba(6, 16, 38, 0.42);
   width: 100%;
 }
 
 .resume-heading {
   border-bottom: 1px solid var(--line);
-  color: #7a3027;
+  color: #5fe0f5;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.74rem;
   font-weight: 700;
@@ -2373,7 +2679,7 @@ footer {
 }
 
 .project-row-name {
-  color: var(--brown);
+  color: var(--foreground);
   font-size: 1.15rem;
   font-weight: 760;
 }
@@ -2395,7 +2701,7 @@ footer {
 .menu-open {
   align-items: center;
   background: var(--brown);
-  color: #fffaf0;
+  color: #eaf2ff;
   display: inline-flex;
   font-weight: 800;
   justify-content: center;
@@ -2412,7 +2718,7 @@ footer {
 
 .menu-open:hover,
 .menu-open:focus-visible {
-  box-shadow: 5px 5px 0 rgba(78, 54, 41, 0.18);
+  box-shadow: 5px 5px 0 rgba(6, 16, 38, 0.45);
   outline: none;
 }
 
@@ -2567,217 +2873,170 @@ footer {
   box-shadow: 6px 6px 0 rgba(3, 14, 36, 0.45);
 }
 
-/* Nav colours. These have to live at the end: an earlier copy of this block sat
-   above the base .menu-item rule and lost the cascade to it, which is why the
-   whole nav stayed brown on blue. */
-.menu-screen .menu-identity h1 {
-  color: #ffffff;
-  text-shadow: 0 3px 0 rgba(3, 14, 36, 0.5);
+/* Secret coin tally on the Fleming Dash start screen. */
+.fdash-coin-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.9rem;
 }
 
-/* Selected and unselected were both effectively white, so nothing read as
-   picked. Unselected drops well back; selected goes bright green, which is the
-   accent the arrow and the Open button already use. */
-.menu-screen .menu-item {
-  color: rgba(255, 255, 255, 0.52);
+.fdash-coin {
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  display: inline-block;
+  height: 1.1rem;
+  width: 1.1rem;
 }
 
-.menu-screen .menu-item:hover,
-.menu-screen .menu-item:focus-visible {
-  color: #ffffff;
+.fdash-coin-on {
+  background: #ffd23f;
+  border-color: #fff;
+  box-shadow: 0 0 10px rgba(255, 210, 63, 0.65);
 }
 
-.menu-screen .menu-item.selected {
+/* ── Phlem.io ─────────────────────────────────────────────────────────── */
+/* The stage is a light petri dish inside the site's dark chrome — the
+   classic agar look is white-with-grid, and fighting that reads wrong. */
+
+.phlem-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.phlem-stage {
+  position: relative;
+  width: 100%;
+  height: min(78vh, 46rem);
+  border: 1px solid var(--line);
+  box-shadow: 8px 8px 0 rgba(6, 16, 38, 0.42);
+  overflow: hidden;
+  background: #f2f5f8;
+}
+
+.phlem-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.phlem-board {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  list-style: none;
+  background: rgba(10, 16, 28, 0.78);
+  color: #e8eef7;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  line-height: 1.7;
+  min-width: 11rem;
+  max-width: 16rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.phlem-board li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phlem-board .phlem-me {
   color: #7ee63f;
-  text-shadow: 0 2px 0 rgba(3, 14, 36, 0.55);
+  font-weight: 700;
 }
 
-.menu-screen .menu-item.selected {
-  border-left-color: #7ee63f;
+.phlem-feed {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.7rem;
+  color: rgba(10, 16, 28, 0.55);
+  pointer-events: none;
 }
 
-.menu-screen .menu-arrow {
-  color: #7ee63f;
+.phlem-split {
+  /* Touch-only: a desktop player splits with S and never needs a target on
+     the screen edge. Coarse-pointer is the standard "this is a finger" test. */
+  display: none;
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid var(--line);
+  background: rgba(10, 16, 28, 0.78);
+  color: #e8eef7;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
 }
 
-.menu-screen .menu-nav {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-.menu-portrait {
-  background-color: #0f2f5c;
-}
-
-@media (max-width: 900px) {
-  .menu-screen .menu-item.selected {
-    border-bottom-color: #7ee63f;
+@media (pointer: coarse) {
+  .phlem-split {
+    display: block;
   }
 }
 
-/* Root inherited colour for the whole menu screen. Without this the container
-   still hands down the warm foreground token, so any element added later that
-   does not set its own colour lands brown on blue. */
-.menu-screen {
-  color: rgba(255, 255, 255, 0.82);
+.phlem-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(10, 16, 28, 0.82);
+  color: #e8eef7;
 }
 
-/* A 3px nudge was too small to notice. Bigger travel, and the arrow itself is
-   scaled up so it reads as a pointer rather than a stray character. */
-.menu-screen .menu-arrow {
-  font-size: 1.15em;
-  width: 1.1ch;
+.phlem-overlay h2 {
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  margin: 0;
 }
 
-@keyframes menu-arrow-nudge {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(7px);
-  }
+.phlem-overlay .menu-blurb {
+  max-width: 34rem;
 }
 
-.menu-screen .menu-identity h1 {
-  max-width: 14ch;
+.phlem-form {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-/* .menu-nav is a <nav>, so the global `nav { display: flex; justify-content:
-   flex-end }` rule was catching it and shoving the list to the right edge of
-   its own box, 151px clear of the title above it. Back to normal flow. */
-.menu-screen .menu-nav {
-  display: block;
-  gap: 0;
-  justify-content: flex-start;
+.phlem-form input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+  color: #e8eef7;
+  padding: 0.65rem 0.9rem;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  min-width: 14rem;
 }
 
-.menu-screen .menu-list {
-  justify-content: flex-start;
+.phlem-quiet {
+  opacity: 0.75;
 }
 
-/* Both plates: darker and matched, with a brighter edge. At the old value they
-   were mid-blue on mid-blue and the boxes barely separated from the field. */
-.menu-screen .menu-panel,
-.menu-screen .menu-nav {
-  background: #08182e;
-  border: 2px solid rgba(95, 224, 245, 0.5);
-  box-shadow: 8px 8px 0 rgba(2, 10, 26, 0.5);
-}
-
-/* ── Blue theme for the project pages ─────────────────────────
-   The menu went blue, so the pages behind it had to follow or the site read as
-   two different sites. Done by redefining the tokens rather than rewriting
-   every rule, because almost everything already draws from them.
-
-   --brown is the awkward one: it is a text or border colour in about thirty
-   places and a background fill in thirteen. It becomes a light ink here, and
-   those thirteen fills are overridden below. */
-
-:root {
-  --background: #10305c;
-  --foreground: #e6f1ff;
-  --card: #0b2143;
-  --line: #24507f;
-  --tan: #17385f;
-  --muted: #a3bfdc;
-  --brown: #dfeeff;
-}
-
-body,
-main {
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    var(--background);
-}
-
-::selection {
-  background: #5fe0f5;
-  color: #08182e;
-}
-
-/* The thirteen fills. Each already pairs with light text, so they only need a
-   dark plate behind it. */
-.site-mark,
-.pulse-controls,
-.elections-controls,
-.map-tooltip,
-.score-card,
-.match-card span,
-.pulse-table button.active {
-  background: #08182e;
-}
-
-/* Filled actions take the accent green with dark text, matching the menu. */
-.project-link-cue,
-.hero-links a:hover,
-.engine-ghost-btn[aria-pressed="true"],
-.engine-part-button.selected,
-.menu-open {
-  background: #7ee63f;
-  color: #08182e;
-}
-
-.eyebrow,
-.project-topline,
-.tag-row span {
-  color: #5fe0f5;
-}
-
-.tag-row span {
-  background: #17385f;
-  border-color: #2b5b8e;
-  color: #b7dcf0;
-}
-
-h1,
-h2,
-h3 {
-  color: #ffffff;
-}
-
-.hero-links a {
-  border-color: #7ee63f;
-  color: #7ee63f;
-}
-
-/* ── The map keeps its own palette ────────────────────────────
-   Custom properties inherit, so redefining the warm set on the map container
-   restores every fill, stroke and label inside it, including the ones set from
-   JSX as var(--tan) and var(--card). The party colours were never token-driven
-   and are untouched either way. */
-.us-map {
-  --background: #f1e6d6;
-  --foreground: #2a211c;
-  --card: #fffaf0;
-  --line: #d6c5b1;
-  --tan: #e4d2bc;
-  --muted: #6d5d51;
-  --brown: #4e3629;
-  background: var(--card);
-}
-
-.us-map h1,
-.us-map h2,
-.us-map h3 {
-  color: var(--brown);
-}
-
-.us-map .map-tooltip {
-  background: var(--brown);
-}
-
-/* Form controls keep a literal cream background but took their text from
-   --brown, which is now light ink. Left alone they render light on light and
-   the zip field, the tier inputs and the play button all go invisible. */
-.pulse-controls select,
-.rank-pill,
-.gddl-range-row input[type="number"],
-.gddl-start-btn,
-.elections-input-row input,
-.elections-input-row button {
-  color: #08182e;
-}
-
-.elections-input-row input::placeholder {
-  color: rgba(8, 24, 46, 0.5);
+.phlem-hint {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+  color: rgba(232, 238, 247, 0.6);
+  max-width: 30rem;
 }

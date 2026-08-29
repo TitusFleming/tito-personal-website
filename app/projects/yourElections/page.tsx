@@ -6,27 +6,20 @@ import VoiceCard from "./voice-card";
 export const metadata = {
   title: "yourElections | Tito Fleming",
   description:
-    "An interactive map of the 2026 primaries. Click your state and district to see every race and candidate. Next.js, FastAPI, Postgres and d3-geo, with a voice agent on the same data.",
-  openGraph: {
-    title: "yourElections | Tito Fleming",
-    description:
-      "An interactive map of the 2026 primaries. Click your state and district to see every race and candidate. Next.js, FastAPI, Postgres and d3-geo, with a voice agent on the same data.",
-    url: "https://www.richard-fleming.com/projects/yourElections",
-    siteName: 'Richard "Tito" Fleming',
-    type: "article",
-  },
+    "An interactive map of the 2026 primaries. Click your state and district to see every race and candidate.",
 };
 
 export default function YourElectionsPage() {
   return (
-    <main className="min-h-screen text-[#181713]">
+    <main className="min-h-screen">
       <div className="elections-page">
         <header className="site-header">
           <Link className="site-mark" href="/" aria-label="Back to Tito Fleming home">
             RTF
           </Link>
           <nav aria-label="Project navigation">
-            <Link href="/">Menu</Link>
+            <Link href="/">Home</Link>
+            <Link href="/#portfolio">Portfolio</Link>
             <a href="mailto:richard_fleming@brown.edu">Contact</a>
           </nav>
         </header>

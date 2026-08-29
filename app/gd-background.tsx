@@ -28,9 +28,10 @@ type Particle = {
 };
 type Flash = { x: number; y: number; life: number };
 
-/** Density comes from count, not speed: more icons drifting at a calm rate
- *  reads as a busy field, where fewer fast ones just read as twitchy. */
-const ICON_COUNT = 7;
+/** How many icons drift at once. Raised from two — the backdrop should read
+ *  as busy, closer to the game's own menu, while everything else about each
+ *  icon (size, speed, forms, popping) stays exactly as it was. */
+const ICON_COUNT = 6;
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
 export default function GdBackground() {
@@ -58,9 +59,9 @@ export default function GdBackground() {
       icon.color = BODY_COLORS[Math.floor(rand(0, BODY_COLORS.length))];
       icon.form = FORMS[Math.floor(rand(0, FORMS.length))];
       icon.angle = rand(-0.3, 0.3);
-      icon.spin = rand(-0.006, 0.006);
-      icon.vx = rand(0.25, 0.85) * (Math.random() < 0.5 ? -1 : 1);
-      icon.vy = rand(-0.16, 0.16);
+      icon.spin = rand(-0.008, 0.008);
+      icon.vx = rand(0.5, 1.1) * (Math.random() < 0.5 ? -1 : 1);
+      icon.vy = rand(-0.2, 0.2);
       icon.dead = 0;
       if (fromEdge) {
         icon.x = icon.vx > 0 ? -icon.size : width + icon.size;
@@ -76,14 +77,9 @@ export default function GdBackground() {
       // its layout size from its attributes, so measuring it to set them feeds
       // back on itself and it grows without bound.
       const rect = wrap!.getBoundingClientRect();
-      // The wrapper is position:fixed inset:0, so its size is the viewport by
-      // definition. Falling back to that matters: if the element measures zero
-      // when this first runs (a page that has not composited yet) and the
-      // ResizeObserver never delivers a second callback, the icons would never
-      // spawn and the backdrop would stay empty for good.
-      width = rect.width || window.innerWidth;
-      height = rect.height || window.innerHeight;
-      if (width === 0 || height === 0) return;
+      if (rect.width === 0 || rect.height === 0) return;
+      width = rect.width;
+      height = rect.height;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas!.width = Math.round(width * dpr);
       canvas!.height = Math.round(height * dpr);
@@ -98,13 +94,6 @@ export default function GdBackground() {
     }
 
     // ── shapes ────────────────────────────────────────────────
-    //
-    // What the reference actually shows, and what the previous pass missed:
-    // the outline is enormously thick relative to the icon; the body carries a
-    // darker band across its lower half so it reads as lit from above; and the
-    // "eye" is a dark square with a cyan square inside it, sunk into a raised
-    // block rather than floating on the silhouette.
-
     function box(x: number, y: number, w: number, h: number, r: number) {
       const c = ctx!;
       c.beginPath();
@@ -116,48 +105,21 @@ export default function GdBackground() {
       c.closePath();
     }
 
-    /** Fill, shade the lower half, then outline. Doing the shade inside a clip
-     *  of the same path is what keeps it from bleeding past the silhouette. */
-    function plate(path: () => void, color: string, s: number, shadeFrom = 0.1) {
+    /** The default icons have no face. They have a square inside a square
+     *  inside a square, and that motif is most of what makes them readable. */
+    function nested(cx: number, cy: number, s: number) {
       const c = ctx!;
-      c.save();
-      path();
-      c.fillStyle = color;
-      c.fill();
-      c.clip();
-      c.fillStyle = "rgba(0, 0, 0, 0.18)";
-      c.fillRect(-s, s * shadeFrom, s * 2, s * 2);
-      c.restore();
-      path();
-      c.stroke();
-    }
-
-    /** Dark square, cyan square inside it. No face: this motif is what the
-     *  default icons use instead, and it is most of what makes them readable. */
-    function eye(cx: number, cy: number, s: number) {
-      const c = ctx!;
-      c.save();
-      c.lineWidth = Math.max(2, s * 0.09);
-      c.fillStyle = "#2f3b3f";
-      box(cx - s * 0.5, cy - s * 0.5, s, s, s * 0.06);
-      c.fill();
-      c.stroke();
+      c.fillStyle = OUTLINE;
+      c.fillRect(cx - s * 0.3, cy - s * 0.3, s * 0.6, s * 0.6);
       c.fillStyle = ACCENT;
-      box(cx - s * 0.24, cy - s * 0.24, s * 0.48, s * 0.48, s * 0.04);
-      c.fill();
-      c.restore();
+      c.fillRect(cx - s * 0.16, cy - s * 0.16, s * 0.32, s * 0.32);
     }
 
-    /** Irregular spikes rather than an even star: the ball's outline is ragged,
-     *  and an evenly-spaced star reads as a sheriff's badge instead. */
-    const SPIKE_JITTER = [1, 0.86, 1.05, 0.9, 1, 0.82, 1.08, 0.88, 0.98, 0.84];
-    function spikes(cx: number, cy: number, outer: number, inner: number) {
+    function star(cx: number, cy: number, outer: number, inner: number, points: number) {
       const c = ctx!;
-      const points = 10;
       c.beginPath();
       for (let i = 0; i < points * 2; i += 1) {
-        const jitter = SPIKE_JITTER[Math.floor(i / 2) % SPIKE_JITTER.length];
-        const r = i % 2 === 0 ? outer * jitter : inner;
+        const r = i % 2 === 0 ? outer : inner;
         const a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
         const px = cx + Math.cos(a) * r;
         const py = cy + Math.sin(a) * r;
@@ -173,88 +135,68 @@ export default function GdBackground() {
       const h = s / 2;
       c.strokeStyle = OUTLINE;
       c.lineJoin = "round";
-      c.lineCap = "round";
-      // Very heavy: the single most characteristic thing about these icons.
-      c.lineWidth = Math.max(3, s * 0.11);
+      // Heavy outline: the single most characteristic thing about these icons.
+      c.lineWidth = Math.max(3, s * 0.1);
+      c.fillStyle = icon.color;
 
       if (icon.form === "cube") {
-        plate(() => box(-h, -h, s, s, s * 0.1), icon.color, s);
-        eye(0, 0, s * 0.42);
+        box(-h, -h, s, s, s * 0.1);
+        c.fill(); c.stroke();
+        nested(0, 0, s * 0.62);
       } else if (icon.form === "ball") {
-        plate(() => spikes(0, 0, h, h * 0.52), icon.color, s);
-        c.save();
-        c.lineWidth = Math.max(2, s * 0.075);
+        star(0, 0, h, h * 0.62, 8);
+        c.fill(); c.stroke();
         c.fillStyle = ACCENT;
-        spikes(0, 0, h * 0.48, h * 0.22);
-        c.fill();
-        c.stroke();
-        c.restore();
+        star(0, 0, h * 0.5, h * 0.26, 8);
+        c.fill(); c.stroke();
       } else if (icon.form === "ship") {
-        // Flat segmented hull, raised block above it carrying the eye.
-        plate(() => box(-h, h * 0.16, s, h * 0.58, h * 0.28), icon.color, s, 0.4);
-        c.save();
-        c.lineWidth = Math.max(2, s * 0.08);
-        plate(() => box(-h * 0.98, h * 0.24, s * 0.3, h * 0.42, h * 0.14), ACCENT, s, 0.5);
-        c.restore();
-        plate(() => box(-h * 0.5, -h * 0.82, s * 0.62, h * 1, s * 0.09), icon.color, s, -0.4);
-        eye(-h * 0.19, -h * 0.32, s * 0.34);
+        // Hull along the bottom, cockpit block above it.
+        box(-h, h * 0.1, s, h * 0.62, s * 0.1);
+        c.fill(); c.stroke();
+        c.fillStyle = ACCENT;
+        box(-h * 0.95, h * 0.22, s * 0.34, h * 0.4, s * 0.06);
+        c.fill(); c.stroke();
+        c.fillStyle = icon.color;
+        box(-h * 0.42, -h * 0.85, s * 0.6, h * 0.95, s * 0.08);
+        c.fill(); c.stroke();
+        nested(-h * 0.12, -h * 0.36, s * 0.4);
       } else if (icon.form === "ufo") {
-        // Dome first so the saucer overlaps its base, as in the reference.
-        c.save();
-        c.lineWidth = Math.max(2, s * 0.07);
-        c.fillStyle = "rgba(255, 255, 255, 0.34)";
-        c.strokeStyle = "rgba(255, 255, 255, 0.75)";
-        c.beginPath();
-        c.arc(0, h * 0.05, h * 0.72, Math.PI, 0);
-        c.fill();
-        c.stroke();
-        c.restore();
-        plate(() => box(-h * 0.46, -h * 0.5, s * 0.46, h * 0.6, s * 0.07), icon.color, s, -0.2);
-        eye(-h * 0.23, -h * 0.2, s * 0.3);
-        plate(() => box(-h, h * 0.02, s, h * 0.4, h * 0.2), icon.color, s, 0.28);
-        c.save();
-        c.lineWidth = Math.max(2, s * 0.08);
+        // Dome, then the saucer across the middle.
         c.fillStyle = ACCENT;
-        c.beginPath();
-        c.arc(0, h * 0.32, h * 0.21, 0, Math.PI * 2);
-        c.fill();
-        c.stroke();
-        c.restore();
+        c.beginPath(); c.arc(0, 0, h * 0.66, Math.PI, 0);
+        c.fill(); c.stroke();
+        c.fillStyle = icon.color;
+        box(-h, -h * 0.02, s, h * 0.44, h * 0.2);
+        c.fill(); c.stroke();
+        nested(0, -h * 0.3, s * 0.4);
+        c.fillStyle = ACCENT;
+        c.beginPath(); c.arc(0, h * 0.2, h * 0.19, 0, Math.PI * 2);
+        c.fill(); c.stroke();
       } else if (icon.form === "swing") {
-        plate(() => box(-h * 0.66, -h * 0.5, s * 0.66, s * 0.6, s * 0.1), icon.color, s, 0.15);
-        eye(-h * 0.33, -h * 0.2, s * 0.3);
-        c.save();
-        c.lineWidth = Math.max(3, s * 0.1);
+        box(-h * 0.62, -h * 0.55, s * 0.62, s * 0.62, s * 0.1);
+        c.fill(); c.stroke();
+        c.lineWidth = Math.max(3, s * 0.085);
         c.beginPath();
-        c.moveTo(-h * 1.02, -h * 0.72);
-        c.lineTo(h * 0.62, -h * 0.72);
+        c.moveTo(-h * 0.98, -h * 0.78); c.lineTo(h * 0.58, -h * 0.78);
         c.stroke();
-        c.restore();
-        c.save();
-        c.lineWidth = Math.max(2, s * 0.08);
         c.fillStyle = ACCENT;
-        c.beginPath();
-        c.arc(-h * 0.18, h * 0.56, h * 0.2, 0, Math.PI * 2);
-        c.fill();
-        c.stroke();
-        c.restore();
+        c.beginPath(); c.arc(-h * 0.2, h * 0.62, h * 0.2, 0, Math.PI * 2);
+        c.fill(); c.stroke();
+        nested(-h * 0.3, -h * 0.24, s * 0.36);
       } else {
-        // spider: angular legs under a blocky head
-        c.save();
-        c.lineWidth = Math.max(3, s * 0.1);
-        c.strokeStyle = OUTLINE;
-        for (const dir of [-1, 1]) {
-          for (const spread of [0.36, 0.86]) {
-            c.beginPath();
-            c.moveTo(dir * h * 0.28, h * 0.1);
-            c.lineTo(dir * h * spread, h * 0.6);
-            c.lineTo(dir * h * (spread + 0.14), h * 1);
-            c.stroke();
-          }
+        // spider: squat body, angular legs
+        c.lineWidth = Math.max(3, s * 0.085);
+        for (const dx of [-h * 0.82, -h * 0.3, h * 0.3, h * 0.82]) {
+          c.beginPath();
+          c.moveTo(dx * 0.62, h * 0.05);
+          c.lineTo(dx, h * 0.55);
+          c.lineTo(dx * 1.05, h * 0.95);
+          c.stroke();
         }
-        c.restore();
-        plate(() => box(-h * 0.82, -h * 0.72, s * 0.82, s * 0.78, s * 0.1), icon.color, s, 0.05);
-        eye(-h * 0.41, -h * 0.33, s * 0.34);
+        c.lineWidth = Math.max(3, s * 0.1);
+        box(-h * 0.8, -h * 0.7, s * 0.8, s * 0.72, s * 0.12);
+        c.fill(); c.stroke();
+        nested(-h * 0.4, -h * 0.34, s * 0.44);
       }
     }
 
@@ -287,8 +229,8 @@ export default function GdBackground() {
     }
 
     /** Listen on the window, not the canvas. The page's layout wrapper is a
-     *  transparent element stretched over most of the viewport, so it, not the
-     *  canvas, is what a real click actually lands on; a canvas-bound listener
+     *  transparent element stretched over most of the viewport, so it — not the
+     *  canvas — is what a real click actually lands on; a canvas-bound listener
      *  never fires for icons drifting inside that column. Clicks on genuine
      *  controls are skipped so popping never steals a menu press. */
     function handlePointerDown(event: PointerEvent) {
@@ -301,7 +243,6 @@ export default function GdBackground() {
     let frame = 0;
     function tick() {
       frame = requestAnimationFrame(tick);
-      if (icons.length === 0) resize();
       ctx!.clearRect(0, 0, width, height);
 
       for (const icon of icons) {
@@ -365,13 +306,7 @@ export default function GdBackground() {
     if (process.env.NODE_ENV !== "production") {
       (window as unknown as { __gd?: unknown }).__gd = {
         icons, particles, flashes, FORMS,
-        step: (n = 1) => {
-          for (let i = 0; i < n; i += 1) {
-            cancelAnimationFrame(frame);
-            tick();
-          }
-          cancelAnimationFrame(frame);
-        },
+        step: (n = 1) => { for (let i = 0; i < n; i += 1) tick(); cancelAnimationFrame(frame); },
         popAt: (x: number, y: number) => popAtPoint(x, y),
       };
     }

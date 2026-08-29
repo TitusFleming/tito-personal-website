@@ -7,7 +7,10 @@
     "build": "next build",
     "build:geo": "node scripts/build-geo.mjs",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test 'app/projects/fleming-dash/**/*.test.ts' 'app/projects/phlem-io/**/*.test.ts' 'lib/**/*.test.ts'",
+    "import:level": "node scripts/import-gd-level.mjs",
+    "import:aredl": "node scripts/import-aredl-names.mjs"
   },
   "dependencies": {
     "d3-geo": "^3.1.1",

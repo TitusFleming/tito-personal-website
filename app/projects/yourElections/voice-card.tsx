@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 // The phone agent, surfaced next to the map it mirrors.
 //
 // Deliberately does NOT check whether the agent is awake on mount. The agent
-// runs on a free Render instance that sleeps, and *any* request wakes it, 
+// runs on a free Render instance that sleeps, and *any* request wakes it —
 // including a status check. Those instance-hours are pooled across the whole
 // Render account, so a probe on every page view would quietly spend the
 // budget that keeps the elections backend running. Nothing is checked until
@@ -37,7 +37,7 @@ export default function VoiceCard() {
         return;
       }
     } catch {
-      // Fall through to polling, the wake request may well have landed
+      // Fall through to polling — the wake request may well have landed
       // even if reading the response didn't.
     }
 
@@ -88,14 +88,14 @@ export default function VoiceCard() {
       ) : status === "waking" ? (
         <>
           <p className="voice-status">
-            Waking the agent up (it spins down when idle), this takes about
+            Waking the agent up (it spins down when idle). This takes about
             thirty seconds.
           </p>
           <div className="pulse-loading" />
         </>
       ) : status === "slow" ? (
         <p className="voice-status">
-          Still not up. You can call anyway, it&rsquo;ll greet you and ask you
+          Still not up. You can call anyway; it&rsquo;ll greet you and ask you
           to hold while it starts.
         </p>
       ) : (
@@ -104,7 +104,7 @@ export default function VoiceCard() {
             Wake the agent
           </button>
           <p className="voice-card-note">
-            Optional. Calling cold works too, you&rsquo;ll just be asked to
+            Optional. Calling cold works too; you&rsquo;ll just be asked to
             hold for the first half-minute while it boots.
           </p>
         </>

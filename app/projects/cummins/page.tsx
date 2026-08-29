@@ -4,27 +4,20 @@ import EngineExplorer from "./engine-explorer";
 export const metadata = {
   title: "Big Cam | Tito Fleming",
   description:
-    "Built as a Digital Tools Intern at Cummins in Columbus, Indiana, on the Guidanz team: an LLM fault-code assistant for diesel technicians. The page itself is the NTC-400 Big Cam III from the headquarters lobby, rebuilt from scratch in code so you can pull it apart.",
-  openGraph: {
-    title: "Big Cam | Tito Fleming",
-    description:
-      "Built as a Digital Tools Intern at Cummins in Columbus, Indiana, on the Guidanz team: an LLM fault-code assistant for diesel technicians. The page itself is the NTC-400 Big Cam III from the headquarters lobby, rebuilt from scratch in code so you can pull it apart.",
-    url: "https://www.richard-fleming.com/projects/cummins",
-    siteName: 'Richard "Tito" Fleming',
-    type: "article",
-  },
+    "A Cummins NTC-400 Big Cam III you can take apart in the browser: thirteen parts, built in code.",
 };
 
 export default function CumminsPage() {
   return (
-    <main className="min-h-screen text-[#181713]">
+    <main className="min-h-screen">
       <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:px-10">
         <header className="site-header">
           <Link className="site-mark" href="/" aria-label="Back to Tito Fleming home">
             RTF
           </Link>
           <nav aria-label="Project navigation">
-            <Link href="/">Menu</Link>
+            <Link href="/">Home</Link>
+            <Link href="/#portfolio">Portfolio</Link>
             <a href="mailto:richard_fleming@brown.edu">Contact</a>
           </nav>
         </header>

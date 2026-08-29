@@ -100,7 +100,7 @@ export default function GDDLGame() {
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error ?? "Failed to load levels");
       const levels = data.levels as GDDLLevel[];
-      if (levels.length < 2) throw new Error("Not enough levels found, try a wider range");
+      if (levels.length < 2) throw new Error("Not enough levels found. Try a wider range");
       const shuffled = shuffle(levels);
       setLeftCard(shuffled[0]);
       setRightCard(shuffled[1]);

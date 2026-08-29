@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         detail:
-          "The elections backend is unreachable. It may still be waking up, try again in a few seconds.",
+          "The elections backend is unreachable. It may still be waking up; try again in a few seconds.",
       },
       { status: 502 },
     );

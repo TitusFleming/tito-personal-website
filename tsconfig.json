@@ -11,6 +11,10 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // Lets the Fleming Dash engine use explicit .ts specifiers on relative
+    // imports, which is what allows `node --test` to run the simulation
+    // headlessly with no test runner or build step. Legal because noEmit is set.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [

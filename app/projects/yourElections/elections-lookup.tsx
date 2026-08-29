@@ -148,7 +148,7 @@ export default function ElectionsLookup() {
         setSelection(json.state, null);
         if (districts.length > 1) {
           setZipHint(
-            `Zip ${json.zip} spans districts ${districts.join(", ")}, pick yours on the map.`,
+            `Zip ${json.zip} spans districts ${districts.join(", ")}. Pick yours on the map.`,
           );
         }
       }
@@ -214,7 +214,7 @@ export default function ElectionsLookup() {
       {zipLoading && slowWakeup ? (
         <div className="elections-status">
           <p>
-            The backend is waking up from a nap (it spins down when idle), 
+            The backend is waking up from a nap (it spins down when idle);
             this first lookup can take up to a minute.
           </p>
           <div className="pulse-loading" />
@@ -243,7 +243,7 @@ export default function ElectionsLookup() {
             <div className="elections-status">
               <p className="eyebrow">How it works</p>
               <p>
-                States are colored by their current House delegation, bluer
+                States are colored by their current House delegation: bluer
                 means more Democrats, redder means more Republicans. Dots mark
                 states with a U.S. Senate seat on the 2026 ballot.
               </p>
@@ -257,7 +257,7 @@ export default function ElectionsLookup() {
             <>
               <div className="map-panel">
                 <p className="eyebrow">Statewide</p>
-                <h3>U.S. Senate, {stateName}</h3>
+                <h3>U.S. Senate: {stateName}</h3>
                 {stateDetail && stateDetail.senators.length > 0 ? (
                   <ul className="senator-list">
                     {stateDetail.senators.map((senator) => (
@@ -343,7 +343,7 @@ export default function ElectionsLookup() {
                       />
                     ) : (
                       <p className="map-panel-note">
-                        Races for this district couldn&apos;t be loaded, the
+                        Races for this district couldn&apos;t be loaded; the
                         backend may still be waking up. Try reselecting the
                         district in a few seconds.
                       </p>

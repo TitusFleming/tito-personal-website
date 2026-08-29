@@ -1,19 +1,19 @@
 import type { MetadataRoute } from "next";
+import { ROUTES, SITE_URL } from "../lib/site.ts";
 
-const SITE = "https://www.richard-fleming.com";
-
+/**
+ * /sitemap.xml, generated from the shared route list.
+ *
+ * `lastModified` is the build time rather than a hand-maintained date: it is
+ * accurate for a statically built site and cannot go stale the way a literal
+ * would.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = [
-    "",
-    "/projects/cummins",
-    "/projects/yourElections",
-    "/projects/epl-brief",
-    "/projects/gd-tier-game",
-  ];
-  return routes.map((route) => ({
-    url: `${SITE}${route}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: route === "" ? 1 : 0.8,
+  const lastModified = new Date();
+  return ROUTES.map((route) => ({
+    url: `${SITE_URL}${route.path === "/" ? "" : route.path}`,
+    lastModified,
+    changeFrequency: route.changeFrequency,
+    priority: route.priority,
   }));
 }
