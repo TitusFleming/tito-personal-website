@@ -51,7 +51,7 @@ const PALETTE: Record<MaterialKey, { color: string; metalness: number; roughness
   castIron: { color: "#413b34", metalness: 0.22, roughness: 0.88 },
   // Machined steel: the bright, cool, obviously-turned surfaces.
   steel: { color: "#dfe3e9", metalness: 0.97, roughness: 0.15 },
-  // Aluminum sits between the two — light but warmer and softer than steel.
+  // Aluminum sits between the two, light but warmer and softer than steel.
   aluminum: { color: "#b3aca1", metalness: 0.72, roughness: 0.38 },
   // Brass for the fuel system, which also ties it to the page's warm palette.
   beige: { color: "#b08a45", metalness: 0.88, roughness: 0.3 },
@@ -59,7 +59,7 @@ const PALETTE: Record<MaterialKey, { color: string; metalness: number; roughness
 
 /** Four variants per key, built once. All are MeshStandardMaterial with the
  *  same (empty) texture set and identical defines, so three compiles one
- *  program and a selection change is a uniform update, not a recompile —
+ *  program and a selection change is a uniform update, not a recompile, 
  *  which is why hovering never hitches. Don't add a map to only some variants. */
 export function buildMaterials(): { sets: Record<MaterialKey, MaterialSet>; all: MeshStandardMaterial[] } {
   const all: MeshStandardMaterial[] = [];
@@ -150,7 +150,7 @@ export type PartNode = {
   meshes: Mesh[];
   partId: string;
   materialKey: MaterialKey;
-  /** Built once, never mutated — explode reads from it every frame. */
+  /** Built once, never mutated, explode reads from it every frame. */
   assembled: Vector3;
   dir: Vector3;
   distance: number;
@@ -176,7 +176,7 @@ export function buildEngine(): BuiltEngine {
   const pickables: Mesh[] = [];
 
   for (const part of ENGINE_PARTS) {
-    // Built once per part and shared across every placement — six pistons are
+    // Built once per part and shared across every placement, six pistons are
     // six groups pointing at one set of geometries.
     const partGeometries = part.geometry.map(buildGeometry);
     geometries.push(...partGeometries);
@@ -229,7 +229,7 @@ function ease(t: number): number {
  * centroid: this engine is 45in long and 20in tall, so a radial blow-up fans
  * the end cylinders sideways and leaves cylinders 3 and 4 sitting inside the
  * block. The vectors are hand-set to match the reading order of the sculpture
- * — heads up, pan down, turbo out — which is a composition, not a simulation.
+ *, heads up, pan down, turbo out, which is a composition, not a simulation.
  *
  * Allocation-free: writes straight into each group's existing position.
  */

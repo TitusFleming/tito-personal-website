@@ -5,6 +5,14 @@ export const metadata = {
   title: "GDDL Higher or Lower | Tito Fleming",
   description:
     "Pick a tier range and guess which Geometry Dash level ranks harder on the GDDL. Go until you get one wrong.",
+  openGraph: {
+    title: "GDDL Higher or Lower | Tito Fleming",
+    description:
+      "Pick a tier range and guess which Geometry Dash level ranks harder on the GDDL. Go until you get one wrong.",
+    url: "https://www.richard-fleming.com/projects/gd-tier-game",
+    siteName: 'Richard "Tito" Fleming',
+    type: "article",
+  },
 };
 
 export default function GDDLPage() {
@@ -16,8 +24,7 @@ export default function GDDLPage() {
             RTF
           </Link>
           <nav aria-label="Project navigation">
-            <Link href="/">Home</Link>
-            <Link href="/#portfolio">Portfolio</Link>
+            <Link href="/">Menu</Link>
             <a href="mailto:richard_fleming@brown.edu">Contact</a>
           </nav>
         </header>

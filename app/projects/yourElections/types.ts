@@ -7,7 +7,7 @@ export type Candidate = {
   status: string;
   /**
    * True when this candidate has reported money to the FEC. It is a
-   * display grouping, never a filter — a real campaign whose first report
+   * display grouping, never a filter, a real campaign whose first report
    * hasn't landed yet reads as unfunded, so nothing is hidden on it.
    */
   funded: boolean;
@@ -62,7 +62,7 @@ export type Officeholder = {
   sponsored_count: number | null;
   cosponsored_count: number | null;
   leadership_role: string | null;
-  /** Subjects they most often file bills about — not policy positions. */
+  /** Subjects they most often file bills about, not policy positions. */
   policy_areas: string | null;
 };
 

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Everything Is a Function</title>
+  <script type="module" crossorigin src="./assets/index-WvV3Iplm.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-D_yNBfoL.css">
+</head>
+<body>
+  <header>
+    <h1>Everything Is a Function</h1>
+    <p class="sub">
+      The machine never sees your drawing. It sees 784 numbers, and a prediction is
+      just arithmetic on them. Draw a digit and watch the picture disappear.
+    </p>
+  </header>
+
+  <main class="pipeline">
+    <section class="card" id="cardDraw">
+      <h2><span class="stepnum">1</span> You draw</h2>
+      <canvas id="pad" width="280" height="280"></canvas>
+      <div class="row">
+        <button id="btnClear">Clear</button>
+        <button id="btnSample">Real MNIST digit</button>
+      </div>
+    </section>
+
+    <div class="arrow" aria-hidden="true">→</div>
+
+    <section class="card" id="cardNumbers">
+      <h2><span class="stepnum">2</span> <span id="numbersTitle">The machine gets pixels…</span></h2>
+      <div class="morph-wrap">
+        <canvas id="morph" width="480" height="300"></canvas>
+        <div id="lens" class="hidden"></div>
+      </div>
+      <div class="row">
+        <button id="btnUnroll" class="primary">Unroll into a list</button>
+      </div>
+      <p class="caption" id="morphCaption">
+        Hover the grid. Every cell is just a brightness number between 0 and 1.
+      </p>
+    </section>
+
+    <div class="arrow" aria-hidden="true">→</div>
+
+    <section class="card" id="cardFn">
+      <h2><span class="stepnum">3</span> A function fires</h2>
+      <p class="formula">f(x) = softmax(W·x + b)</p>
+      <div class="verdict">
+        <span id="bigDigit">–</span>
+        <span id="bigConf"></span>
+      </div>
+      <div id="bars"></div>
+    </section>
+  </main>
+
+  <section class="mutate">
+    <span class="mutate-label">Break it:</span>
+    <button id="btnShift">Shift 3px →</button>
+    <button id="btnNoise">Add noise</button>
+    <button id="btnInvert">Invert</button>
+    <button id="btnReset">Undo damage</button>
+    <p id="status">Draw a digit to start.</p>
+  </section>
+
+  <section class="templates">
+    <h2>What f is actually looking for</h2>
+    <p class="caption">
+      Each output score has its own 784 weights, shown here as images. Orange pixels add
+      to that digit&rsquo;s score when inked, blue pixels subtract. The model is scoring your
+      drawing against ten fuzzy stencils. Nobody drew these. That&rsquo;s part 2.
+    </p>
+    <div id="templateRow"></div>
+  </section>
+
+  <footer>
+    This exact model scores <span id="accNote">–</span> on the MNIST test set, and it is nothing
+    but 7,840 multiplications and 10 additions. View source: the whole thing is there.
+  </footer>
+
+</body>
+</html>

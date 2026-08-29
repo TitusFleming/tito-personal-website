@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Loss Landscape</title>
+  <script type="module" crossorigin src="./assets/index-B933rhxt.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-GfD1aelx.css">
+</head>
+<body>
+  <div id="scene"></div>
+
+  <aside id="panel">
+    <h1>The Loss Landscape</h1>
+    <p class="sub">
+      Gradient descent is a ball rolling downhill. Its famous weakness: it stops in the
+      first valley it finds. Shake it out.
+    </p>
+
+    <div class="row">
+      <button id="btnTerrain">New landscape</button>
+      <button id="btnDrop">Drop ball</button>
+    </div>
+    <div class="row">
+      <button id="btnShake" class="primary">Shake &nbsp;<kbd>space</kbd></button>
+      <button id="btnAnneal">Auto-anneal</button>
+    </div>
+
+    <label class="slider">
+      <span>Learning rate</span>
+      <input type="range" id="sldLr" min="2" max="30" step="0.5" value="12" />
+    </label>
+    <label class="slider">
+      <span>Momentum</span>
+      <input type="range" id="sldMom" min="0" max="0.95" step="0.05" value="0.5" />
+    </label>
+    <label class="slider">
+      <span>Shake power</span>
+      <input type="range" id="sldShake" min="0.5" max="4" step="0.1" value="2" />
+    </label>
+
+    <label class="check">
+      <input type="checkbox" id="chkReveal" />
+      <span>Reveal global minimum</span>
+    </label>
+
+    <div id="stats">
+      <div class="stat"><span class="k">Loss</span><span class="v" id="statLoss">–</span></div>
+      <div class="stat"><span class="k">Best</span><span class="v" id="statBest">–</span></div>
+      <div class="stat"><span class="k">Global min</span><span class="v" id="statMin">???</span></div>
+      <div class="stat"><span class="k">Shakes</span><span class="v" id="statShakes">0</span></div>
+    </div>
+
+    <div id="status">Press Drop ball to start.</div>
+  </aside>
+
+  <div id="banner" class="hidden">You found the global minimum</div>
+
+</body>
+</html>

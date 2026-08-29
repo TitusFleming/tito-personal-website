@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Candidate } from "./types";
 
-/** $68.6M / $471K / $9,988 — short enough to sit in a list row. */
+/** $68.6M / $471K / $9,988, short enough to sit in a list row. */
 function formatMoney(value: number): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 10_000) return `$${Math.round(value / 1_000)}K`;
@@ -36,7 +36,7 @@ export default function CandidateRow({ candidate }: { candidate: Candidate }) {
   const receipts = candidate.receipts ?? 0;
   const hasMoney = candidate.funded && receipts > 0;
 
-  // Nothing to expand into for a bare filing — don't offer a disclosure
+  // Nothing to expand into for a bare filing, don't offer a disclosure
   // that opens onto an empty box. Loose `!= null` so an absent key counts
   // as absent too: `undefined !== null` is true, which would open an empty
   // box the moment the API stopped sending explicit nulls.
@@ -98,7 +98,7 @@ export default function CandidateRow({ candidate }: { candidate: Candidate }) {
 
         <div className="candidate-facts">
           {/* A sitting member running for a different seat gets their
-            * record shown, so say which seat that record is for —
+            * record shown, so say which seat that record is for, 
             * otherwise the tenure and bill counts read as if they
             * already hold the one being contested. */}
           {member && !candidate.incumbent ? (
@@ -106,8 +106,7 @@ export default function CandidateRow({ candidate }: { candidate: Candidate }) {
               Currently serves in the U.S.{" "}
               {member.district !== null
                 ? `House, District ${member.district}`
-                : "Senate"}{" "}
-              — not this seat.
+                : "Senate"}{" "}, not this seat.
             </p>
           ) : null}
 
@@ -145,7 +144,7 @@ export default function CandidateRow({ candidate }: { candidate: Candidate }) {
               <span className="candidate-policy-label">Files bills about</span>{" "}
               {member.policy_areas}
               <span className="candidate-caveat">
-                Subjects of their recent bills — not positions on them.
+                Subjects of their recent bills, not positions on them.
               </span>
             </p>
           ) : null}

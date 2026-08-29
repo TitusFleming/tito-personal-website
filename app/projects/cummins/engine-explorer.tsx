@@ -15,7 +15,7 @@ function subscribeToMotionPreference(onChange: () => void) {
 
 // ssr:false is a hard error inside a Server Component in Next 16, which is
 // most of why this file exists separately from page.tsx. It also keeps three
-// out of the page's initial chunk entirely — engine-canvas is its only
+// out of the page's initial chunk entirely, engine-canvas is its only
 // importer, so the ~165 KB only lands when this component mounts.
 const EngineCanvas = dynamic(() => import("./engine-canvas"), {
   ssr: false,
@@ -48,7 +48,7 @@ export default function EngineExplorer() {
 
   // Deep links without touching the router: /projects/cummins#part-crankshaft
   // preselects a part. This has to be an effect rather than a lazy useState
-  // initializer — the component server-renders, so reading location during
+  // initializer, the component server-renders, so reading location during
   // render would hydrate mismatched. The rule below guards against cascading
   // renders; a single mount-time read of a browser-only value has no cascade.
   useEffect(() => {

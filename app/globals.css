@@ -2202,34 +2202,6 @@ footer {
   margin-bottom: clamp(1.25rem, 3vw, 2rem);
 }
 
-/* The nav sits directly on the blue, so its colours come from a light set
-   rather than the warm tokens used inside the panel. */
-.menu-nav .eyebrow {
-  color: #ffd23f;
-}
-
-.menu-identity h1 {
-  color: #ffffff;
-  text-shadow: 0 3px 0 rgba(8, 26, 52, 0.45);
-}
-
-.menu-item {
-  color: rgba(255, 255, 255, 0.86);
-}
-
-.menu-item:hover,
-.menu-item:focus-visible,
-.menu-item.selected {
-  color: #ffffff;
-}
-
-.menu-item.selected {
-  border-left-color: #ffd23f;
-}
-
-.menu-arrow {
-  color: #ffd23f;
-}
 
 .menu-identity h1 {
   font-size: clamp(2.2rem, 4.5vw, 3.4rem);
@@ -2593,4 +2565,219 @@ footer {
 .menu-portrait {
   border-color: rgba(120, 190, 255, 0.55);
   box-shadow: 6px 6px 0 rgba(3, 14, 36, 0.45);
+}
+
+/* Nav colours. These have to live at the end: an earlier copy of this block sat
+   above the base .menu-item rule and lost the cascade to it, which is why the
+   whole nav stayed brown on blue. */
+.menu-screen .menu-identity h1 {
+  color: #ffffff;
+  text-shadow: 0 3px 0 rgba(3, 14, 36, 0.5);
+}
+
+/* Selected and unselected were both effectively white, so nothing read as
+   picked. Unselected drops well back; selected goes bright green, which is the
+   accent the arrow and the Open button already use. */
+.menu-screen .menu-item {
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.menu-screen .menu-item:hover,
+.menu-screen .menu-item:focus-visible {
+  color: #ffffff;
+}
+
+.menu-screen .menu-item.selected {
+  color: #7ee63f;
+  text-shadow: 0 2px 0 rgba(3, 14, 36, 0.55);
+}
+
+.menu-screen .menu-item.selected {
+  border-left-color: #7ee63f;
+}
+
+.menu-screen .menu-arrow {
+  color: #7ee63f;
+}
+
+.menu-screen .menu-nav {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.menu-portrait {
+  background-color: #0f2f5c;
+}
+
+@media (max-width: 900px) {
+  .menu-screen .menu-item.selected {
+    border-bottom-color: #7ee63f;
+  }
+}
+
+/* Root inherited colour for the whole menu screen. Without this the container
+   still hands down the warm foreground token, so any element added later that
+   does not set its own colour lands brown on blue. */
+.menu-screen {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* A 3px nudge was too small to notice. Bigger travel, and the arrow itself is
+   scaled up so it reads as a pointer rather than a stray character. */
+.menu-screen .menu-arrow {
+  font-size: 1.15em;
+  width: 1.1ch;
+}
+
+@keyframes menu-arrow-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(7px);
+  }
+}
+
+.menu-screen .menu-identity h1 {
+  max-width: 14ch;
+}
+
+/* .menu-nav is a <nav>, so the global `nav { display: flex; justify-content:
+   flex-end }` rule was catching it and shoving the list to the right edge of
+   its own box, 151px clear of the title above it. Back to normal flow. */
+.menu-screen .menu-nav {
+  display: block;
+  gap: 0;
+  justify-content: flex-start;
+}
+
+.menu-screen .menu-list {
+  justify-content: flex-start;
+}
+
+/* Both plates: darker and matched, with a brighter edge. At the old value they
+   were mid-blue on mid-blue and the boxes barely separated from the field. */
+.menu-screen .menu-panel,
+.menu-screen .menu-nav {
+  background: #08182e;
+  border: 2px solid rgba(95, 224, 245, 0.5);
+  box-shadow: 8px 8px 0 rgba(2, 10, 26, 0.5);
+}
+
+/* ── Blue theme for the project pages ─────────────────────────
+   The menu went blue, so the pages behind it had to follow or the site read as
+   two different sites. Done by redefining the tokens rather than rewriting
+   every rule, because almost everything already draws from them.
+
+   --brown is the awkward one: it is a text or border colour in about thirty
+   places and a background fill in thirteen. It becomes a light ink here, and
+   those thirteen fills are overridden below. */
+
+:root {
+  --background: #10305c;
+  --foreground: #e6f1ff;
+  --card: #0b2143;
+  --line: #24507f;
+  --tan: #17385f;
+  --muted: #a3bfdc;
+  --brown: #dfeeff;
+}
+
+body,
+main {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    var(--background);
+}
+
+::selection {
+  background: #5fe0f5;
+  color: #08182e;
+}
+
+/* The thirteen fills. Each already pairs with light text, so they only need a
+   dark plate behind it. */
+.site-mark,
+.pulse-controls,
+.elections-controls,
+.map-tooltip,
+.score-card,
+.match-card span,
+.pulse-table button.active {
+  background: #08182e;
+}
+
+/* Filled actions take the accent green with dark text, matching the menu. */
+.project-link-cue,
+.hero-links a:hover,
+.engine-ghost-btn[aria-pressed="true"],
+.engine-part-button.selected,
+.menu-open {
+  background: #7ee63f;
+  color: #08182e;
+}
+
+.eyebrow,
+.project-topline,
+.tag-row span {
+  color: #5fe0f5;
+}
+
+.tag-row span {
+  background: #17385f;
+  border-color: #2b5b8e;
+  color: #b7dcf0;
+}
+
+h1,
+h2,
+h3 {
+  color: #ffffff;
+}
+
+.hero-links a {
+  border-color: #7ee63f;
+  color: #7ee63f;
+}
+
+/* ── The map keeps its own palette ────────────────────────────
+   Custom properties inherit, so redefining the warm set on the map container
+   restores every fill, stroke and label inside it, including the ones set from
+   JSX as var(--tan) and var(--card). The party colours were never token-driven
+   and are untouched either way. */
+.us-map {
+  --background: #f1e6d6;
+  --foreground: #2a211c;
+  --card: #fffaf0;
+  --line: #d6c5b1;
+  --tan: #e4d2bc;
+  --muted: #6d5d51;
+  --brown: #4e3629;
+  background: var(--card);
+}
+
+.us-map h1,
+.us-map h2,
+.us-map h3 {
+  color: var(--brown);
+}
+
+.us-map .map-tooltip {
+  background: var(--brown);
+}
+
+/* Form controls keep a literal cream background but took their text from
+   --brown, which is now light ink. Left alone they render light on light and
+   the zip field, the tier inputs and the play button all go invisible. */
+.pulse-controls select,
+.rank-pill,
+.gddl-range-row input[type="number"],
+.gddl-start-btn,
+.elections-input-row input,
+.elections-input-row button {
+  color: #08182e;
+}
+
+.elections-input-row input::placeholder {
+  color: rgba(8, 24, 46, 0.5);
 }

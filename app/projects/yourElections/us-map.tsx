@@ -166,7 +166,7 @@ export default function USMap({
   // Zoom-to-state as a group transform over nationally-projected paths.
   // The frame reshapes to the state's own proportions too, so the map keeps
   // filling its column now that the column is no wider than the panels
-  // beside it — a wide national box would leave a selected state stranded
+  // beside it, a wide national box would leave a selected state stranded
   // in empty space on either side.
   const view = useMemo(() => {
     if (!selectedFeature) return { w: WIDTH, h: HEIGHT, k: 1, tx: 0, ty: 0 };
@@ -307,7 +307,7 @@ export default function USMap({
               const info = overview?.states[abbr];
               // Alaska and Hawaii sit at made-up inset positions in an
               // Albers USA projection, so as backdrop they can drift into
-              // a zoomed frame — Hawaii lands in the Gulf beside Texas.
+              // a zoomed frame, Hawaii lands in the Gulf beside Texas.
               // They're only drawn when they're the state being viewed.
               if (inStateView && !isSelected && (abbr === "AK" || abbr === "HI")) {
                 return null;

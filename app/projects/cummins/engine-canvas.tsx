@@ -35,8 +35,8 @@ type EngineCanvasProps = {
 };
 
 /** Imperative handle the small prop-effects use to poke the already-built
- *  scene. The scene effect itself has a [] dep array — rebuilding a WebGL
- *  context on every parent render would be catastrophic — so props cannot
+ *  scene. The scene effect itself has a [] dep array, rebuilding a WebGL
+ *  context on every parent render would be catastrophic, so props cannot
  *  reach it any other way. */
 type SceneHandle = {
   setExplode: (t: number) => void;
@@ -83,7 +83,7 @@ export default function EngineCanvas({
     const stage = stageRef.current;
     if (!stage) return;
 
-    // matchMedia lives in the effect, never the render body — this component
+    // matchMedia lives in the effect, never the render body, this component
     // is inside a page that server-renders, and reading window during render
     // is a hydration mismatch.
     const coarse = window.matchMedia("(pointer: coarse)").matches;
@@ -95,7 +95,7 @@ export default function EngineCanvas({
     try {
       // Deliberately NOT passing a canvas from JSX. Cleanup has to call
       // forceContextLoss(), and that permanently poisons the element it ran
-      // on — getContext() afterwards hands back the same, still-lost context
+      // on, getContext() afterwards hands back the same, still-lost context
       // forever. Under Strict Mode's mount/unmount/mount that means the
       // second mount can never get a live context and the page falls back to
       // "WebGL unavailable" on a machine that supports it perfectly well.
@@ -128,7 +128,7 @@ export default function EngineCanvas({
     const scene = new Scene();
 
     // MeshStandardMaterial at high metalness has nothing to reflect without an
-    // environment map — it renders near-black, and the reflex fix (dropping
+    // environment map, it renders near-black, and the reflex fix (dropping
     // metalness) is exactly what makes cast iron look like grey plastic.
     // RoomEnvironment is a procedural studio box: no downloaded asset, ~20ms
     // once, and it gives curved surfaces specular breakup that moves as you
@@ -163,7 +163,7 @@ export default function EngineCanvas({
     // disconnected until the user explicitly asks for the model.
     if (coarse) controls.disconnect();
 
-    // Frame the EXPLODED bounds, not the assembled ones — otherwise the model
+    // Frame the EXPLODED bounds, not the assembled ones, otherwise the model
     // walks out of frame as the slider moves and the user has to zoom out.
     applyExplode(engine.nodes, 1);
     const sphere = new Box3().setFromObject(engine.root).getBoundingSphere(new Sphere());
@@ -198,7 +198,7 @@ export default function EngineCanvas({
       pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
-      // Non-recursive against the flat pickable list — we already know every
+      // Non-recursive against the flat pickable list, we already know every
       // candidate, so there's no reason to walk the graph.
       const hit = raycaster.intersectObjects(engine.pickables, false)[0];
       return hit ? (hit.object.userData.partId as string) : null;
@@ -259,7 +259,7 @@ export default function EngineCanvas({
     canvas.addEventListener("pointerleave", handlePointerLeave);
     canvas.addEventListener("keydown", handleKeyDown);
 
-    // A lost context is more common on mobile than people expect — the OS
+    // A lost context is more common on mobile than people expect, the OS
     // reclaims the GPU under memory pressure and the canvas goes black.
     const handleContextLost = (event: Event) => {
       event.preventDefault();
@@ -286,7 +286,7 @@ export default function EngineCanvas({
     // The callout is real DOM sitting over the canvas rather than a sprite in
     // the scene: it has to hold a paragraph of selectable text, and text in
     // WebGL is a texture-atlas problem nobody needs. Its position is written
-    // imperatively each frame — routing 60 transform updates a second through
+    // imperatively each frame, routing 60 transform updates a second through
     // React state would re-render the part list along with it.
     const centroid = new Vector3();
     const scratch = new Vector3();
@@ -387,7 +387,7 @@ export default function EngineCanvas({
     });
 
     // Dev-only escape hatch. The render loop is driven by rAF, which browsers
-    // suspend whenever the page isn't compositing — so in a hidden or
+    // suspend whenever the page isn't compositing, so in a hidden or
     // headless window nothing ever draws and the scene can't be inspected.
     // This makes it drivable by hand from the console.
     if (process.env.NODE_ENV !== "production") {
@@ -482,7 +482,7 @@ export default function EngineCanvas({
   }, [reducedMotion]);
 
   return (
-    // The canvas is created and appended by the effect, not rendered here —
+    // The canvas is created and appended by the effect, not rendered here, 
     // see the note on forceContextLoss above.
     <div className="engine-stage" ref={stageRef}>
       {/* Overlay is inset to match the stage padding, so its coordinate space

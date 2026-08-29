@@ -44,7 +44,7 @@ async function handle(request: Request) {
 
   // Wake the elections backend on every pass, warm or cold. It sleeps on its
   // own 15-minute timer, so the voice service being up says nothing about
-  // whether the data behind it is — and an agent that connects and then can't
+  // whether the data behind it is, and an agent that connects and then can't
   // reach the data is a worse call than one that asks you to hold.
   wakeBackend();
 
@@ -68,7 +68,7 @@ async function handle(request: Request) {
   // seconds is worse than a bit of hold silence.
   const greeting =
     attempt === 0
-      ? "<Say>Hi! Give me about thirty seconds to wake up — " +
+      ? "<Say>Hi! Give me about thirty seconds to wake up, " +
         "this runs on a free server that goes to sleep.</Say>"
       : "";
 

@@ -2,6 +2,8 @@ export type ProjectItem = {
   label: string;
   meta: string;
   blurb: string;
+  /** Optional second line: what the project does when you use it. */
+  does?: string;
   tags: string[];
   href?: string;
 };
@@ -39,6 +41,41 @@ export const PROJECT_GROUPS: ProjectGroup[] = [
           "Pick a tier range and guess which Geometry Dash level ranks harder on the GDDL. Go until you get one wrong.",
         tags: ["Geometry Dash", "GDDL"],
         href: "/projects/gd-tier-game",
+      },
+    ],
+  },
+  {
+    title: "The Fundamentals of AI: blog series",
+    items: [
+      {
+        label: "Everything Is a Function",
+        meta: "Part 1 · Interactive essay",
+        blurb:
+          "An interactive drawing pad that exposes how a machine actually sees an image, powered by a real 92% accurate model that is nothing but 7,840 multiplications.",
+        does:
+          "You draw a digit and watch it get crushed into 784 raw numbers, unrolled into a flat list, and scored into live probability bars, with buttons that break the prediction to prove the machine learned numbers, not shapes.",
+        tags: ["Interactive", "MNIST", "Writing"],
+        href: "/blog/ai-fundamentals/everything-is-a-function",
+      },
+      {
+        label: "How Machines Learn",
+        meta: "Part 2 · Interactive essay",
+        blurb:
+          "A 3D physics game where a ball rolling downhill on a randomly generated terrain is, literally, the gradient descent algorithm that trains modern AI.",
+        does:
+          "You drop a ball, watch it get stuck in the wrong valley, and shake the ground to knock it into the deepest one, accidentally performing real simulated annealing along the way.",
+        tags: ["Interactive", "Three.js", "Writing"],
+        href: "/blog/ai-fundamentals/how-machines-learn",
+      },
+      {
+        label: "Everything Is a Prediction",
+        meta: "Part 3 · Interactive essay",
+        blurb:
+          "A phone-autocomplete mockup that learned everything it knows by counting one book, Alice in Wonderland, with no neural network anywhere.",
+        does:
+          "You write sentences by tapping suggestion chips, then drag a memory slider from 0 words up toward ChatGPT's 2,048 and watch the counting approach visibly die, which is exactly why real models need a function instead of a table.",
+        tags: ["Interactive", "Language models", "Writing"],
+        href: "/blog/ai-fundamentals/everything-is-a-prediction",
       },
     ],
   },

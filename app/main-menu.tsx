@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 
+import { BLOG_SERIES } from "./blog-data";
 import { PROJECT_GROUPS, RESUME } from "./menu-data";
 
-type SectionId = "about" | "resume" | "projects" | "contact";
+type SectionId = "about" | "resume" | "projects" | "blog" | "contact";
 
 const SECTIONS: { id: SectionId; label: string }[] = [
   { id: "about", label: "About" },
   { id: "resume", label: "Resume" },
   { id: "projects", label: "Projects" },
+  { id: "blog", label: "Blog" },
   { id: "contact", label: "Contact" },
 ];
 
@@ -42,15 +44,32 @@ export default function MainMenu() {
   return (
     <div className="menu-screen">
       <div className="menu-panel" id="menu-panel" aria-live="polite">
-        {active === "about" ? <AboutSection /> : null}
-        {active === "resume" ? <ResumeSection /> : null}
-        {active === "projects" ? <ProjectsSection /> : null}
-        {active === "contact" ? <ContactSection /> : null}
+        {/* All four sections render into the HTML and the inactive ones are
+            hidden, rather than not being rendered at all. Visually identical,
+            one panel at a time, but it means a crawler or an AI summarising
+            this page sees every project, the resume and the contact details.
+            Rendering only the active panel meant a summary of the site could
+            only ever describe whichever one happened to be open. */}
+        <div hidden={active !== "about"}>
+          <AboutSection />
+        </div>
+        <div hidden={active !== "resume"}>
+          <ResumeSection />
+        </div>
+        <div hidden={active !== "projects"}>
+          <ProjectsSection />
+        </div>
+        <div hidden={active !== "blog"}>
+          <BlogSection />
+        </div>
+        <div hidden={active !== "contact"}>
+          <ContactSection />
+        </div>
       </div>
 
       <nav className="menu-nav" aria-label="Main menu">
         <div className="menu-identity">
-          <h1>Tito Fleming</h1>
+          <h1>Richard &quot;Tito&quot; Fleming</h1>
         </div>
 
         <ul className="menu-list">
@@ -84,10 +103,6 @@ export default function MainMenu() {
         </ul>
       </nav>
 
-      <p className="gd-credit">
-        Menu backdrop and icons inspired by <strong>Geometry Dash</strong>. All
-        artwork here is drawn from scratch. Special thanks to RobTop Games.
-      </p>
     </div>
   );
 }
@@ -100,14 +115,26 @@ function AboutSection() {
         <div className="menu-portrait" aria-hidden="true" />
         <div>
           <p className="menu-blurb">
-            I&apos;m a computer science student at Brown, making software, data
-            projects and technical experiments. Usually things I want to exist
-            and then have to build to find out whether they work.
+            Computer science at Brown, in Providence.
           </p>
           <p className="menu-blurb">
-            Most recently at Cummins in Columbus, Indiana, building diagnostic
-            tooling for diesel technicians. Before that, retirement data models
-            at Fidelity.
+            This past summer I was a Digital Tools Intern at Cummins, at its
+            global headquarters in Columbus, Indiana, working with the Guidanz
+            team at the Fuel Systems facility. Over ten weeks I built an
+            AI-powered diagnostic feature for the Guidanz mobile app that lets
+            service technicians ask questions about ECM fault codes in plain
+            language, instead of working from raw diagnostic output alone. I
+            wrote it in Android Studio in Java and C++, integrating OpenAI
+            ChatKit into the existing Guidanz workflow.
+          </p>
+          <p className="menu-blurb">
+            It reaches technicians across more than 13,000 certified dealer
+            locations and 640 distributors. Ten weeks of being the least
+            experienced person in almost every room turned out to be exactly
+            what I needed.
+          </p>
+          <p className="menu-blurb">
+            Before that, retirement cohort models in Snowflake at Fidelity.
           </p>
         </div>
       </div>
@@ -176,6 +203,7 @@ function ProjectsSection() {
                   <span className="menu-meta">{item.meta}</span>
                 </div>
                 <p className="menu-blurb">{item.blurb}</p>
+                {item.does ? <p className="menu-blurb">{item.does}</p> : null}
                 <div className="tag-row">
                   {item.tags.map((tag) => (
                     <span key={tag}>{tag}</span>
@@ -193,6 +221,31 @@ function ProjectsSection() {
           </ul>
         </section>
       ))}
+    </div>
+  );
+}
+
+function BlogSection() {
+  return (
+    <div className="menu-section">
+      <p className="eyebrow">Blog</p>
+      <h2>{BLOG_SERIES.title}</h2>
+      <p className="menu-blurb">{BLOG_SERIES.tagline}</p>
+
+      <ul className="project-list">
+        {BLOG_SERIES.posts.map((post) => (
+          <li className="project-row" key={post.slug}>
+            <div className="project-row-head">
+              <span className="project-row-name">{post.title}</span>
+              <span className="menu-meta">{post.meta}</span>
+            </div>
+            <p className="menu-blurb">{post.blurb}</p>
+            <Link className="menu-open" href={`/blog/ai-fundamentals/${post.slug}`}>
+              Read
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

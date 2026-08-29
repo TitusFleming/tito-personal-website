@@ -13,7 +13,7 @@ function raceKey(race: RaceGroup) {
  *
  * The tail is real: 22 of the 36 people who filed for the 2026 Texas
  * Senate seat have reported nothing. But "no money reported" is not the
- * same as "not a real candidate" — a campaign whose first FEC report
+ * same as "not a real candidate", a campaign whose first FEC report
  * hasn't landed yet looks identical to a paper filing here. So they are
  * tucked away and counted, never dropped. */
 function CandidateGroups({
@@ -75,7 +75,7 @@ function CandidateGroups({
 
 /** Renders race groups the same way for every flow (zip lookup, district
  * click, statewide panel): grouped by office, one collapsed accordion per
- * party primary. `scopeKey` identifies the selection the races belong to —
+ * party primary. `scopeKey` identifies the selection the races belong to, 
  * when it changes, every accordion closes again. */
 export default function RacePanel({
   races,

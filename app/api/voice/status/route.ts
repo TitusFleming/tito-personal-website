@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 //
 // Note this is not a free read: probing a sleeping Render instance wakes it.
 // That is fine while the user is deliberately waiting for a wake, and is why
-// the card must never poll this on page load — see the comment in warm.ts.
+// the card must never poll this on page load, see the comment in warm.ts.
 export async function GET() {
   const base = voiceBaseUrl();
   if (!base) {

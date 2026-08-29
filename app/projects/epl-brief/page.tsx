@@ -3,7 +3,16 @@ import TeamPulse from "./team-pulse";
 
 export const metadata = {
   title: "EPL Brief | Tito Fleming",
-  description: "A runtime Premier League form tracker for fans catching up on their club.",
+  description:
+    "A runtime Premier League form tracker for fans catching up on their club.",
+  openGraph: {
+    title: "EPL Brief | Tito Fleming",
+    description:
+      "A runtime Premier League form tracker for fans catching up on their club.",
+    url: "https://www.richard-fleming.com/projects/epl-brief",
+    siteName: 'Richard "Tito" Fleming',
+    type: "article",
+  },
 };
 
 export default function HowIsMyTeamDoingPage() {
@@ -15,8 +24,7 @@ export default function HowIsMyTeamDoingPage() {
             RTF
           </Link>
           <nav aria-label="Project navigation">
-            <Link href="/">Home</Link>
-            <Link href="/#portfolio">Portfolio</Link>
+            <Link href="/">Menu</Link>
             <a href="mailto:richard_fleming@brown.edu">Contact</a>
           </nav>
         </header>
