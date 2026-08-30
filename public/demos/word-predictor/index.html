@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Everything Is a Prediction</title>
-  <script type="module" crossorigin src="./assets/index-BjbAVMOf.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-j88w96qQ.css">
+  <script type="module" crossorigin src="./assets/index-Dcuknj5y.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-K0vu6dqd.css">
 </head>
 <body>
   <header>
@@ -39,7 +39,7 @@
     </div>
 
     <section class="card" id="scalePanel">
-      <h2>How many words can it remember?</h2>
+      <h2>How many words can it look at?</h2>
 
       <div class="memwrap">
         <input type="range" id="sldCtx" min="0" max="4" step="1" value="2" list="ctxticks" />
@@ -48,7 +48,14 @@
           <option value="3"></option><option value="4"></option>
         </datalist>
         <div id="ctxLabels">
-          <span>0</span><span>1</span><span>2</span><span>10</span><span>100k+<br /><em>ChatGPT</em></span>
+          <span class="tick">0</span>
+          <span class="tick">1</span>
+          <span class="tick">2</span>
+          <span class="tick">10</span>
+          <span class="tickcol">
+            <span class="tick">100k+</span>
+            <span class="tickname">ChatGPT</span>
+          </span>
         </div>
       </div>
 
@@ -72,8 +79,8 @@
   <footer>
     Everything this model knows came from counting <span id="wordCount">–</span> words
     of Lewis Carroll. There is no neural network in it. A real language model does the
-    same job with the slider set past 2,000, where counting becomes impossible, so a
-    trained function makes the predictions instead.
+    same job by feeding all the text it is given into a trained function, instead of
+    searching stored text the way this one does.
   </footer>
 
 </body>

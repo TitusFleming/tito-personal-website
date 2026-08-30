@@ -31,21 +31,20 @@ export default function Page() {
           the book it learned from.
         </p>
         <p>
-          Set the slider to 10 and the suggestions stop coming. This model works by
-          searching its training text for your exact last words, and one book is nowhere
-          near enough text to contain every possible 10 word phrase. After a few words,
-          whatever you wrote has probably never appeared in the book at all, so there is
-          nothing to find.
+          Set the slider to 10 and the suggestions stop coming. This model guesses by
+          searching the book for the exact words you just wrote and looking at what came
+          right after them. At 10 words the search is too specific. Whatever you wrote
+          has almost certainly never appeared in the book, so the search comes back with
+          nothing.
         </p>
         <p>
-          ChatGPT looks at hundreds of thousands of words at once, and as we just saw,
-          searching stored text stops working long before that. So instead of searching,
-          it uses a function that takes the words in and outputs a probability for every
-          possible next word. That is the same kind of function from part 1, and it gets
-          trained with gradient descent from part 2. A function does not need to have
-          seen your exact sentence before to handle it. That ability is called
-          generalization, and it&rsquo;s the reason neural networks replaced lookup
-          tables.
+          ChatGPT does not search stored text at all. Every time it guesses a word, the
+          entire conversation so far is fed into a function as input, and the function
+          outputs a probability for every possible next word. That is the same kind of
+          function from part 1, and its weights were found with gradient descent from
+          part 2. A function does not need to have seen your exact sentence before to
+          give an answer for it. That ability is called generalization, and it is the
+          reason neural networks replaced lookup tables.
         </p>
       </Prose>
     </PostShell>

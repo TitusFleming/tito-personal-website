@@ -27,7 +27,7 @@ export const BLOG_SERIES = {
       title: "How Machines Learn",
       meta: "Part 2 · Gradient descent",
       blurb:
-        "I built a 3D landscape you can drop a ball onto. Watching it roll downhill and get stuck is exactly how neural networks get trained, and this post explains why.",
+        "I built a 3D landscape you can drop a ball onto. This is a visualization of gradient descent which is the technique most models use to learn.",
       status: "draft",
     },
     {
