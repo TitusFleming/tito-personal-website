@@ -18,7 +18,7 @@ export const BLOG_SERIES = {
       title: "Everything Is a Function",
       meta: "Part 1 · How machines see",
       blurb:
-        "The model that reads your handwriting cant actually see, it's just a mathematical function. Draw a digit and it will guess what you wrote.",
+        "I built a page where you draw a digit and a small neural network I trained guesses what you wrote. The post explains every step the model takes to do that.",
       status: "draft",
     },
     {
@@ -27,7 +27,7 @@ export const BLOG_SERIES = {
       title: "How Machines Learn",
       meta: "Part 2 · Gradient descent",
       blurb:
-        "Gradient descent sounds scary but it's just a ball rolling downhill. Drop one, watch it get stuck in the wrong valley, and shake it out.",
+        "I built a 3D landscape you can drop a ball onto. Watching it roll downhill and get stuck is exactly how neural networks get trained, and this post explains why.",
       status: "draft",
     },
     {
@@ -36,7 +36,7 @@ export const BLOG_SERIES = {
       title: "Everything Is a Prediction",
       meta: "Part 3 · From digits to language",
       blurb:
-        "Your phone's autocomplete and ChatGPT do the same job. I built a tiny one from a single book, and a slider shows what changes at scale.",
+        "I built a tiny language model that learned from a single book. You write with it by tapping suggestions, and a memory slider shows why real models like ChatGPT have to work differently.",
       status: "draft",
     },
   ] satisfies BlogPost[],

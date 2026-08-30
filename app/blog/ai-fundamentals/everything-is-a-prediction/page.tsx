@@ -38,9 +38,9 @@ export default function Page() {
           nothing to find.
         </p>
         <p>
-          ChatGPT uses a memory of thousands of words, and no amount of text anywhere
-          contains every phrase that long. So instead of searching stored text, it uses
-          a function that takes the words in and outputs a probability for every
+          ChatGPT looks at hundreds of thousands of words at once, and as we just saw,
+          searching stored text stops working long before that. So instead of searching,
+          it uses a function that takes the words in and outputs a probability for every
           possible next word. That is the same kind of function from part 1, and it gets
           trained with gradient descent from part 2. A function does not need to have
           seen your exact sentence before to handle it. That ability is called
