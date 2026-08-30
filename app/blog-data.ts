@@ -10,7 +10,7 @@ export type BlogPost = {
 export const BLOG_SERIES = {
   title: "The Fundamentals of AI",
   tagline:
-    "This stuff isn't complicated, the explanations just made it feel that way. So I built ones you can play with instead.",
+    "I think these ideas are much easier to understand visually than by reading about them. Each post here pairs a short explanation with something you can play with.",
   posts: [
     {
       part: 1,
@@ -18,7 +18,7 @@ export const BLOG_SERIES = {
       title: "Everything Is a Function",
       meta: "Part 1 · How machines see",
       blurb:
-        "The machine that reads your handwriting has never seen anything. It's arithmetic. Draw a digit and watch it work.",
+        "The model that reads your handwriting cant actually see, it's just a mathematical function. Draw a digit and it will guess what you wrote.",
       status: "draft",
     },
     {
@@ -27,7 +27,7 @@ export const BLOG_SERIES = {
       title: "How Machines Learn",
       meta: "Part 2 · Gradient descent",
       blurb:
-        "You are a marble in thick fog with one rule: roll downhill. Get stuck in the wrong valley, then shake your way out.",
+        "Gradient descent sounds scary but it's just a ball rolling downhill. Drop one, watch it get stuck in the wrong valley, and shake it out.",
       status: "draft",
     },
     {
@@ -36,7 +36,7 @@ export const BLOG_SERIES = {
       title: "Everything Is a Prediction",
       meta: "Part 3 · From digits to language",
       blurb:
-        "Your phone's autocomplete and ChatGPT are the same species. The difference is one slider. Drag it and watch counting die.",
+        "Your phone's autocomplete and ChatGPT do the same job. I built a tiny one from a single book, and a slider shows what changes at scale.",
       status: "draft",
     },
   ] satisfies BlogPost[],
