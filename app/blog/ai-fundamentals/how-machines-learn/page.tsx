@@ -2,7 +2,7 @@ import PostShell, { DemoFrame, Prose } from "../post-shell";
 
 export const metadata = {
   title: "How Machines Learn | Tito Fleming",
-  description: "Part 2 of The Fundamentals of AI: gradient descent, by feel.",
+  description: "Part 2 of The Fundamentals of AI: gradient descent.",
 };
 
 export default function Page() {
@@ -10,11 +10,14 @@ export default function Page() {
     <PostShell part={2}>
       <Prose>
         <p>
-          In the last post I trained a model and skipped the biggest question: where did
-          its 7,840 weights come from? I did not choose them. An algorithm called
-          gradient descent found them, and the easiest way I know to explain it is a
-          marble rolling on hills. The marble follows one rule: roll downhill. Below is a
-          landscape you can try that rule on. Press Drop ball and watch where it ends up.
+          Previously I showed you how a basic Neural Network works, however I
+          intentionally skipped a core consideration. What are the weights? Where did
+          they come from. I didn&rsquo;t choose them, so what did. An algorithm called
+          gradient descent found each of them, and the easiest way to understand how it
+          works in my opinion is to picture a ball rolling down a hill. The marble
+          follows one rule, go downhill. Below is a landscape you can try that out on.
+          Press Drop ball and see what happens, you may have some trouble getting all
+          the way down.
         </p>
       </Prose>
 
@@ -22,33 +25,34 @@ export default function Page() {
 
       <Prose>
         <p>
-          The ball rolls into the nearest dip and stops there. Usually that dip is not
-          the lowest point on the map. Turn on &ldquo;reveal global minimum&rdquo; and
-          you will see a deeper valley somewhere else, one the ball can never reach on
-          its own, because getting there would mean rolling uphill first. This is called
+          The ball rolls into the lowest dip under it and stops there. Not always is
+          that divot lowest point on the map. Turn on &ldquo;reveal global
+          minimum&rdquo; and you will see the lowest point in case it&rsquo;s not
+          readily apparent. The ball may not be able to reach that point on its own
+          because the ball would first have to go uphill to get there. This is called
           getting stuck in a local minimum, and it is the classic failure of gradient
           descent.
         </p>
         <p>
-          The fix sounds too simple to work: shake the ground. A random kick can knock a
-          stuck ball over a ridge, and a ball that is already in the deepest valley
-          usually just falls back in, so randomness hurts bad answers more than good
-          ones. Shaking hard at first and more gently over time is a real method called
-          simulated annealing, and it is exactly what the Auto-anneal button does.
+          Adding some randomness or &ldquo;noise&rdquo; is one solution to this, shake
+          the ground. now the ball can be knocked over a ridge. Randomness hurts bad
+          answers more than good ones. Shaking hard at first and more gently over time
+          is a real method called simulated annealing, and it is exactly what the
+          Auto-anneal button does.
         </p>
         <p>
-          The two sliders are real vocabulary too. Learning rate is how hard the slope
-          pushes the ball. Momentum lets the ball keep its speed, so it can coast through
-          small bumps instead of stopping in every tiny dent.
+          The two sliders change features of the ball and the landscape. Learning rate
+          is how hard the slope pushes the ball. Momentum lets the ball keep its speed,
+          so it can coast through small bumps instead of stopping in on a tiny dent.
         </p>
         <p>
-          Here is the connection back to part 1. The landscape is not a real place. The
-          two directions of the floor are two of the model&rsquo;s weights, and the
-          height at every point is how wrong the model would be with the weights set that
-          way. The ball&rsquo;s position is a model. Rolling downhill is training. When
-          the ball finally rests somewhere low, its coordinates are the trained weights.
-          The stencils from part 1 are just where a ball stopped rolling, in a version of
-          this game with 7,840 dimensions instead of 2.
+          The landscape here is not a real place. The two directions of the floor
+          represent two of the weights from the last post, and the height at each spot
+          is how wrong the model would be with its weights set to those values. Moving
+          the ball changes the weights. Rolling downhill makes the model less wrong, and
+          that is all training is. The real model has 7,840 weights instead of 2, so its
+          landscape has 7,840 directions, which is impossible to draw but works the same
+          way. The weights you saw in part 1 are just where the ball stopped.
         </p>
       </Prose>
     </PostShell>

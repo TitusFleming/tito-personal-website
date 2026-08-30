@@ -10,11 +10,11 @@ export default function Page() {
     <PostShell part={3}>
       <Prose>
         <p>
-          A language model has one job: given some text, put a probability on every word
-          that could come next. That is the trick behind ChatGPT, and it is also the
-          trick behind the autocomplete strip on your phone keyboard. To show how it
-          works, I built the small one below. It learned everything it knows from a
-          single book, Alice in Wonderland, and you can write with it by tapping the
+          A language model has one job, given the current context guess what word comes
+          next. That is the core feature behind ChatGPT, and it is also the trick behind
+          the autocomplete strip on your phone&rsquo;s keyboard. To show how it works, I
+          built the small one below. It learned everything it knows from just one book,
+          Alice in Wonderland, and you can write with it by tapping/clicking on the
           suggestion chips.
         </p>
       </Prose>
@@ -23,33 +23,29 @@ export default function Page() {
 
       <Prose>
         <p>
-          The control that matters is the memory slider. At 0 words of memory the model
-          picks words purely by how common they are, and the result is soup. Give it 1
-          word of memory and grammar starts to appear, which is roughly what your phone
-          keyboard does. At 2 words it suddenly sounds like Lewis Carroll, because pairs
-          of Carroll&rsquo;s words are exactly what it counted.
+          The most important feature here is the memory slider. It controls how many
+          previous words the model looks at when guessing the next one. At 0 it looks at
+          nothing and just picks whatever words are most common. At 1 it only looks at
+          the last word, which is close to what your phone&rsquo;s autocomplete does. At
+          2 it looks at the last two words, and with just that it starts to sound like
+          the book it learned from.
         </p>
         <p>
-          Now slide it to 10 and everything dies. The model works by looking up your
-          exact last words in a table of counts, and a table covering every possible 10
-          word phrase would need more rows than there are atoms in the universe. One book
-          fills basically none of them. Almost any 10 word sentence you type has never
-          been written before by anyone, so there is nothing to look up.
+          Set the slider to 10 and the suggestions stop coming. This model works by
+          searching its training text for your exact last words, and one book is nowhere
+          near enough text to contain every possible 10 word phrase. After a few words,
+          whatever you wrote has probably never appeared in the book at all, so there is
+          nothing to find.
         </p>
         <p>
-          This is the problem that forces the jump to neural networks. Replace the lookup
-          table with a function that takes the text and outputs the probabilities, which
-          is part 1 with words instead of pixels. Train that function with gradient
-          descent on how surprised it was by each real next word, which is part 2 with
-          around a trillion weights instead of two.
-        </p>
-        <p>
-          Early in training, the function mostly memorizes the text it has seen. Keep
-          training and something better happens: it starts working on text it has never
-          seen, because the patterns it was forced to learn, grammar, style, the way
-          ideas follow each other, apply to sentences that were never in the training
-          data at all. That is called generalization, and it is the one thing a lookup
-          table can never do.
+          ChatGPT uses a memory of thousands of words, and no amount of text anywhere
+          contains every phrase that long. So instead of searching stored text, it uses
+          a function that takes the words in and outputs a probability for every
+          possible next word. That is the same kind of function from part 1, and it gets
+          trained with gradient descent from part 2. A function does not need to have
+          seen your exact sentence before to handle it. That ability is called
+          generalization, and it&rsquo;s the reason neural networks replaced lookup
+          tables.
         </p>
       </Prose>
     </PostShell>
