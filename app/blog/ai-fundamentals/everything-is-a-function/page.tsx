@@ -10,11 +10,10 @@ export default function Page() {
     <PostShell part={1}>
       <Prose>
         <p>
-          Neural networks are functions. That sentence took me a long time to actually
-          believe, so this post tries to show it instead of just saying it. I trained a
-          small neural network on the MNIST dataset, a famous collection of 70,000
-          handwritten digits, and wired it into this page. Draw a digit in the black box
-          and the model will guess what you drew, live, while your mouse is still moving.
+          Neural networks are just very long functions. This post tries to show that
+          instead of just saying it. I trained a small neural network on MNIST, a famous
+          dataset of 70,000 handwritten digits, and put it into this page. If you draw a
+          digit in the black box, the model guesses what you drew.
         </p>
       </Prose>
 
@@ -43,13 +42,13 @@ export default function Page() {
           Once the drawing is a list of numbers, the prediction is plain arithmetic. The
           model multiplies each of the 784 numbers by a weight, adds everything up, and
           repeats that ten times, once for each digit from 0 to 9. The biggest total
-          wins. Written as math it is <code>f(x) = softmax(W·x + b)</code>, but there is
-          nothing more inside: 7,840 multiplications total. You could do every one of
+          wins. Written as math it&rsquo;s <code>f(x) = softmax(W·x + b)</code>, but
+          there&rsquo;s nothing more inside: 7,840 multiplications total. You could do every one of
           them with a pencil and get the exact same answer this page gives you.
         </p>
         <p>
-          So the only mystery left is the weights. I did not pick them, and no person
-          did. Below are the ten sets of weights from my model, drawn as pictures. An
+          So the only mystery left is the weights. I didn&rsquo;t pick them. Below are
+          the ten sets of weights from my model, drawn as pictures. An
           orange pixel means ink there raises that digit&rsquo;s score, and a blue pixel
           means ink there lowers it. Squint and you can see a faint 0 in the 0 detector.
           The model is really just comparing your drawing to ten blurry stencils.
