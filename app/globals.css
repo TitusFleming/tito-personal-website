@@ -3040,3 +3040,30 @@ footer {
   color: rgba(232, 238, 247, 0.6);
   max-width: 30rem;
 }
+
+/* GD-style scrollbar: dark groove, gold capsule thumb with a yellow rim,
+   applied everywhere (page scroll, menu panel, any overflow container). */
+::-webkit-scrollbar {
+  width: 13px;
+  height: 13px;
+}
+::-webkit-scrollbar-track {
+  background: #08090c;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ffe98a 0%, #d9a521 55%, #8a6508 100%);
+  border-radius: 999px;
+  border: 2px solid #f5d431;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #fff3ae 0%, #e8b52e 55%, #9a7208 100%);
+}
+::-webkit-scrollbar-corner {
+  background: #08090c;
+}
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-color: #d9a521 #08090c;
+  }
+}

@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 
 import { BLOG_SERIES } from "../../blog-data";
 import GdBackground from "../../gd-background";
-import ProgressBar from "./progress-bar";
 import s from "./post.module.css";
 
 /** Static demo bundles live in public/demos/. Rebuild and refresh them with
@@ -76,7 +75,6 @@ export default function PostShell({ part, children }: { part: number; children: 
 
   return (
     <main className={s.page}>
-      <ProgressBar />
       <GdBackground />
       <div className={s.scrim} aria-hidden="true" />
 
