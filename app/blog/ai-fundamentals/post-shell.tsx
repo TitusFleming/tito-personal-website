@@ -29,31 +29,44 @@ const DEMOS: Record<number, { src: string; title: string; height: number; label:
   },
 };
 
-export function DemoFrame({ part }: { part: number }) {
+export function DemoFrame({
+  part,
+  view,
+  height,
+}: {
+  part: number;
+  view?: string;
+  height?: number;
+}) {
   const d = DEMOS[part];
+  const src = view ? `${d.src}?view=${view}` : d.src;
   return (
     <div className={`${s.demoShell} ${s.reveal}`}>
       <div className={s.demoChrome}>
         <span className={s.dotR} />
         <span className={s.dotY} />
         <span className={s.dotG} />
-        <span className={s.demoLabel}>{d.label} · live</span>
+        <span className={s.demoLabel}>
+          {d.label}
+          {view ? ` · ${view}` : ""} · live
+        </span>
         <a className={s.demoOpen} href={d.src} target="_blank" rel="noopener noreferrer">
           open ↗
         </a>
       </div>
-      <iframe src={d.src} title={d.title} height={d.height} className={s.demoFrame} loading="lazy" />
+      <iframe
+        src={src}
+        title={view ? `${d.title} (${view})` : d.title}
+        height={height ?? d.height}
+        className={s.demoFrame}
+        loading="lazy"
+      />
     </div>
   );
 }
 
-export function Bubble({ kicker, children }: { kicker: string; children: ReactNode }) {
-  return (
-    <div className={`${s.card} ${s.reveal}`}>
-      <p className={s.cardKicker}>{kicker}</p>
-      <div className={s.body}>{children}</div>
-    </div>
-  );
+export function Prose({ children }: { children: ReactNode }) {
+  return <div className={`${s.prose} ${s.reveal}`}>{children}</div>;
 }
 
 export default function PostShell({ part, children }: { part: number; children: ReactNode }) {

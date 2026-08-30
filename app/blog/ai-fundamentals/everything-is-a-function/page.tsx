@@ -1,4 +1,4 @@
-import PostShell, { Bubble, DemoFrame } from "../post-shell";
+import PostShell, { DemoFrame, Prose } from "../post-shell";
 
 export const metadata = {
   title: "Everything Is a Function | Tito Fleming",
@@ -8,68 +8,62 @@ export const metadata = {
 export default function Page() {
   return (
     <PostShell part={1}>
-      <Bubble kicker="the setup">
+      <Prose>
         <p>
-          The model below can read and identify handwritten digits. It has never seen
-          anything, because it has no eyes. Each pixel of the drawing is converted to a
-          number for how light or dark it is, and those numbers become the variables a
-          function takes in. Draw a digit and watch the bars update while you are still
-          drawing.
+          Neural networks are functions. That sentence took me a long time to actually
+          believe, so this post tries to show it instead of just saying it. I trained a
+          small neural network on the MNIST dataset, a famous collection of 70,000
+          handwritten digits, and wired it into this page. Draw a digit in the black box
+          and the model will guess what you drew, live, while your mouse is still moving.
         </p>
-      </Bubble>
+      </Prose>
 
-      <DemoFrame part={1} />
+      <DemoFrame part={1} view="draw" height={560} />
 
-      <Bubble kicker="the picture becomes numbers">
+      <Prose>
         <p>
-          The machine&rsquo;s first step is to destroy the picture. The drawing is
-          crushed into a 28 by 28 grid, and each cell becomes a brightness value between
-          0 and 1. Hover over the grid: that is not a visualization of the data. That is
-          the data.
+          The part that surprised me most when I first learned this: the model never sees
+          a picture. Your drawing gets shrunk down to a grid of 28 by 28 pixels, and each
+          pixel becomes one number describing how bright it is. 0 means black, 1 means
+          white, and decimals sit in between. That is the entire input. Your digit is now
+          784 numbers.
         </p>
         <p>
-          Press Unroll and the grid flattens into a list of 784 numbers. The layout is
-          gone. The model never learns that pixel 30 sat above pixel 58, because a list
-          has no &ldquo;above.&rdquo;
+          The grid below shows your drawing after that step, and if you hover over it you
+          can read the actual numbers. Press the button underneath to flatten the grid
+          into one long row, because that is what the model really receives: not an
+          image, just a list. It never even knows which pixels were next to each other.
         </p>
-      </Bubble>
+      </Prose>
 
-      <Bubble kicker="the entire model">
-        <p>
-          The prediction is <code>f(x) = softmax(W·x + b)</code>, and nothing else is
-          hiding behind it. Each of the 784 numbers is multiplied by a weight and summed,
-          once per digit, and the largest total wins. That is 7,840 multiplications,
-          which could be done with a pencil to the same result.
-        </p>
-        <p>
-          &ldquo;The machine sees a seven&rdquo; is a metaphor. The arithmetic is not.
-        </p>
-      </Bubble>
+      <DemoFrame part={1} view="pixels" height={520} />
 
-      <Bubble kicker="where it breaks">
+      <Prose>
         <p>
-          Shift the digit three pixels and the confidence collapses. The shape is the
-          same to you, but the function receives 784 different numbers. Invert the colors
-          and an 8 becomes a 3. It never learned shapes, only numbers.
+          Once the drawing is a list of numbers, the prediction is plain arithmetic. The
+          model multiplies each of the 784 numbers by a weight, adds everything up, and
+          repeats that ten times, once for each digit from 0 to 9. The biggest total
+          wins. Written as math it is <code>f(x) = softmax(W·x + b)</code>, but there is
+          nothing more inside: 7,840 multiplications total. You could do every one of
+          them with a pencil and get the exact same answer this page gives you.
         </p>
         <p>
-          Note what it never says: &ldquo;I don&rsquo;t know.&rdquo; Scribble noise and
-          it still answers at 94% confidence. A function always outputs numbers. There is
-          no bar for doubt.
+          So the only mystery left is the weights. I did not pick them, and no person
+          did. Below are the ten sets of weights from my model, drawn as pictures. An
+          orange pixel means ink there raises that digit&rsquo;s score, and a blue pixel
+          means ink there lowers it. Squint and you can see a faint 0 in the 0 detector.
+          The model is really just comparing your drawing to ten blurry stencils.
         </p>
-      </Bubble>
+      </Prose>
 
-      <Bubble kicker="what the weights look like">
+      <DemoFrame part={1} view="weights" height={260} />
+
+      <Prose>
         <p>
-          The ten images at the bottom of the demo are the weights themselves, drawn as
-          pictures. Orange marks pixels that raise a digit&rsquo;s score, blue marks
-          pixels that lower it. Every drawing is scored against ten faint stencils.
+          Nobody drew those stencils. They were found automatically, by an algorithm
+          called gradient descent, and that is the next post.
         </p>
-        <p>
-          Nobody drew them. They were found by gradient descent, which is explained
-          next, in part 2.
-        </p>
-      </Bubble>
+      </Prose>
     </PostShell>
   );
 }

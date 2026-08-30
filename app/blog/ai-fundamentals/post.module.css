@@ -269,3 +269,26 @@
     animation-range: entry 0% entry 38%;
   }
 }
+
+/* -------------------------------------------------- prose */
+/* Plain blog paragraphs. The cards are gone: text reads as an essay and the
+   widgets sit between paragraphs, the way blog.skz.dev interleaves them. */
+
+.prose p {
+  font-size: 16.5px;
+  line-height: 1.8;
+  color: #dbe1ef;
+  margin-bottom: 18px;
+  text-shadow: 0 1px 8px rgba(5, 10, 25, 0.6);
+}
+.prose p:last-child { margin-bottom: 0; }
+
+.prose code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 14.5px;
+  color: #67e8f9;
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.15);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
